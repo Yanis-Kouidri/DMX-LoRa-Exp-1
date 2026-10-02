@@ -29,24 +29,67 @@ READER_POLL_INTERVAL = 0.1
 # Attente maximale de la réponse immédiate avant de réafficher l'invite.
 IMMEDIATE_RESPONSE_DELAY = 0.5
 
-BUILTIN_COMMANDS = ("help", "clear", "exit", "quit")
+# Un octet reçu sans fin de ligne depuis ce délai est affiché tel quel :
+# c'est le symptôme d'un débit désynchronisé ou d'un module en bootloader.
+PARTIAL_LINE_TIMEOUT = 0.5
 
-# Complétion basique : commandes intégrées + quelques commandes AT courantes,
-# utile comme point de départ avec Tab.
-KNOWN_COMMANDS = BUILTIN_COMMANDS + (
-    "sys get ver",
-    "sys get hweui",
+# Durée pendant laquelle les réponses parasites d'un 'resync' sont ignorées.
+RESYNC_DISCARD_DELAY = 0.5
+
+BUILTIN_COMMANDS = ("help", "clear", "exit", "quit", "resync", "hex on", "hex off")
+
+# Commandes RN2483 proposées à la complétion (guide DS40001784G, chapitre 2).
+# 'sys eraseFW' en est volontairement absente : elle efface le firmware.
+_MAC_SET_PARAMS = (
+    "devaddr deveui appeui nwkskey appskey appkey pwridx dr adr bat retx "
+    "linkchk rxdelay1 ar rx2 sync upctr dnctr"
+)
+_MAC_GET_PARAMS = (
+    "devaddr deveui appeui dr band pwridx adr retx rxdelay1 rxdelay2 ar rx2 "
+    "dcycleps mrgn gwnb status sync upctr dnctr"
+)
+_RADIO_PARAMS = "bt mod freq pwr sf afcbw rxbw bitrate fdev prlen crc iqi cr wdt bw sync"
+
+RN2483_COMMANDS = (
+    "sys sleep",
     "sys reset",
-    "radio get sf",
-    "radio get freq",
-    "radio get pwr",
-    "radio set sf",
-    "radio set freq",
-    "radio tx",
-    "radio rx",
+    "sys factoryRESET",
+    "sys set nvm",
+    "sys set pindig",
+    "sys set pinmode",
+    "sys get ver",
+    "sys get nvm",
+    "sys get vdd",
+    "sys get hweui",
+    "sys get pindig",
+    "sys get pinana",
+    "mac reset 868",
+    "mac reset 433",
+    "mac tx cnf",
+    "mac tx uncnf",
+    "mac join otaa",
+    "mac join abp",
+    "mac save",
+    "mac forceENABLE",
     "mac pause",
     "mac resume",
+    *(f"mac set {param}" for param in _MAC_SET_PARAMS.split()),
+    *(f"mac set ch {param}" for param in ("freq", "dcycle", "drrange", "status")),
+    *(f"mac get {param}" for param in _MAC_GET_PARAMS.split()),
+    *(f"mac get ch {param}" for param in ("freq", "dcycle", "drrange", "status")),
+    "radio rx",
+    "radio tx",
+    "radio cw on",
+    "radio cw off",
+    *(f"radio set {param}" for param in _RADIO_PARAMS.split()),
+    *(f"radio get {param}" for param in _RADIO_PARAMS.split()),
+    "radio get snr",
+    "radio get rssi",
 )
+
+COMPLETION_TREE = tuple(tuple(cmd.split()) for cmd in BUILTIN_COMMANDS + RN2483_COMMANDS)
+
+USING_LIBEDIT = getattr(readline, "backend", None) == "editline" or "libedit" in (readline.__doc__ or "")
 
 
 def print_help() -> None:
@@ -56,10 +99,12 @@ Available commands:
   help               Show this help
   clear              Clear the screen
   exit, quit         Exit the shell
+  resync             Re-sync the mote baudrate (Break + 0x55)
+  hex on | hex off   Also show received bytes in hexadecimal
 
 Navigation:
   Up / Down arrows   Recall previous commands (persisted across sessions)
-  Tab                Autocomplete known commands
+  Tab                Autocomplete commands word by word (Tab twice to list)
 
 Any other command is sent directly to the RN2483. Responses are displayed
 as they arrive, including delayed ones (mac join, mac tx, radio rx...).
@@ -92,12 +137,57 @@ def setup_readline() -> None:
 
     atexit.register(save_history)
 
-    def completer(text: str, state: int) -> str | None:
-        matches = [cmd for cmd in KNOWN_COMMANDS if cmd.startswith(text)]
-        return matches[state] if state < len(matches) else None
+    readline.set_completer(complete)
+    # Seuls les espaces séparent les mots : 'text' est alors le mot en cours.
+    readline.set_completer_delims(" \t")
 
-    readline.set_completer(completer)
-    readline.parse_and_bind("tab: complete")
+    # La syntaxe de configuration diffère entre GNU readline et libedit
+    # (backend par défaut de certains Python, dont celui de ce projet).
+    if USING_LIBEDIT:
+        readline.parse_and_bind("bind ^I rl_complete")
+    else:
+        readline.parse_and_bind("tab: complete")
+
+
+def completion_candidates(line: str) -> list[str]:
+    """
+    Retourne les mots possibles pour compléter le dernier mot de `line`.
+
+    La complétion se fait mot par mot : avec 'mac g', propose 'get' ;
+    avec 'mac get ', propose tous les paramètres de 'mac get'.
+    """
+
+    words = line.split()
+    if line and not line[-1].isspace():
+        prefix_words, partial = words[:-1], words[-1]
+    else:
+        prefix_words, partial = words, ""
+
+    depth = len(prefix_words)
+    matches = {
+        cmd[depth]
+        for cmd in COMPLETION_TREE
+        if len(cmd) > depth
+        and [w.lower() for w in cmd[:depth]] == [w.lower() for w in prefix_words]
+        and cmd[depth].lower().startswith(partial.lower())
+    }
+    return sorted(matches)
+
+
+_completion_matches: list[str] = []
+
+
+def complete(text: str, state: int) -> str | None:
+    """Fonction de complétion readline (appelée avec state = 0, 1, 2...)."""
+
+    global _completion_matches
+    if state == 0:
+        line = readline.get_line_buffer()[: readline.get_endidx()]
+        _completion_matches = completion_candidates(line)
+        # GNU readline ajoute un espace après une complétion unique, pas libedit.
+        if USING_LIBEDIT and len(_completion_matches) == 1:
+            _completion_matches = [f"{_completion_matches[0]} "]
+    return _completion_matches[state] if state < len(_completion_matches) else None
 
 
 def purge_secret_history() -> None:
@@ -143,24 +233,58 @@ class SerialReader(threading.Thread):
         self.last_activity = time.monotonic()
         # Positionné par la boucle principale pendant qu'input() attend une saisie.
         self.prompt_active = threading.Event()
+        # Affiche aussi les octets reçus en hexadécimal (commande 'hex on').
+        self.hex_mode = False
+        # Les lignes reçues avant cet instant sont ignorées (voir 'resync').
+        self.discard_until = 0.0
 
     def stop(self) -> None:
         self._stop_event.set()
 
     def run(self) -> None:
         buffer = b""
+        last_byte_at = time.monotonic()
         while not self._stop_event.is_set():
             try:
-                buffer += self._mote.read_available()
+                data = self._mote.read_available()
             except SerialException as exc:
                 self._print(f"Serial communication error: {exc}")
                 return
 
+            if data:
+                buffer += data
+                last_byte_at = time.monotonic()
+
             while b"\n" in buffer:
                 line, buffer = buffer.split(b"\n", 1)
-                text = line.decode(errors="replace").strip()
-                if text:
-                    self._print(text)
+                self._handle_line(line, complete_line=True)
+
+            # Octets sans fin de ligne : une réponse RN2483 se termine toujours
+            # par \r\n, on les affiche donc comme anomalie après un délai.
+            if buffer and time.monotonic() - last_byte_at > PARTIAL_LINE_TIMEOUT:
+                self._handle_line(buffer, complete_line=False)
+                buffer = b""
+
+    def _handle_line(self, raw: bytes, complete_line: bool) -> None:
+        raw = raw.rstrip(b"\r")
+        if not raw or time.monotonic() < self.discard_until:
+            return
+
+        text = raw.decode(errors="replace").strip()
+        if self.hex_mode:
+            text = f"{text}  [{raw.hex(' ')}]"
+
+        readable = all(0x20 <= byte < 0x7F or byte == 0x09 for byte in raw)
+        if readable and complete_line:
+            self._print(text)
+            return
+
+        self._print(f"{text}  [{raw.hex(' ')}]" if not self.hex_mode else text)
+        self._print(
+            "Warning: unreadable or unterminated response. The baudrate may be out of "
+            "sync: try 'resync'. If every command gets 2 garbled bytes back, the mote "
+            "is probably in bootloader mode: reflash it with 'flash_firmware.py --resume'."
+        )
 
     def _print(self, text: str) -> None:
         """Affiche une ligne sans casser la saisie en cours."""
@@ -266,6 +390,27 @@ def main() -> None:
             if command == "clear":
                 clear_screen()
                 continue
+
+            if command in {"hex on", "hex off"}:
+                reader.hex_mode = command == "hex on"
+                print(f"Hexadecimal display {'enabled' if reader.hex_mode else 'disabled'}.")
+                continue
+
+            if command == "resync":
+                print("Re-syncing baudrate, then checking with 'sys get ver'...")
+                # Le Break et le 0x55 laissent des octets parasites dans le tampon de
+                # commande du module : une ligne vide le vide, et sa réponse
+                # 'invalid_param' est ignorée.
+                reader.discard_until = time.monotonic() + RESYNC_DISCARD_DELAY
+                try:
+                    mote.resync_baudrate()
+                    time.sleep(0.1)
+                    mote.write_command("")
+                except SerialException as exc:
+                    print(f"Serial communication error: {exc}")
+                    continue
+                time.sleep(RESYNC_DISCARD_DELAY)
+                command = "sys get ver"
 
             if not interactive:
                 print(f"> {command}", flush=True)

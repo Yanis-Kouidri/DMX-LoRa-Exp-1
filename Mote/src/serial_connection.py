@@ -37,6 +37,19 @@ class RN2483Connection:
 
         return self._serial.read(self._serial.in_waiting or 1)
 
+    def resync_baudrate(self) -> None:
+        """
+        Relance l'auto-baud du RN2483 : condition Break suivie de 0x55.
+
+        Procédure documentée (guide DS40001784G, sys sleep / UART interface)
+        pour recaler le débit du module sur celui de l'hôte. Sans effet sur
+        la configuration ; inoffensif aussi si le module est en bootloader.
+        """
+
+        self._serial.send_break(duration=0.05)
+        self._serial.write(b"\x55")
+        self._serial.flush()
+
     def _read_line(self, timeout: float) -> str:
         """Lit une ligne avec un timeout dédié, sans altérer le timeout par défaut du port."""
 
