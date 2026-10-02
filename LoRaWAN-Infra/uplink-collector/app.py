@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
@@ -17,6 +18,8 @@ POSTGRES_DSN = os.getenv(
     "POSTGRES_DSN",
     "postgresql://chirpstack:chirpstack@postgres:5432/lorawan_experiments",
 )
+
+DB_RETRY_MAX_DELAY_S = 30
 
 
 def insert_uplink(event, record, rx):
@@ -56,6 +59,21 @@ def insert_uplink(event, record, rx):
             return cur.rowcount == 1
 
 
+def store_uplink(event, record, rx):
+    # Retry until PostgreSQL is reachable: the message is only acknowledged to
+    # the broker once this returns, so it is never dropped while the DB is down.
+    # If the MQTT connection times out meanwhile, the broker redelivers it and
+    # the ON CONFLICT clause discards the duplicate.
+    delay = 1
+    while True:
+        try:
+            return insert_uplink(event, record, rx)
+        except psycopg.OperationalError as err:
+            print(f"PostgreSQL unavailable, retrying in {delay}s: {err}", flush=True)
+            time.sleep(delay)
+            delay = min(delay * 2, DB_RETRY_MAX_DELAY_S)
+
+
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code != 0:
         raise RuntimeError(f"MQTT connection failed: {reason_code}")
@@ -64,28 +82,37 @@ def on_connect(client, userdata, flags, reason_code, properties):
 
 
 def on_message(client, userdata, message):
-    event = json.loads(message.payload.decode("utf-8"))
-    rx = event.get("rxInfo", [{}])[0]
-    lora = event.get("txInfo", {}).get("modulation", {}).get("lora", {})
+    try:
+        event = json.loads(message.payload.decode("utf-8"))
+        rx = (event.get("rxInfo") or [{}])[0]
+        lora = event.get("txInfo", {}).get("modulation", {}).get("lora", {})
+        record = {
+            "received_at": event.get("time"),
+            "collected_at": datetime.now(timezone.utc).isoformat(),
+            "dev_eui": event.get("deviceInfo", {}).get("devEui"),
+            "gateway_id": rx.get("gatewayId"),
+            "f_cnt": event.get("fCnt"),
+            "f_port": event.get("fPort"),
+            "frequency_hz": event.get("txInfo", {}).get("frequency"),
+            "bandwidth_hz": lora.get("bandwidth"),
+            "spreading_factor": lora.get("spreadingFactor"),
+            "coding_rate": lora.get("codeRate"),
+            "channel": rx.get("channel"),
+            "rssi_dbm": rx.get("rssi"),
+            "snr_db": rx.get("snr"),
+            "payload_base64": event.get("data"),
+        }
+    except (ValueError, AttributeError, TypeError) as err:
+        print(f"Malformed message skipped on {message.topic}: {err}: {message.payload!r}", flush=True)
+        return
 
-    record = {
-        "received_at": event.get("time"),
-        "collected_at": datetime.now(timezone.utc).isoformat(),
-        "dev_eui": event.get("deviceInfo", {}).get("devEui"),
-        "gateway_id": rx.get("gatewayId"),
-        "f_cnt": event.get("fCnt"),
-        "f_port": event.get("fPort"),
-        "frequency_hz": event.get("txInfo", {}).get("frequency"),
-        "bandwidth_hz": lora.get("bandwidth"),
-        "spreading_factor": lora.get("spreadingFactor"),
-        "coding_rate": lora.get("codeRate"),
-        "channel": rx.get("channel"),
-        "rssi_dbm": rx.get("rssi"),
-        "snr_db": rx.get("snr"),
-        "payload_base64": event.get("data"),
-    }
+    try:
+        inserted = store_uplink(event, record, rx)
+    except psycopg.Error as err:
+        print(f"Uplink rejected by PostgreSQL: {err}: {message.payload!r}", flush=True)
+        return
 
-    if insert_uplink(event, record, rx):
+    if inserted:
         print(json.dumps(record, separators=(",", ":")), flush=True)
     else:
         print(
@@ -98,6 +125,7 @@ def on_message(client, userdata, message):
 client = mqtt.Client(
     mqtt.CallbackAPIVersion.VERSION2,
     client_id="uplink-collector",
+    clean_session=False,
 )
 client.on_connect = on_connect
 client.on_message = on_message
