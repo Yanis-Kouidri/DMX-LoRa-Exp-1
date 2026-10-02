@@ -117,6 +117,61 @@ class RN2483Connection:
 
         return self.send_command(f"mac set dr {dr}")
 
+    def is_joined(self) -> bool:
+        """
+        Indique si le module a déjà rejoint le réseau.
+
+        `mac get status` renvoie un champ de bits en hexadécimal (firmware
+        1.0.5+) : bits 3:0 = état MAC, bit 4 = statut de join.
+        """
+
+        status = self.send_command("mac get status")
+        try:
+            return bool(int(status, 16) & 0x10)
+        except ValueError:
+            raise RuntimeError(f"Réponse inattendue à 'mac get status' : {status!r}")
+
+    def join_otaa(self, async_timeout: float = 20.0) -> tuple[str, str]:
+        """
+        Lance un join OTAA et lit les DEUX réponses du module :
+
+        1. La réponse immédiate : "ok" si la procédure démarre, sinon une
+           erreur ("keys_not_init", "no_free_ch", "silent", "busy"...).
+        2. La réponse asynchrone : "accepted" ou "denied".
+
+        Si `immediate` n'est pas "ok", `async_response` est une chaîne vide.
+        """
+
+        self._serial.reset_input_buffer()
+        self._serial.write(b"mac join otaa\r\n")
+
+        immediate = self._read_line(timeout=1.0)
+
+        if immediate.lower() != "ok":
+            return immediate, ""
+
+        async_response = self._read_line(timeout=async_timeout)
+        return immediate, async_response
+
+    def set_channel_duty_cycle(self, channel: int, dcycle: int) -> str:
+        """
+        Règle le duty cycle d'un canal : duty cycle (%) = 100 / (dcycle + 1).
+
+        `dcycle = 0` correspond à 100 %, ce qui lève la limitation imposée
+        par le module (réservé aux tests en environnement fermé).
+        """
+
+        return self.send_command(f"mac set ch dcycle {channel} {dcycle}")
+
+    def get_dr(self) -> int:
+        """Retourne le Data Rate actuellement utilisé par le module."""
+
+        response = self.send_command("mac get dr")
+        try:
+            return int(response)
+        except ValueError:
+            raise RuntimeError(f"Réponse inattendue à 'mac get dr' : {response!r}")
+
     def save(self) -> str:
         """Sauvegarde la configuration mac courante en mémoire non volatile."""
 
