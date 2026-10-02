@@ -27,6 +27,16 @@ class RN2483Connection:
 
         return response.decode(errors="replace").strip()
 
+    def write_command(self, command: str) -> None:
+        """Envoie une commande sans attendre de réponse (lecture gérée par l'appelant)."""
+
+        self._serial.write(f"{command}\r\n".encode())
+
+    def read_available(self) -> bytes:
+        """Lit les octets disponibles, en attendant au plus le timeout du port."""
+
+        return self._serial.read(self._serial.in_waiting or 1)
+
     def _read_line(self, timeout: float) -> str:
         """Lit une ligne avec un timeout dédié, sans altérer le timeout par défaut du port."""
 
