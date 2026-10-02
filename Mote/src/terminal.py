@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import atexit
+import queue
 import re
 import readline
 import sys
@@ -29,12 +30,30 @@ READER_POLL_INTERVAL = 0.1
 # Attente maximale de la réponse immédiate avant de réafficher l'invite.
 IMMEDIATE_RESPONSE_DELAY = 0.5
 
+# Attente maximale du 'ok' initial d'une commande à double réponse.
+TWO_STEP_FIRST_RESPONSE_DELAY = 2.0
+
 # Un octet reçu sans fin de ligne depuis ce délai est affiché tel quel :
 # c'est le symptôme d'un débit désynchronisé ou d'un module en bootloader.
 PARTIAL_LINE_TIMEOUT = 0.5
 
 # Durée pendant laquelle les réponses parasites d'un 'resync' sont ignorées.
 RESYNC_DISCARD_DELAY = 0.5
+
+# Commandes à double réponse : après un 'ok', le module envoie une réponse
+# finale plus tard (guide DS40001784G). L'invite est bloquée jusqu'à celle-ci.
+# (motif de commande, préfixes de réponse finale, attente maximale en secondes)
+TWO_STEP_COMMANDS = (
+    (re.compile(r"^mac\s+join\b", re.IGNORECASE), ("accepted", "denied"), 20.0),
+    (
+        re.compile(r"^mac\s+tx\b", re.IGNORECASE),
+        ("mac_tx_ok", "mac_rx", "mac_err", "invalid_data_len"),
+        60.0,
+    ),
+    (re.compile(r"^radio\s+tx\b", re.IGNORECASE), ("radio_tx_ok", "radio_err"), 30.0),
+    # 'radio rx 0' écoute jusqu'au watchdog radio (15 s par défaut).
+    (re.compile(r"^radio\s+rx\b", re.IGNORECASE), ("radio_rx", "radio_err"), 60.0),
+)
 
 BUILTIN_COMMANDS = ("help", "clear", "exit", "quit", "resync", "hex on", "hex off")
 
@@ -106,8 +125,9 @@ Navigation:
   Up / Down arrows   Recall previous commands (persisted across sessions)
   Tab                Autocomplete commands word by word (Tab twice to list)
 
-Any other command is sent directly to the RN2483. Responses are displayed
-as they arrive, including delayed ones (mac join, mac tx, radio rx...).
+Any other command is sent directly to the RN2483. For commands with a
+delayed final response (mac join, mac tx, radio tx, radio rx), the prompt
+comes back once that response is received; Ctrl+C stops waiting.
 Commands setting a key (mac set appkey/nwkskey/appskey) are not saved
 in the history.
 
@@ -217,12 +237,23 @@ def save_history() -> None:
         print(f"Warning: could not save command history: {exc}")
 
 
+def two_step_command(command: str) -> tuple[tuple[str, ...], float] | None:
+    """Retourne (préfixes de réponse finale, attente max) si la commande a une double réponse."""
+
+    for pattern, final_prefixes, max_wait in TWO_STEP_COMMANDS:
+        if pattern.match(command):
+            return final_prefixes, max_wait
+    return None
+
+
 class SerialReader(threading.Thread):
     """
     Lit le port série en continu et affiche chaque ligne dès sa réception.
 
-    Indispensable pour les commandes à double réponse (mac join, mac tx,
-    radio tx/rx...) dont la seconde réponse arrive plusieurs secondes après.
+    Les lignes reçues sont aussi transmises à la boucle principale (file
+    `responses`), qui s'en sert pour attendre la réponse finale des commandes
+    à double réponse. Les messages spontanés (ex: downlink en Class C)
+    s'affichent sans casser la saisie en cours.
     """
 
     def __init__(self, mote: RN2483Connection) -> None:
@@ -237,6 +268,8 @@ class SerialReader(threading.Thread):
         self.hex_mode = False
         # Les lignes reçues avant cet instant sont ignorées (voir 'resync').
         self.discard_until = 0.0
+        # Lignes reçues, consommées par la boucle principale.
+        self.responses: queue.Queue[str] = queue.Queue()
 
     def stop(self) -> None:
         self._stop_event.set()
@@ -271,6 +304,7 @@ class SerialReader(threading.Thread):
             return
 
         text = raw.decode(errors="replace").strip()
+        self.responses.put(text)
         if self.hex_mode:
             text = f"{text}  [{raw.hex(' ')}]"
 
@@ -293,17 +327,52 @@ class SerialReader(threading.Thread):
         if self._interactive and self.prompt_active.is_set():
             # Efface la ligne d'invite, affiche la réponse, puis redessine
             # l'invite avec ce que l'utilisateur était en train de taper.
-            sys.stdout.write(f"\r\033[K{text}\n{PROMPT}{readline.get_line_buffer()}")
+            typed = readline.get_line_buffer()
+            # Avec libedit, tant que rien n'a été tapé, le tampon contient encore
+            # la saisie précédente suivie de '\n' : on ne la réaffiche pas.
+            if typed.endswith("\n"):
+                typed = ""
+            sys.stdout.write(f"\r\033[K{text}\n{PROMPT}{typed}")
         else:
             sys.stdout.write(f"{text}\n")
         sys.stdout.flush()
 
-    def wait_for_response(self, since: float, timeout: float) -> None:
-        """Attend une réponse reçue après `since`, au plus `timeout` secondes."""
+    def drain_responses(self) -> None:
+        """Oublie les lignes déjà reçues (elles ont déjà été affichées)."""
 
-        deadline = since + timeout
-        while self.last_activity <= since and time.monotonic() < deadline:
-            time.sleep(READER_POLL_INTERVAL / 2)
+        while True:
+            try:
+                self.responses.get_nowait()
+            except queue.Empty:
+                return
+
+    def next_response(self, timeout: float) -> str | None:
+        """Retourne la prochaine ligne reçue, ou None après `timeout` secondes."""
+
+        try:
+            return self.responses.get(timeout=max(timeout, 0))
+        except queue.Empty:
+            return None
+
+    def wait_for_final_response(self, final_prefixes: tuple[str, ...], max_wait: float) -> None:
+        """
+        Bloque jusqu'à la réponse finale d'une commande à double réponse.
+
+        Ctrl+C interrompt l'attente sans quitter le shell ; la réponse, si
+        elle arrive ensuite, s'affiche quand même.
+        """
+
+        deadline = time.monotonic() + max_wait
+        try:
+            while (remaining := deadline - time.monotonic()) > 0:
+                response = self.next_response(remaining)
+                if response is not None and response.lower().startswith(final_prefixes):
+                    return
+        except KeyboardInterrupt:
+            print("\nStopped waiting for the final response.")
+            return
+
+        print(f"No final response after {max_wait:.0f}s.")
 
     def wait_until_idle(self, quiet_period: float) -> None:
         """Attend qu'aucune réponse ne soit arrivée depuis `quiet_period` secondes."""
@@ -415,21 +484,27 @@ def main() -> None:
             if not interactive:
                 print(f"> {command}", flush=True)
 
-            sent_at = time.monotonic()
+            two_step = two_step_command(command)
+
+            reader.drain_responses()
             try:
                 mote.write_command(command)
             except SerialException as exc:
                 print(f"Serial communication error: {exc}")
                 continue
 
-            if interactive:
-                # Laisse la réponse immédiate s'afficher avant de redonner l'invite ;
-                # les réponses tardives s'intercalent ensuite dans la saisie.
-                reader.wait_for_response(sent_at, IMMEDIATE_RESPONSE_DELAY)
-            else:
-                # Sans terminal, les commandes arrivent d'un bloc : on laisse au
-                # module le temps de répondre avant d'envoyer la suivante.
-                reader.wait_for_response(sent_at, args.timeout)
+            # Laisse la réponse immédiate s'afficher avant de redonner l'invite.
+            # Sans terminal, les commandes arrivent d'un bloc : on laisse en plus
+            # au module le temps de répondre avant d'envoyer la suivante.
+            first_wait = IMMEDIATE_RESPONSE_DELAY if interactive else args.timeout
+            if two_step:
+                first_wait = max(first_wait, TWO_STEP_FIRST_RESPONSE_DELAY)
+            first_response = reader.next_response(first_wait)
+
+            # 'ok' = commande acceptée, la réponse finale suivra. Toute autre
+            # réponse (not_joined, busy, no_free_ch...) est déjà la dernière.
+            if two_step and first_response == "ok":
+                reader.wait_for_final_response(*two_step)
 
     except KeyboardInterrupt:
         print("\nInterrupted.")
