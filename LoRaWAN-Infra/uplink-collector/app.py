@@ -25,23 +25,26 @@ def insert_uplink(event, record, rx):
             cur.execute(
                 """
                 INSERT INTO uplinks (
-                    received_at, collected_at, dev_eui, gateway_id, uplink_id,
+                    received_at, collected_at, deduplication_id, dev_eui,
+                    gateway_id, uplink_id,
                     f_cnt, f_port, confirmed, data_rate, frequency_hz,
                     bandwidth_hz, spreading_factor, coding_rate, channel,
                     rssi_dbm, snr_db, gw_time, ns_time, payload_base64, raw_event
                 )
                 VALUES (
-                    %(received_at)s, %(collected_at)s, %(dev_eui)s, %(gateway_id)s,
+                    %(received_at)s, %(collected_at)s, %(deduplication_id)s,
+                    %(dev_eui)s, %(gateway_id)s,
                     %(uplink_id)s, %(f_cnt)s, %(f_port)s, %(confirmed)s,
                     %(data_rate)s, %(frequency_hz)s, %(bandwidth_hz)s,
                     %(spreading_factor)s, %(coding_rate)s, %(channel)s,
                     %(rssi_dbm)s, %(snr_db)s, %(gw_time)s, %(ns_time)s,
                     %(payload_base64)s, %(raw_event)s
                 )
-                ON CONFLICT (gateway_id, uplink_id) DO NOTHING
+                ON CONFLICT (deduplication_id, gateway_id) DO NOTHING
                 """,
                 {
                     **record,
+                    "deduplication_id": event.get("deduplicationId"),
                     "uplink_id": rx.get("uplinkId"),
                     "confirmed": event.get("confirmed"),
                     "data_rate": event.get("dr"),
@@ -50,6 +53,7 @@ def insert_uplink(event, record, rx):
                     "raw_event": Jsonb(event),
                 },
             )
+            return cur.rowcount == 1
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -81,8 +85,14 @@ def on_message(client, userdata, message):
         "payload_base64": event.get("data"),
     }
 
-    insert_uplink(event, record, rx)
-    print(json.dumps(record, separators=(",", ":")), flush=True)
+    if insert_uplink(event, record, rx):
+        print(json.dumps(record, separators=(",", ":")), flush=True)
+    else:
+        print(
+            f"Duplicate uplink skipped: deduplicationId={event.get('deduplicationId')} "
+            f"gateway={record['gateway_id']} fCnt={record['f_cnt']}",
+            flush=True,
+        )
 
 
 client = mqtt.Client(
