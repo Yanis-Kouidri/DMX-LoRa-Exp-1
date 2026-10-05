@@ -11,7 +11,7 @@ MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv(
     "MQTT_TOPIC",
-    "application/7c5f57e0-c72d-4452-a5e6-58dac3bc32e8/device/+/event/up",
+    "application/+/device/+/event/up",
 )
 
 POSTGRES_DSN = os.getenv(
