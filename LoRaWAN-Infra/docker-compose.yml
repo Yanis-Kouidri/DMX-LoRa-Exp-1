@@ -98,7 +98,7 @@ services:
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: "1883"
-      MQTT_TOPIC: application/+/device/+/event/up
+      MQTT_TOPICS: application/+/device/+/event/+,+/gateway/+/+/+
       POSTGRES_DSN: postgresql://chirpstack:chirpstack@postgres:5432/lorawan_experiments
     depends_on:
       - mosquitto
