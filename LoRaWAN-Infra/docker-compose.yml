@@ -13,6 +13,7 @@ services:
       - MQTT_BROKER_HOST=mosquitto
       - REDIS_HOST=redis
       - POSTGRESQL_HOST=postgres
+      - CHIRPSTACK_API_SECRET=${CHIRPSTACK_API_SECRET:?CHIRPSTACK_API_SECRET must be set in .env}
     ports:
       - "127.0.0.1:8080:8080"
 
