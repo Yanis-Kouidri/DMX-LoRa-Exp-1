@@ -73,6 +73,34 @@ directory.
 PostgreSQL and Redis data is persisted in Docker volumes, see the `docker-compose.yml`
 `volumes` definition.
 
+## Backups and restore (this deployment)
+
+The whole EC2 instance (eu-west-1) is backed up by an Amazon Data Lifecycle
+Manager policy, configured in the AWS console (not in this repository):
+
+* **Policy:** custom, EBS-backed AMI policy targeting instances tagged
+  `Backup` = `daily`.
+* **Schedule:** one AMI every 24 hours starting at 03:00 UTC, 14 most recent
+  AMIs kept (older AMIs and their snapshots are deleted automatically).
+* **No reboot:** AMIs are taken while the stack runs (crash-consistent);
+  PostgreSQL recovers from them like after a power loss.
+* **Scope:** the single EBS volume holds everything: OS, Docker volumes
+  (PostgreSQL, Grafana, Mosquitto...), `.env` secrets and the gateway CA in
+  `configuration/certs/`.
+
+To restore:
+
+1. EC2 → Images → AMIs → select the AMI → **Launch instance from AMI**, with
+   the same instance type and security group (TCP 80, 443 and 3001).
+2. Point `chirpstack.kouidri.fr` and `grafana.chirpstack.kouidri.fr` to the new
+   instance (or reassociate the Elastic IP). The gateway reconnects on its own
+   once the name resolves to the new instance.
+3. The stack starts automatically (`restart: unless-stopped`); check it with
+   `docker compose ps`.
+
+These AMIs live in the same AWS account and region; they do not protect
+against the loss of the account.
+
 ## Requirements
 
 Before using this `docker-compose.yml` file, make sure you have [Docker](https://www.docker.com/community-edition)
