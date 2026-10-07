@@ -16,9 +16,10 @@ type="basic_station"
 
   [backend.basic_station]
   bind=":3001"
-  tls_cert=""
-  tls_key=""
-  ca_cert=""
+  tls_cert="/etc/chirpstack-certs/server.pem"
+  tls_key="/etc/chirpstack-certs/server-key.pem"
+  # Only gateways with a client certificate issued by ChirpStack are accepted.
+  ca_cert="/etc/chirpstack-certs/ca.pem"
 
   region="EU868"
   frequency_min=863000000

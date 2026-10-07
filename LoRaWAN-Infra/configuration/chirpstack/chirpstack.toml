@@ -97,6 +97,14 @@
   secret="$CHIRPSTACK_API_SECRET"
 
 
+# Gateway client certificates (Basic Station TLS authentication), generated
+# with scripts/gateway-certs.sh.
+[gateway]
+  ca_cert="/etc/chirpstack-certs/ca.pem"
+  ca_key="/etc/chirpstack-certs/ca-key.pem"
+  client_cert_lifetime="12months"
+
+
 [integration]
   enabled=["mqtt"]
 

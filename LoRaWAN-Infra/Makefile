@@ -3,3 +3,7 @@ import-device-profiles:
 		apk add --no-cache git && \
 		git clone https://github.com/chirpstack/chirpstack-device-profiles.git /tmp/chirpstack-device-profiles && \
 		chirpstack -c /etc/chirpstack import-device-profiles -d /tmp/chirpstack-device-profiles'
+
+# Private CA and Basic Station server certificate, see scripts/gateway-certs.sh.
+gateway-certs:
+	./scripts/gateway-certs.sh
