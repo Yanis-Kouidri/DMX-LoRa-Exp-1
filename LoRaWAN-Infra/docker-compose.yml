@@ -13,6 +13,8 @@ services:
       - MQTT_BROKER_HOST=mosquitto
       - REDIS_HOST=redis
       - POSTGRESQL_HOST=postgres
+      - POSTGRESQL_USER=${POSTGRES_USER}
+      - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       - CHIRPSTACK_API_SECRET=${CHIRPSTACK_API_SECRET:?CHIRPSTACK_API_SECRET must be set in .env}
     ports:
       - "127.0.0.1:8080:8080"
@@ -59,7 +61,7 @@ services:
       - postgresqldata:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       - POSTGRES_DB=${POSTGRES_DB}
 
   redis:
@@ -100,7 +102,7 @@ services:
       MQTT_HOST: mosquitto
       MQTT_PORT: "1883"
       MQTT_TOPICS: application/+/device/+/event/+,+/gateway/+/+/+
-      POSTGRES_DSN: postgresql://chirpstack:chirpstack@postgres:5432/lorawan_experiments
+      POSTGRES_DSN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@postgres:5432/lorawan_experiments
     depends_on:
       - mosquitto
       - postgres

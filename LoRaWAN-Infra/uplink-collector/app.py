@@ -21,10 +21,7 @@ MQTT_TOPICS = os.getenv(
     "application/+/device/+/event/+,+/gateway/+/+/+",
 ).split(",")
 
-POSTGRES_DSN = os.getenv(
-    "POSTGRES_DSN",
-    "postgresql://chirpstack:chirpstack@postgres:5432/lorawan_experiments",
-)
+POSTGRES_DSN = os.environ["POSTGRES_DSN"]
 
 DB_RETRY_MAX_DELAY_S = 30
 
