@@ -42,11 +42,11 @@ services:
       - chirpstack
 
   postgres:
-    image: postgres:14.24-alpine
+    image: postgres:17.11-alpine
     restart: unless-stopped
     volumes:
       - ./configuration/postgresql/initdb:/docker-entrypoint-initdb.d
-      - postgresqldata:/var/lib/postgresql/data
+      - postgresqldata17:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
@@ -109,7 +109,8 @@ services:
       - postgres
 
 volumes:
-  postgresqldata:
+  # PostgreSQL 17 data (migrated from PostgreSQL 14 with pg_dumpall on 2026-10-07).
+  postgresqldata17:
   redisdata:
   mosquittodata:
   caddy_data:
