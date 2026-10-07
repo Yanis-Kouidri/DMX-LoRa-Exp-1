@@ -12,7 +12,7 @@ The `configuration/postgresql/migrations/` directory contains SQL migrations to 
 This directory contains a Docker Compose stack for LoRaWAN experiments:
 
 - **ChirpStack**: LoRaWAN network server.
-- **Gateway Bridge**: Semtech UDP and Basic Station gateway integrations.
+- **Gateway Bridge**: Basic Station gateway integration (port 3001), gateways authenticated with ChirpStack-issued TLS client certificates. The unauthenticated Semtech UDP bridge (port 1700) has been removed.
 - **REST API**: ChirpStack REST interface.
 - **PostgreSQL**: application database.
 - **Redis**: ChirpStack cache and session backend.

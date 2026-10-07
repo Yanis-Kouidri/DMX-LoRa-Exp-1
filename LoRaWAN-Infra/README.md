@@ -14,6 +14,20 @@ but keep in mind that for production usage it might need modifications.
 * `configuration/mosquitto`: directory containing the Mosquitto (MQTT broker) configuration
 * `configuration/postgresql/initdb/`: directory containing PostgreSQL initialization scripts
 
+## Gateway connection (this deployment)
+
+Gateways connect with the LoRa Basics Station (LNS) protocol on
+`wss://chirpstack.kouidri.fr:3001`, using mutual TLS:
+
+* `make gateway-certs` creates the private CA and the server certificate in
+  `configuration/certs/` (not committed; never regenerate it once gateways are
+  provisioned).
+* Each gateway gets a client certificate from the ChirpStack UI
+  (Gateway → TLS certificate → Generate certificate). The Gateway Bridge
+  rejects any connection without a certificate signed by this CA.
+* The Semtech UDP Packet Forwarder bridge (port 1700) is not deployed, as that
+  protocol cannot authenticate gateways.
+
 ## Configuration
 
 This setup is pre-configured for all regions. You can either connect a ChirpStack Gateway Bridge
