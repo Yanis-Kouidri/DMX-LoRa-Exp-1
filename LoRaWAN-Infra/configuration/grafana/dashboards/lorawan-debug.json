@@ -156,7 +156,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  received_at AS \"Time\",\n  dev_eui AS \"DevEUI\",\n  f_cnt AS \"FCnt\",\n  f_port AS \"FPort\",\n  spreading_factor AS \"SF\",\n  rssi_dbm AS \"RSSI\",\n  snr_db AS \"SNR\",\n  frequency_hz AS \"Fréquence\",\n  gateway_id AS \"Gateway\",\n  upper(encode(decode(payload_base64, 'base64'), 'hex')) AS \"Payload (hex)\"\nFROM uplinks\nWHERE $__timeFilter(received_at)\n  AND dev_eui IN (${dev_eui:sqlstring})\nORDER BY received_at DESC\nLIMIT $limit;",
+          "rawSql": "SELECT\n  received_at AS \"Time\",\n  spreading_factor AS \"SF\",\n  dev_eui AS \"DevEUI\",\n  f_cnt AS \"FCnt\",\n  f_port AS \"FPort\",\n  rssi_dbm AS \"RSSI\",\n  snr_db AS \"SNR\",\n  frequency_hz AS \"Fréquence\",\n  gateway_id AS \"Gateway\",\n  upper(encode(decode(payload_base64, 'base64'), 'hex')) AS \"Payload (hex)\"\nFROM uplinks\nWHERE $__timeFilter(received_at)\n  AND dev_eui IN (${dev_eui:sqlstring})\nORDER BY received_at DESC\nLIMIT $limit;",
           "refId": "A"
         }
       ],
