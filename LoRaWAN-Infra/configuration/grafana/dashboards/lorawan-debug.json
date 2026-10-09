@@ -340,6 +340,174 @@
       ],
       "title": "Dernières requêtes de join OTAA",
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "efwxza0hb47wgf"
+      },
+      "description": "Downlinks envoyés par ChirpStack aux gateways. Statut et Fenêtre viennent de l'ack de la gateway (RX1/RX2 réellement émise) ; SF, Fréquence et Puissance sont ceux de cette fenêtre. FOpts = commandes MAC en clair (03 LinkADRReq, 06 DevStatusReq...). FRMPayload chiffré, voir PHYPayload. DevEUI déduit des événements join (vide si inconnu, toujours affiché).",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SF"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd"
+                }
+              },
+              {
+                "id": "min",
+                "value": 7
+              },
+              {
+                "id": "max",
+                "value": 12
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "custom.align",
+                "value": "center"
+              },
+              {
+                "id": "custom.width",
+                "value": 60
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Statut"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green",
+                        "index": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "regex",
+                    "options": {
+                      "pattern": ".*",
+                      "result": {
+                        "color": "red",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PHYPayload (hex)"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto",
+                  "wrapText": true
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Fréquence"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "hertz"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Puissance"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dBm"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "efwxza0hb47wgf"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  c.time AS \"Time\",\n  dev.dev_eui AS \"DevEUI\",\n  c.m_type AS \"Type\",\n  coalesce(tx.status, 'Pas d''ack') AS \"Statut\",\n  CASE WHEN tx.idx IS NULL THEN NULL ELSE 'RX' || tx.idx END AS \"Fenêtre\",\n  (item->'txInfo'->'modulation'->'lora'->>'spreadingFactor')::int AS \"SF\",\n  (item->'txInfo'->>'frequency')::bigint AS \"Fréquence\",\n  (item->'txInfo'->>'power')::int AS \"Puissance\",\n  c.dev_addr AS \"DevAddr\",\n  c.f_cnt AS \"FCnt\",\n  CASE WHEN c.m_type LIKE '%DataDown' AND get_byte(p.b, 5) & 15 > 0\n    THEN upper(encode(substring(p.b from 9 for get_byte(p.b, 5) & 15), 'hex')) END AS \"FOpts (hex)\",\n  CASE WHEN c.m_type LIKE '%DataDown' AND length(p.b) > 12 + (get_byte(p.b, 5) & 15)\n    THEN get_byte(p.b, 8 + (get_byte(p.b, 5) & 15)) END AS \"FPort\",\n  c.gateway_id AS \"Gateway\",\n  upper(encode(p.b, 'hex')) AS \"PHYPayload (hex)\"\nFROM gateway_events c\n-- Gateway ack: the first item with a status other than IGNORED is the one transmitted.\nLEFT JOIN LATERAL (\n  SELECT s.ord AS idx, s.v->>'status' AS status\n  FROM gateway_events a,\n    jsonb_array_elements(a.raw_event->'items') WITH ORDINALITY AS s(v, ord)\n  WHERE a.direction = 'event' AND a.event_type = 'ack'\n    AND a.gateway_id = c.gateway_id\n    AND a.raw_event->'downlinkId' = c.raw_event->'downlinkId'\n    AND s.v->>'status' <> 'IGNORED'\n  ORDER BY s.ord\n  LIMIT 1\n) tx ON true\nCROSS JOIN LATERAL (\n  SELECT c.raw_event->'items'->(coalesce(tx.idx, 1)::int - 1) AS item\n) i\nCROSS JOIN LATERAL (\n  SELECT decode(i.item->>'phyPayload', 'base64') AS b\n) p\n-- DevEUI: join event matching the JoinAccept, or the last join that assigned this DevAddr.\nLEFT JOIN LATERAL (\n  SELECT d.dev_eui\n  FROM device_events d\n  WHERE d.event_type = 'join'\n    AND CASE WHEN c.m_type = 'JoinAccept'\n      THEN d.time BETWEEN c.time - interval '5 seconds' AND c.time + interval '5 seconds'\n      ELSE d.raw_event->>'devAddr' = c.dev_addr AND d.time <= c.time END\n  ORDER BY abs(extract(epoch FROM c.time - d.time))\n  LIMIT 1\n) dev ON true\nWHERE c.direction = 'command'\n  AND c.event_type = 'down'\n  AND $__timeFilter(c.time)\n  AND (dev.dev_eui IS NULL OR dev.dev_eui IN (${dev_eui:sqlstring}))\nORDER BY c.time DESC\nLIMIT $limit;",
+          "refId": "A"
+        }
+      ],
+      "title": "Derniers downlinks",
+      "type": "table"
     }
   ],
   "preload": false,
