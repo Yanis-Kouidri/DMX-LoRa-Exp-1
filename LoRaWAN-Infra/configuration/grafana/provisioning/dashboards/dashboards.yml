@@ -1,0 +1,14 @@
+# Dashboards are loaded from the JSON files in configuration/grafana/dashboards/.
+# UI edits are allowed for quick iterations but the JSON files remain the source
+# of truth: export the dashboard (Share > Export > Save to file) back into the
+# repository to keep a change.
+apiVersion: 1
+
+providers:
+  - name: lorawan
+    type: file
+    folder: ""
+    allowUiUpdates: true
+    disableDeletion: true
+    options:
+      path: /var/lib/grafana/dashboards

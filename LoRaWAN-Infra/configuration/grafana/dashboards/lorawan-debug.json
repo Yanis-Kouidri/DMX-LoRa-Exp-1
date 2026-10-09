@@ -1,0 +1,382 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Derniers uplinks et requêtes de join OTAA reçus, avec SF et payload en hexadécimal.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "efwxza0hb47wgf"
+      },
+      "description": "Une ligne par réception (gateway). payload_hex est le FRMPayload applicatif déchiffré par ChirpStack.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SF"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 10 },
+                    { "color": "red", "value": 12 }
+                  ]
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 60
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Payload (hex)"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto",
+                  "wrapText": true
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RSSI"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dBm"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SNR"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dB"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Fréquence"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "hertz"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "efwxza0hb47wgf"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  received_at AS \"Time\",\n  dev_eui AS \"DevEUI\",\n  f_cnt AS \"FCnt\",\n  f_port AS \"FPort\",\n  spreading_factor AS \"SF\",\n  rssi_dbm AS \"RSSI\",\n  snr_db AS \"SNR\",\n  frequency_hz AS \"Fréquence\",\n  gateway_id AS \"Gateway\",\n  upper(encode(decode(payload_base64, 'base64'), 'hex')) AS \"Payload (hex)\"\nFROM uplinks\nWHERE $__timeFilter(received_at)\n  AND dev_eui IN (${dev_eui:sqlstring})\nORDER BY received_at DESC\nLIMIT $limit;",
+          "refId": "A"
+        }
+      ],
+      "title": "Derniers uplinks",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "efwxza0hb47wgf"
+      },
+      "description": "JoinRequest vus par les gateways. Accepté = un événement join ChirpStack a suivi dans les 10 s (DevAddr attribué). PHYPayload = MHDR | JoinEUI | DevEUI | DevNonce | MIC (champs en little-endian).",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SF"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 10 },
+                    { "color": "red", "value": 12 }
+                  ]
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 60
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Accepté"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Oui": { "color": "green", "index": 0 },
+                      "Non": { "color": "red", "index": 1 }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PHYPayload (hex)"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto",
+                  "wrapText": true
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RSSI"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dBm"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SNR"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dB"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Fréquence"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "hertz"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "efwxza0hb47wgf"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  r.time AS \"Time\",\n  r.dev_eui AS \"DevEUI\",\n  CASE WHEN j.id IS NULL THEN 'Non' ELSE 'Oui' END AS \"Accepté\",\n  j.raw_event->>'devAddr' AS \"DevAddr\",\n  get_byte(decode(r.phy_payload_base64, 'base64'), 17)\n    | (get_byte(decode(r.phy_payload_base64, 'base64'), 18) << 8) AS \"DevNonce\",\n  r.spreading_factor AS \"SF\",\n  r.rssi_dbm AS \"RSSI\",\n  r.snr_db AS \"SNR\",\n  r.frequency_hz AS \"Fréquence\",\n  r.gateway_id AS \"Gateway\",\n  upper(encode(decode(r.phy_payload_base64, 'base64'), 'hex')) AS \"PHYPayload (hex)\"\nFROM gateway_events r\nLEFT JOIN LATERAL (\n  SELECT d.id, d.raw_event\n  FROM device_events d\n  WHERE d.event_type = 'join'\n    AND d.dev_eui = r.dev_eui\n    AND d.time BETWEEN r.time AND r.time + interval '10 seconds'\n  ORDER BY d.time\n  LIMIT 1\n) j ON true\nWHERE r.direction = 'event'\n  AND r.event_type = 'up'\n  AND r.m_type = 'JoinRequest'\n  AND $__timeFilter(r.time)\n  AND r.dev_eui IN (${dev_eui:sqlstring})\nORDER BY r.time DESC\nLIMIT $limit;",
+          "refId": "A"
+        }
+      ],
+      "title": "Dernières requêtes de join OTAA",
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "10s",
+  "schemaVersion": 41,
+  "tags": ["lorawan", "debug"],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": ["All"],
+          "value": ["$__all"]
+        },
+        "definition": "SELECT dev_eui FROM uplinks UNION SELECT dev_eui FROM gateway_events WHERE m_type = 'JoinRequest' AND dev_eui IS NOT NULL ORDER BY 1",
+        "includeAll": true,
+        "label": "Device EUI",
+        "multi": true,
+        "name": "dev_eui",
+        "options": [],
+        "query": "SELECT dev_eui FROM uplinks UNION SELECT dev_eui FROM gateway_events WHERE m_type = 'JoinRequest' AND dev_eui IS NOT NULL ORDER BY 1",
+        "refresh": 2,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "50",
+          "value": "50"
+        },
+        "includeAll": false,
+        "label": "Lignes max",
+        "name": "limit",
+        "options": [
+          { "selected": false, "text": "20", "value": "20" },
+          { "selected": true, "text": "50", "value": "50" },
+          { "selected": false, "text": "200", "value": "200" },
+          { "selected": false, "text": "1000", "value": "1000" }
+        ],
+        "query": "20,50,200,1000",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "LoRaWAN — Debug",
+  "uid": "lorawan-debug"
+}

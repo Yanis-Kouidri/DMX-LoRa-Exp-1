@@ -13,6 +13,7 @@ but keep in mind that for production usage it might need modifications.
 * `configuration/chirpstack-gateway-bridge`: directory containing the ChirpStack Gateway Bridge configuration
 * `configuration/mosquitto`: directory containing the Mosquitto (MQTT broker) configuration
 * `configuration/postgresql/initdb/`: directory containing PostgreSQL initialization scripts
+* `configuration/grafana/`: Grafana datasource and dashboard provisioning
 
 ## Gateway connection (this deployment)
 
@@ -67,6 +68,16 @@ that the ChirpStack Gateway Bridge instance must used. The default is
 `chirpstack-gateway-bridge-basicstation-eu868.toml`. For available
 configuration files, please see the `configuration/chirpstack-gateway-bridge`
 directory.
+
+### Grafana dashboards
+
+The PostgreSQL datasource (read-only `grafana_reader` role, password from
+`GRAFANA_DB_PASSWORD`) and the dashboards are provisioned at startup from
+`configuration/grafana/`. Dashboards can be edited in the UI, but the JSON files in
+`configuration/grafana/dashboards/` are the source of truth: export a modified
+dashboard (Share > Export > Save to file, without "Export for sharing externally")
+into that directory and commit it, otherwise the change is lost when the file is
+updated or Grafana is reinstalled.
 
 # Data persistence
 

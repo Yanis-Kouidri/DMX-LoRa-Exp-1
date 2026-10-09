@@ -1,0 +1,24 @@
+# Read-only access to the lorawan_experiments database through the
+# grafana_reader role (see configuration/postgresql/initdb/003-grafana-reader-role.sql).
+# The uid is referenced by every provisioned dashboard: do not change it.
+apiVersion: 1
+
+datasources:
+  - name: grafana-postgresql-datasource
+    uid: efwxza0hb47wgf
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: postgres:5432
+    user: grafana_reader
+    isDefault: true
+    editable: false
+    jsonData:
+      database: lorawan_experiments
+      sslmode: disable
+      postgresVersion: 1700
+      connMaxLifetime: 14400
+      maxOpenConns: 100
+      maxIdleConns: 100
+      maxIdleConnsAuto: true
+    secureJsonData:
+      password: $GRAFANA_DB_PASSWORD
