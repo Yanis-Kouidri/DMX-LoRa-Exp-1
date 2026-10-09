@@ -13,3 +13,6 @@ secrets.md
 campagne_sf.csv
 # RN2483 firmware binaries (downloaded from MicrochipTech/RN2xx3_LORAWAN_FIRMWARE)
 Mote/firmware/
+
+# Reference papers (local only)
+papers/
