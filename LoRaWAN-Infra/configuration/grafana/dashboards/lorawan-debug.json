@@ -45,28 +45,29 @@
             },
             "properties": [
               {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd"
+                }
+              },
+              {
+                "id": "min",
+                "value": 7
+              },
+              {
+                "id": "max",
+                "value": 12
+              },
+              {
                 "id": "custom.cellOptions",
                 "value": {
                   "type": "color-background",
-                  "mode": "basic"
+                  "mode": "gradient"
                 }
               },
               {
-                "id": "color",
-                "value": {
-                  "mode": "thresholds"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    { "color": "green", "value": null },
-                    { "color": "yellow", "value": 10 },
-                    { "color": "red", "value": 12 }
-                  ]
-                }
+                "id": "custom.align",
+                "value": "center"
               },
               {
                 "id": "custom.width",
@@ -139,7 +140,9 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true
@@ -184,28 +187,29 @@
             },
             "properties": [
               {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd"
+                }
+              },
+              {
+                "id": "min",
+                "value": 7
+              },
+              {
+                "id": "max",
+                "value": 12
+              },
+              {
                 "id": "custom.cellOptions",
                 "value": {
                   "type": "color-background",
-                  "mode": "basic"
+                  "mode": "gradient"
                 }
               },
               {
-                "id": "color",
-                "value": {
-                  "mode": "thresholds"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    { "color": "green", "value": null },
-                    { "color": "yellow", "value": 10 },
-                    { "color": "red", "value": 12 }
-                  ]
-                }
+                "id": "custom.align",
+                "value": "center"
               },
               {
                 "id": "custom.width",
@@ -225,8 +229,14 @@
                   {
                     "type": "value",
                     "options": {
-                      "Oui": { "color": "green", "index": 0 },
-                      "Non": { "color": "red", "index": 1 }
+                      "Oui": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "Non": {
+                        "color": "red",
+                        "index": 1
+                      }
                     }
                   }
                 ]
@@ -308,7 +318,9 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true
@@ -333,13 +345,20 @@
   "preload": false,
   "refresh": "10s",
   "schemaVersion": 41,
-  "tags": ["lorawan", "debug"],
+  "tags": [
+    "lorawan",
+    "debug"
+  ],
   "templating": {
     "list": [
       {
         "current": {
-          "text": ["All"],
-          "value": ["$__all"]
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "definition": "SELECT dev_eui FROM uplinks UNION SELECT dev_eui FROM gateway_events WHERE m_type = 'JoinRequest' AND dev_eui IS NOT NULL ORDER BY 1",
         "includeAll": true,
@@ -361,10 +380,26 @@
         "label": "Lignes max",
         "name": "limit",
         "options": [
-          { "selected": false, "text": "20", "value": "20" },
-          { "selected": true, "text": "50", "value": "50" },
-          { "selected": false, "text": "200", "value": "200" },
-          { "selected": false, "text": "1000", "value": "1000" }
+          {
+            "selected": false,
+            "text": "20",
+            "value": "20"
+          },
+          {
+            "selected": true,
+            "text": "50",
+            "value": "50"
+          },
+          {
+            "selected": false,
+            "text": "200",
+            "value": "200"
+          },
+          {
+            "selected": false,
+            "text": "1000",
+            "value": "1000"
+          }
         ],
         "query": "20,50,200,1000",
         "type": "custom"
