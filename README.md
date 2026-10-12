@@ -22,6 +22,8 @@ This project targets the **Microchip RN2483 LoRa Technology Mote**, an evaluatio
 - Model: MikroTik wAP LoRa8
 - Version: MikroTik RouterOS 7.24
 
+Network setup, administration access and known issues: see [gateway.md](gateway.md).
+
 ## WSL 2 Mote connection
 
 To work on WSL and connect to the mote you need to run on Windows PowerShell:

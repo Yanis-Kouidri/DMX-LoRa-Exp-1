@@ -9,3 +9,4 @@
 ## MikroTik
 
 - Gateway-ID:
+- Admin Wi-Fi (wAP-LoRa-admin) password:
