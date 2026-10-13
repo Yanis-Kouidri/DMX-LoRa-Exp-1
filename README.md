@@ -21,6 +21,8 @@ This project targets the **Microchip RN2483 LoRa Technology Mote**, an evaluatio
 
 - Source: [MicrochipTech/RN2xx3_LORAWAN_FIRMWARE](https://github.com/MicrochipTech/RN2xx3_LORAWAN_FIRMWARE), file `software/firmware/RN2483EU_1.0.6_RC4/Binary/offset/RN2483_Parser.production.hex` (git blob `46f6913c06273d5d8a7fcdd86519c1cc72402def`). A local copy is kept in `Mote/firmware/` (git-ignored).
 - `sys get ver` reports `RN2483 1.0.6 RC3 May 18 2021 18:35:00`. This is expected: Microchip did not update the version string in the RC4 build, so the official RC4 binary still contains "1.0.6 RC3".
+- LoRaWAN version: **1.0.2**. This is the most recent LoRaWAN version officially supported by Microchip for this mote: no official RN2483 firmware implements LoRaWAN 1.0.4 or 1.1.
+- LoRaWAN 1.1 is not achievable on this hardware in practice. The RN2483 runs on a PIC18LF46K22 (64 KB flash, ~3.9 KB RAM), and the 1.0.6 RC4 image already fills 904 of the 1012 flash rows (~7 KB left). LoRaWAN 1.1 reworks the security layer (NwkKey + AppKey, three network session keys, new MIC computation, FOpts encryption, rekey and rejoin procedures), which would not fit in the remaining memory.
 - New motes ship with an older firmware (1.0.1 seen out of the box) and must be flashed before use:
 
 ```bash
