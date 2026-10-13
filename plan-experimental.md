@@ -100,6 +100,7 @@ La plus-value principale est l'**expérimentation réelle** : la grande majorit�
 | Élément | Configuration |
 |---|---|
 | Motes | 6 × Microchip RN2483 dans 6 bâtiments (bureaux de collègues, pas de sous-sol), chacune pilotée en USB par un **Raspberry Pi** accessible en SSH |
+| Firmware des motes | **RN2483 1.0.6 RC4** (EU868, LoRaWAN 1.0.2), dernière version publiée par Microchip, sur **toutes** les motes. Source : dépôt [MicrochipTech/RN2xx3_LORAWAN_FIRMWARE](https://github.com/MicrochipTech/RN2xx3_LORAWAN_FIRMWARE), fichier `software/firmware/RN2483EU_1.0.6_RC4/Binary/offset/RN2483_Parser.production.hex`. Attention : `sys get ver` affiche `RN2483 1.0.6 RC3 May 18 2021`, car Microchip n'a pas mis à jour la chaîne de version dans le binaire RC4. Les motes neuves arrivent en 1.0.1 et doivent être flashées avant l'installation |
 | Gateway fixe | Toit de l'IRIT, rattachée au même ChirpStack. **Modèle à identifier.** On suppose le même modèle que la gateway mobile |
 | Gateway mobile | MikroTik wAP LR8 (RouterOS 7.24) à vélo ou à trottinette, reliée en **4G** par carte SIM. Alimentation à trouver |
 | GPS | Téléphone avec une appli d'enregistrement GPX, horloges synchronisées (NTP d'un côté, GPS de l'autre) |
@@ -469,6 +470,7 @@ Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 
 - « Contact-Aware Opportunistic Data Forwarding in Disconnected LoRaWAN Mobile Networks », arXiv 2004.06614. https://arxiv.org/abs/2004.06614
 - Évaluation de l'ADR en mobilité (traces d'Anvers) : https://medialibrary.uantwerpen.be/oldcontent/personalpage52076/files/lora.pdf
 - ADR et mobilité, WCNC 2023 : https://sancy.iut.uca.fr/~durand/docs/WCNC23.pdf
+- Firmware RN2483 (1.0.6 RC4 utilisé) : https://github.com/MicrochipTech/RN2xx3_LORAWAN_FIRMWARE
 - Spécification LoRaWAN L2 1.0.4 (LinkCheckReq, fenêtres de réception) : https://lora-alliance.org/wp-content/uploads/2021/11/LoRaWAN-Link-Layer-Specification-v1.0.4.pdf
 
 **Support de présentation** (phases 0 et 1, pour les directeurs de thèse) : https://claude.ai/artifact/CDKfivjox7gLvguU3JwqEL
