@@ -7,12 +7,12 @@ liaison série USB).
 
 | Quantité | Modèle                  | Révision | RAM    |
 | -------- | ----------------------- | -------- | ------ |
-| 4        | Raspberry Pi 4 Model B  |          | 4 Go   |
+| 5        | Raspberry Pi 4 Model B  |          | 4 Go   |
 | 1        | Raspberry Pi 3 Model B  | V1.2     | 1 Go   |
 
 ## Système d'exploitation
 
-**Raspberry Pi OS Lite 64 bits** (sans interface graphique) sur les 5 Pi.
+**Raspberry Pi OS Lite 64 bits** (sans interface graphique) sur les 6 Pi.
 
 - Compatible avec toutes les cartes, Pi 3 Model B v1.2 compris : même image
   et même configuration partout.
@@ -28,7 +28,7 @@ liaison série USB).
 ## Installation d'un Pi
 
 Procédure validée sur `pi-mote-1` (Raspberry Pi 4). Remplacer `pi-mote-N` par
-le nom de la machine (`pi-mote-1` à `pi-mote-5`).
+le nom de la machine (`pi-mote-1` à `pi-mote-6`).
 
 ### 1. Flasher la carte SD
 
