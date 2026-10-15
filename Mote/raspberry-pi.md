@@ -64,7 +64,8 @@ Brancher les Pi un par un.
 Le script [`scripts/setup-pi.sh`](scripts/setup-pi.sh) enchaîne les étapes 3
 et 4 : il demande l'identifiant et le mot de passe eduroam, vérifie
 l'empreinte du certificat, recrée la connexion, teste Internet via `wlan0`,
-met à jour le système (`apt update` et `apt upgrade`), installe `git`, `vim`
+passe les dépôts APT en HTTPS (le HTTP est bloqué sur eduroam), met à jour le
+système (`apt update` et `apt upgrade`), installe `git`, `vim`
 et `tree`, clone ce dépôt dans `~/DMX-LoRa-Exp-1`, puis installe et lance
 Tailscale. Depuis le PC, avec le câble branché :
 

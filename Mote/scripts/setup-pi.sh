@@ -69,6 +69,13 @@ echo "wlan0 : ${ip4}"
 ping -I wlan0 -c 4 -W 2 1.1.1.1 >/dev/null || die "pas d'accès à Internet via wlan0"
 echo "Accès à Internet via wlan0 : OK"
 
+step "Passage des dépôts APT en HTTPS"
+# Le HTTP est bloqué sur eduroam.
+shopt -s nullglob
+sed -i 's|http://|https://|g' \
+    /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources
+shopt -u nullglob
+
 step "Mise à jour du système et outils"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
