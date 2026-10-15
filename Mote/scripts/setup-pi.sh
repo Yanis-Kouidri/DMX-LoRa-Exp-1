@@ -140,6 +140,14 @@ else
     sudo -u "$SUDO_USER" git clone "$REPO_URL" "${user_home}/${REPO_DIR}"
 fi
 
+step "uv"
+# Installé pour l'utilisateur, dans ~/.local/bin.
+if [[ -x "${user_home}/.local/bin/uv" ]]; then
+    echo "Déjà installé : $("${user_home}/.local/bin/uv" --version)."
+else
+    curl -LsSf https://astral.sh/uv/install.sh | sudo -u "$SUDO_USER" -H sh
+fi
+
 step "Tailscale"
 if ! command -v tailscale >/dev/null; then
     curl -fsSL https://tailscale.com/install.sh | sh

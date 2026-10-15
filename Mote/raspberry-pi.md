@@ -68,7 +68,8 @@ Internet via `wlan0` : si oui, il la conserve. Sinon, ou avec l'option
 l'empreinte du certificat, recrée la connexion et teste Internet via `wlan0`.
 Ensuite, il passe les dépôts APT en HTTPS (le HTTP est bloqué sur eduroam), met à jour le
 système (`apt update` et `apt upgrade`), installe `git`, `vim`
-et `tree`, clone ce dépôt dans `~/DMX-LoRa-Exp-1`, puis installe et lance
+et `tree`, clone ce dépôt dans `~/DMX-LoRa-Exp-1`, installe
+[uv](https://docs.astral.sh/uv/) dans `~/.local/bin`, puis installe et lance
 Tailscale. Depuis le PC, avec le câble branché :
 
 ```bash
@@ -81,7 +82,7 @@ ssh -t pi@pi-mote-N.local sudo ./setup-pi.sh
 
 Le script est idempotent : il peut être relancé sans risque et saute ce qui
 est déjà en place (connexion eduroam fonctionnelle, dépôts déjà en HTTPS, dépôt
-déjà cloné, Tailscale déjà installé et connecté).
+déjà cloné, uv déjà installé, Tailscale déjà installé et connecté).
 
 Pour forcer la recréation de la connexion eduroam (changement d'identifiant,
 par exemple) :
