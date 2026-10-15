@@ -62,9 +62,11 @@ Brancher les Pi un par un.
 ### Étapes 3 et 4 automatisées
 
 Le script [`scripts/setup-pi.sh`](scripts/setup-pi.sh) enchaîne les étapes 3
-et 4 : il demande l'identifiant et le mot de passe eduroam, vérifie
-l'empreinte du certificat, recrée la connexion, teste Internet via `wlan0`,
-passe les dépôts APT en HTTPS (le HTTP est bloqué sur eduroam), met à jour le
+et 4. Il vérifie d'abord si la connexion eduroam existe et donne accès à
+Internet via `wlan0` : si oui, il la conserve. Sinon, ou avec l'option
+`--force-eduroam`, il demande l'identifiant et le mot de passe eduroam, vérifie
+l'empreinte du certificat, recrée la connexion et teste Internet via `wlan0`.
+Ensuite, il passe les dépôts APT en HTTPS (le HTTP est bloqué sur eduroam), met à jour le
 système (`apt update` et `apt upgrade`), installe `git`, `vim`
 et `tree`, clone ce dépôt dans `~/DMX-LoRa-Exp-1`, puis installe et lance
 Tailscale. Depuis le PC, avec le câble branché :
@@ -75,6 +77,13 @@ scp Mote/scripts/setup-pi.sh pi@pi-mote-N.local:
 
 ```bash
 ssh -t pi@pi-mote-N.local sudo ./setup-pi.sh
+```
+
+Pour forcer la recréation de la connexion eduroam (changement d'identifiant,
+par exemple) :
+
+```bash
+ssh -t pi@pi-mote-N.local sudo ./setup-pi.sh --force-eduroam
 ```
 
 Le détail des commandes est donné ci-dessous.
