@@ -3,9 +3,10 @@
 # de contrôle des motes. Voir Mote/raspberry-pi.md.
 #
 # Usage : sudo ./setup-pi.sh [--force-eduroam]
-# À lancer avec le câble Ethernet branché. Si la connexion eduroam existe et
-# donne accès à Internet, elle est conservée, sauf avec --force-eduroam qui la
-# recrée.
+# À lancer avec le câble Ethernet branché. Le script est idempotent : il peut
+# être relancé et saute ce qui est déjà en place. Si la connexion eduroam
+# existe et donne accès à Internet, elle est conservée, sauf avec
+# --force-eduroam qui la recrée.
 
 set -euo pipefail
 
@@ -110,9 +111,20 @@ fi
 step "Passage des dépôts APT en HTTPS"
 # Le HTTP est bloqué sur eduroam.
 shopt -s nullglob
-sed -i 's|http://|https://|g' \
-    /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources
+apt_sources=(/etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources)
 shopt -u nullglob
+http_sources=()
+for f in "${apt_sources[@]}"; do
+    if [[ -f $f ]] && grep -q 'http://' "$f"; then
+        http_sources+=("$f")
+    fi
+done
+if (( ${#http_sources[@]} )); then
+    sed -i 's|http://|https://|g' "${http_sources[@]}"
+    printf 'Modifié : %s\n' "${http_sources[@]}"
+else
+    echo "Dépôts déjà en HTTPS."
+fi
 
 step "Mise à jour du système et outils"
 export DEBIAN_FRONTEND=noninteractive
@@ -132,7 +144,14 @@ step "Tailscale"
 if ! command -v tailscale >/dev/null; then
     curl -fsSL https://tailscale.com/install.sh | sh
 fi
-tailscale up --ssh
+# tailscale up échoue si le nœud tourne déjà avec d'autres options :
+# tailscale set ne modifie que l'option donnée.
+if tailscale status --json | grep -q '"BackendState": *"Running"'; then
+    echo "Déjà connecté à Tailscale."
+    tailscale set --ssh
+else
+    tailscale up --ssh
+fi
 tailscale status --self --peers=false
 
 cat <<EOF

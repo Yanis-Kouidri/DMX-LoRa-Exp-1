@@ -79,6 +79,10 @@ scp Mote/scripts/setup-pi.sh pi@pi-mote-N.local:
 ssh -t pi@pi-mote-N.local sudo ./setup-pi.sh
 ```
 
+Le script est idempotent : il peut être relancé sans risque et saute ce qui
+est déjà en place (connexion eduroam fonctionnelle, dépôts déjà en HTTPS, dépôt
+déjà cloné, Tailscale déjà installé et connecté).
+
 Pour forcer la recréation de la connexion eduroam (changement d'identifiant,
 par exemple) :
 
