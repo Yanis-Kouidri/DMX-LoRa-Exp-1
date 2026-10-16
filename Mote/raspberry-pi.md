@@ -5,19 +5,24 @@ liaison série USB).
 
 ## Matériel
 
-| Quantité | Modèle                  | Révision | RAM    |
-| -------- | ----------------------- | -------- | ------ |
-| 5        | Raspberry Pi 4 Model B  |          | 4 Go   |
-| 1        | Raspberry Pi 3 Model B  | V1.2     | 1 Go   |
+6 × Raspberry Pi 4 Model B, 4 Go de RAM (vérifié par SSH via
+`/proc/device-tree/model` et `/proc/meminfo`).
+
+| Machine     | Modèle                 | Révision | RAM  |
+| ----------- | ---------------------- | -------- | ---- |
+| `pi-mote-1` | Raspberry Pi 4 Model B | 1.5      | 4 Go |
+| `pi-mote-2` | Raspberry Pi 4 Model B | 1.5      | 4 Go |
+| `pi-mote-3` | Raspberry Pi 4 Model B | 1.5      | 4 Go |
+| `pi-mote-4` | Raspberry Pi 4 Model B | 1.5      | 4 Go |
+| `pi-mote-5` | Raspberry Pi 4 Model B | 1.5      | 4 Go |
+| `pi-mote-6` | Raspberry Pi 4 Model B | 1.1      | 4 Go |
 
 ## Système d'exploitation
 
 **Raspberry Pi OS Lite 64 bits** (sans interface graphique) sur les 6 Pi.
 
-- Compatible avec toutes les cartes, Pi 3 Model B v1.2 compris : même image
-  et même configuration partout.
-- Sans bureau : les Pi sont pilotés en SSH, ce qui garde l'OS léger (utile
-  pour le Pi 3 et son 1 Go de RAM).
+- Même image et même configuration sur les 6 cartes.
+- Sans bureau : les Pi sont pilotés en SSH, ce qui garde l'OS léger.
 - OS officiel : meilleur support du matériel (firmware, `raspi-config`,
   bootloader du Pi 4).
 - Préconfigurable avec Raspberry Pi Imager (nom de machine, utilisateur, clé
@@ -105,8 +110,6 @@ Paramètres de l'INP Toulouse, issus de son profil
 | Identité anonyme           | `anonymous@inp-toulouse.fr`               |
 | Serveur d'authentification | `eduroam.inp-toulouse.fr`                 |
 | Certificat (CA)            | `rootCA.eduroam.inpt`, valide jusqu'en 2034 |
-
-Le réseau émet en 2,4 GHz : le Pi 3 peut aussi s'y connecter.
 
 Installer le certificat, propre à l'INP et absent de l'OS :
 
