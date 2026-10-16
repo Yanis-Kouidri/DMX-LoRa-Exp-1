@@ -17,6 +17,30 @@ liaison série USB).
 | `pi-mote-5` | Raspberry Pi 4 Model B | 1.5      | 4 Go |
 | `pi-mote-6` | Raspberry Pi 4 Model B | 1.1      | 4 Go |
 
+### Problème connu : liaison série de `pi-mote-4`
+
+La liaison série entre `pi-mote-4` et sa mote (HWEUI `0004A30B0023F575`) se
+bloque de temps en temps (constaté le 16 octobre 2026) :
+
+- une réponse s'interrompt en cours de route, puis la mote ne répond plus du
+  tout, même après une resynchronisation de l'auto-baud ;
+- seule une coupure de l'alimentation USB la relance
+  (`sudo uhubctl -l 1-1 -a cycle -d 5`, `uhubctl` installé sur ce Pi
+  uniquement) ;
+- la première commande après l'ouverture du port répond souvent
+  `invalid_param` ;
+- en fonctionnement normal, une série de `sys get ver` d'affilée bloque la
+  mote après 211 commandes (`pi-mote-5`, témoin : 500 sur 500) ;
+- le passage en 1.0.6 RC4 a demandé 20 coupures USB sur 1012 lignes écrites.
+  `src/flash_firmware.py` échoue sur cette mote : il a fallu un flash qui
+  reprend à la ligne bloquée après chaque coupure.
+
+Les 5 autres Pi flashent sans erreur avec le même montage : le problème vient
+de la mote, du câble ou du port USB. Les commandes `mac tx` passent par la
+même liaison, la campagne y est donc exposée aussi.
+
+À essayer : changer de port USB, puis de câble.
+
 ## Système d'exploitation
 
 **Raspberry Pi OS Lite 64 bits** (sans interface graphique) sur les 6 Pi.
