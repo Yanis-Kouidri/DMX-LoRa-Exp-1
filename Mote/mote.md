@@ -13,14 +13,14 @@ Inventaire des 6 motes Microchip RN2483, chacune branchée en USB
 | `pi-mote-1` | `0004A30B0023F200` | 1.0.6 RC4       | oui (= HWEUI)    |
 | `pi-mote-2` | `0004A30B00FD7996` | 1.0.6 RC4       | oui (= HWEUI)    |
 | `pi-mote-3` | `0004A30B002428B8` | 1.0.6 RC4       | oui (= HWEUI)    |
-| `pi-mote-4` | `0004A30B0023F575` | 1.0.6 RC4       | non              |
-| `pi-mote-5` | `0004A30B00240C83` | 1.0.6 RC4       | non              |
-| `pi-mote-6` | `0004A30B00240BA2` | 1.0.6 RC4       | non              |
+| `pi-mote-4` | `0004A30B0023F575` | 1.0.6 RC4       | oui (= HWEUI)    |
+| `pi-mote-5` | `0004A30B00240C83` | 1.0.6 RC4       | oui (= HWEUI)    |
+| `pi-mote-6` | `0004A30B00240BA2` | 1.0.6 RC4       | oui (= HWEUI)    |
 
 Toutes les motes sont livrées avec le firmware d'origine 1.0.1.
 
-Pour les motes 4, 5 et 6, `mac get deveui` renvoie `0000000000000000` : la
-configuration LoRaWAN de `config.md` reste à appliquer.
+Le DevEUI est égal au HWEUI et l'AppEUI vaut `0000000000000000`. Le RN2483
+ne permet pas de relire l'AppKey : elle n'apparaît donc pas dans ce tableau.
 
 ## Firmware 1.0.6 RC4
 

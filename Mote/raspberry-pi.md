@@ -26,7 +26,8 @@ bloque de temps en temps (constaté le 16 octobre 2026) :
   tout, même après une resynchronisation de l'auto-baud ;
 - seule une coupure de l'alimentation USB la relance
   (`sudo uhubctl -l 1-1 -a cycle -d 5`, `uhubctl` installé sur ce Pi
-  uniquement) ;
+  uniquement). Cette commande exacte est autorisée sans mot de passe par
+  `/etc/sudoers.d/020_uhubctl` ;
 - la première commande après l'ouverture du port répond souvent
   `invalid_param` ;
 - en fonctionnement normal, une série de `sys get ver` d'affilée bloque la
