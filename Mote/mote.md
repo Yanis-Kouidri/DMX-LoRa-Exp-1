@@ -8,14 +8,16 @@ Inventaire des 6 motes Microchip RN2483, chacune branchée en USB
 État relevé le 16 octobre 2026 avec `sys get ver`, `sys get hweui` et
 `mac get deveui`.
 
-| Pi          | HWEUI              | Firmware d'origine | Firmware actuel | DevEUI configuré |
-| ----------- | ------------------ | ------------------ | --------------- | ---------------- |
-| `pi-mote-1` | `0004A30B0023F200` | 1.0.6 RC4          | 1.0.6 RC4       | oui (= HWEUI)    |
-| `pi-mote-2` | `0004A30B00FD7996` | 1.0.5              | 1.0.6 RC4       | oui (= HWEUI)    |
-| `pi-mote-3` | `0004A30B002428B8` | 1.0.6 RC4          | 1.0.6 RC4       | oui (= HWEUI)    |
-| `pi-mote-4` | `0004A30B0023F575` | 1.0.1              | 1.0.6 RC4       | non              |
-| `pi-mote-5` | `0004A30B00240C83` | 1.0.1              | 1.0.6 RC4       | non              |
-| `pi-mote-6` | `0004A30B00240BA2` | 1.0.1              | 1.0.6 RC4       | non              |
+| Pi          | HWEUI              | Firmware actuel | DevEUI configuré |
+| ----------- | ------------------ | --------------- | ---------------- |
+| `pi-mote-1` | `0004A30B0023F200` | 1.0.6 RC4       | oui (= HWEUI)    |
+| `pi-mote-2` | `0004A30B00FD7996` | 1.0.6 RC4       | oui (= HWEUI)    |
+| `pi-mote-3` | `0004A30B002428B8` | 1.0.6 RC4       | oui (= HWEUI)    |
+| `pi-mote-4` | `0004A30B0023F575` | 1.0.6 RC4       | non              |
+| `pi-mote-5` | `0004A30B00240C83` | 1.0.6 RC4       | non              |
+| `pi-mote-6` | `0004A30B00240BA2` | 1.0.6 RC4       | non              |
+
+Toutes les motes sont livrées avec le firmware d'origine 1.0.1.
 
 Pour les motes 4, 5 et 6, `mac get deveui` renvoie `0000000000000000` : la
 configuration LoRaWAN de `config.md` reste à appliquer.
