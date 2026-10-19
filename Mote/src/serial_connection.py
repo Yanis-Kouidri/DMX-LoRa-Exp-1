@@ -172,10 +172,19 @@ class RN2483Connection:
         except ValueError:
             raise RuntimeError(f"Réponse inattendue à 'mac get dr' : {response!r}")
 
-    def save(self) -> str:
-        """Sauvegarde la configuration mac courante en mémoire non volatile."""
+    def save(self, timeout: float = 5.0) -> str:
+        """
+        Sauvegarde la configuration mac courante en mémoire non volatile.
 
-        return self.send_command("mac save")
+        L'écriture en EEPROM peut dépasser le timeout par défaut du port
+        (plus d'1 s observée) : on attend donc la réponse plus longtemps,
+        sinon le "ok" tardif serait lu comme réponse à la commande suivante.
+        """
+
+        self._serial.reset_input_buffer()
+        self._serial.write(b"mac save\r\n")
+
+        return self._read_line(timeout=timeout)
 
     def close(self) -> None:
         """Ferme le port série."""
