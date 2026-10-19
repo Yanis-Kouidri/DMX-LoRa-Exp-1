@@ -2,8 +2,10 @@
 Test de réception par Spreading Factor, sans contrainte de duty cycle.
 
 Rejoint le réseau en OTAA si le module n'est pas déjà joint (arrêt avec un
-message d'erreur en cas d'échec), puis envoie PACKETS_PER_DR paquets pour
-chaque DR (donc chaque SF) avec une pause fixe entre deux envois.
+message d'erreur en cas d'échec), puis entrelace les SF : à chaque tour, un
+paquet en SF7, pause, un paquet en SF8, pause, ... jusqu'à SF12. Le tour est
+répété ROUNDS fois, ce qui répartit les conditions radio de manière égale
+entre les SF.
 
 Le duty cycle est volontairement ignoré : le script le désactive aussi dans
 le module (sinon celui-ci répondrait "no_free_ch"). À n'utiliser qu'en
@@ -23,7 +25,7 @@ from sf_test_campaign import DR_TO_SF, build_payload
 
 PORT = "/dev/ttyACM0"
 
-PACKETS_PER_DR = 20
+ROUNDS = 100
 DELAY_BETWEEN_PACKETS_S = 5.0
 MAX_CHANNELS = 16        # canaux 0 à 15 sur le RN2483 (EU868)
 TX_ASYNC_TIMEOUT_S = 10.0  # couvre l'airtime SF12 + fenêtres RX1/RX2
@@ -67,7 +69,10 @@ def disable_duty_cycle(mote: RN2483Connection) -> None:
 
 def run() -> None:
     mote = RN2483Connection(PORT)
-    results: dict[int, int] = {}
+    # Ordre d'un tour : SF7 (DR5) -> SF12 (DR0)
+    drs = sorted(DR_TO_SF, key=DR_TO_SF.get)
+    attempts: dict[int, int] = {dr: 0 for dr in drs}
+    results: dict[int, int] = {dr: 0 for dr in drs}
     first_packet = True
 
     try:
@@ -77,36 +82,29 @@ def run() -> None:
         print("Désactivation du duty cycle sur les canaux...")
         disable_duty_cycle(mote)
 
-        for dr, sf in DR_TO_SF.items():
-            print(f"\n=== DR{dr} (SF{sf}) ===")
+        for seq in range(ROUNDS):
+            print(f"\n=== Tour {seq + 1}/{ROUNDS} ===")
 
-            dr_response = mote.set_dr(dr)
-            print(f"  mac set dr {dr} -> {dr_response}")
+            for dr in drs:
+                sf = DR_TO_SF[dr]
 
-            if dr_response.lower() != "ok":
-                print(f"  ATTENTION : configuration DR{dr} refusée, ce DR est ignoré.")
-                continue
-
-            results[dr] = 0
-
-            for seq in range(PACKETS_PER_DR):
                 if not first_packet:
                     time.sleep(DELAY_BETWEEN_PACKETS_S)
                 first_packet = False
 
-                # Le réseau peut imposer un autre DR via LinkADRReq (notamment
-                # sur le premier downlink après un join), même avec l'ADR coupé.
-                current_dr = mote.get_dr()
-                if current_dr != dr:
-                    print(f"  DR modifié par le réseau (DR{current_dr}), retour à DR{dr} -> {mote.set_dr(dr)}")
+                dr_response = mote.set_dr(dr)
+                if dr_response.lower() != "ok":
+                    print(f"  SF{sf} : mac set dr {dr} refusé ({dr_response!r}), paquet ignoré.")
+                    continue
 
+                attempts[dr] += 1
                 payload = build_payload(seq, dr)
                 immediate, async_resp = mote.send_mac_tx(
                     payload, async_timeout=TX_ASYNC_TIMEOUT_S
                 )
 
                 print(
-                    f"  [{seq + 1}/{PACKETS_PER_DR}] payload={payload} "
+                    f"  SF{sf} (DR{dr}) payload={payload} "
                     f"immediate={immediate!r} async={async_resp!r}"
                 )
 
@@ -114,8 +112,8 @@ def run() -> None:
                     results[dr] += 1
 
         print("\nRésumé (paquets émis avec succès côté module) :")
-        for dr, sent in results.items():
-            print(f"  DR{dr} (SF{DR_TO_SF[dr]}) : {sent}/{PACKETS_PER_DR}")
+        for dr in drs:
+            print(f"  SF{DR_TO_SF[dr]} (DR{dr}) : {results[dr]}/{attempts[dr]}")
 
     finally:
         mote.close()
