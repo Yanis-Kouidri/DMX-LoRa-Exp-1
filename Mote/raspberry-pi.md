@@ -40,7 +40,17 @@ Les 5 autres Pi flashent sans erreur avec le même montage : le problème vient
 de la mote, du câble ou du port USB. Les commandes `mac tx` passent par la
 même liaison, la campagne y est donc exposée aussi.
 
-À essayer : changer de port USB, puis de câble.
+Essais (3000 `sys get ver` d'affilée, coupure USB entre deux passages) :
+
+| Date            | Montage                       | Résultat                                  |
+| --------------- | ----------------------------- | ----------------------------------------- |
+| 16 octobre 2026 | port USB 3 du hub             | bloquée après 211 commandes (sur 500)     |
+| 19 octobre 2026 | port USB 4 du hub, même câble | bloquée après 339, 62 puis 144 commandes  |
+
+`pi-mote-5`, témoin : 3000 sur 3000. Changer de port ne corrige rien : chaque
+blocage est précédé d'une réponse incorrecte puis d'une absence de réponse.
+Reste à essayer : changer de câble, puis échanger la mote avec celle d'un
+autre Pi pour savoir si le défaut suit la mote ou le Pi.
 
 ## Système d'exploitation
 

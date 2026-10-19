@@ -41,7 +41,8 @@ ne permet pas de relire l'AppKey : elle n'apparaît donc pas dans ce tableau.
 
 ## Problème connu : mote de `pi-mote-4`
 
-Liaison série instable : la mote se bloque au bout de quelques centaines de
-commandes et seule une coupure de l'alimentation USB la relance. Le flash en
+Liaison série instable : la mote se bloque au bout de quelques dizaines à
+quelques centaines de commandes et seule une coupure de l'alimentation USB la
+relance. Changer de port USB n'a rien corrigé (19 octobre 2026). Le flash en
 RC4 a demandé 20 coupures. Détails dans `raspberry-pi.md`, section « Problème
 connu : liaison série de `pi-mote-4` ».
