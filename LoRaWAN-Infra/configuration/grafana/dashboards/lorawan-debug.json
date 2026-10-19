@@ -173,6 +173,62 @@
                 "value": "hertz"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mote"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "mote-1": {
+                        "color": "#3274D9",
+                        "index": 0
+                      },
+                      "mote-2": {
+                        "color": "#A352CC",
+                        "index": 1
+                      },
+                      "mote-3": {
+                        "color": "#12B5CB",
+                        "index": 2
+                      },
+                      "mote-4": {
+                        "color": "#E85EC0",
+                        "index": 3
+                      },
+                      "mote-5": {
+                        "color": "#8C6D46",
+                        "index": 4
+                      },
+                      "mote-6": {
+                        "color": "#7A8B99",
+                        "index": 5
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "custom.align",
+                "value": "center"
+              },
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
           }
         ]
       },
@@ -204,7 +260,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  received_at AS \"Time\",\n  spreading_factor AS \"SF\",\n  dev_eui AS \"DevEUI\",\n  CASE dev_eui\n    WHEN '0004a30b0023f200' THEN 'mote-1'\n    WHEN '0004a30b00fd7996' THEN 'mote-2'\n    WHEN '0004a30b002428b8' THEN 'mote-3'\n    WHEN '0004a30b0023ee8a' THEN 'mote-4'\n    WHEN '0004a30b00240c83' THEN 'mote-5'\n    WHEN '0004a30b00240ba2' THEN 'mote-6'\n  END AS \"Mote\",\n  snr_db - (10 - 2.5 * spreading_factor) AS \"Marge SNR\",\n  snr_db AS \"SNR\",\n  rssi_dbm AS \"RSSI\",\n  f_cnt AS \"FCnt\",\n  f_port AS \"FPort\",\n  frequency_hz AS \"Fréquence\",\n  gateway_id AS \"Gateway\",\n  upper(encode(decode(payload_base64, 'base64'), 'hex')) AS \"Payload (hex)\"\nFROM uplinks\nWHERE $__timeFilter(received_at)\n  AND dev_eui IN (${dev_eui:sqlstring})\nORDER BY received_at DESC\nLIMIT $limit;",
+          "rawSql": "SELECT\n  received_at AS \"Time\",\n  spreading_factor AS \"SF\",\n  CASE dev_eui\n    WHEN '0004a30b0023f200' THEN 'mote-1'\n    WHEN '0004a30b00fd7996' THEN 'mote-2'\n    WHEN '0004a30b002428b8' THEN 'mote-3'\n    WHEN '0004a30b0023ee8a' THEN 'mote-4'\n    WHEN '0004a30b00240c83' THEN 'mote-5'\n    WHEN '0004a30b00240ba2' THEN 'mote-6'\n  END AS \"Mote\",\n  snr_db - (10 - 2.5 * spreading_factor) AS \"Marge SNR\",\n  snr_db AS \"SNR\",\n  rssi_dbm AS \"RSSI\",\n  f_cnt AS \"FCnt\",\n  f_port AS \"FPort\",\n  frequency_hz AS \"Fréquence\",\n  gateway_id AS \"Gateway\",\n  upper(encode(decode(payload_base64, 'base64'), 'hex')) AS \"Payload (hex)\",\n  dev_eui AS \"DevEUI\"\nFROM uplinks\nWHERE $__timeFilter(received_at)\n  AND dev_eui IN (${dev_eui:sqlstring})\nORDER BY received_at DESC\nLIMIT $limit;",
           "refId": "A"
         }
       ],
