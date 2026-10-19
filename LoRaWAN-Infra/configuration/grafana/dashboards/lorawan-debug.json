@@ -117,6 +117,54 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "Marge SNR"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dB"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 2.5
+                    },
+                    {
+                      "color": "green",
+                      "value": 10
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "Fréquence"
             },
             "properties": [
@@ -156,7 +204,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  received_at AS \"Time\",\n  spreading_factor AS \"SF\",\n  dev_eui AS \"DevEUI\",\n  f_cnt AS \"FCnt\",\n  f_port AS \"FPort\",\n  rssi_dbm AS \"RSSI\",\n  snr_db AS \"SNR\",\n  frequency_hz AS \"Fréquence\",\n  gateway_id AS \"Gateway\",\n  upper(encode(decode(payload_base64, 'base64'), 'hex')) AS \"Payload (hex)\"\nFROM uplinks\nWHERE $__timeFilter(received_at)\n  AND dev_eui IN (${dev_eui:sqlstring})\nORDER BY received_at DESC\nLIMIT $limit;",
+          "rawSql": "SELECT\n  received_at AS \"Time\",\n  spreading_factor AS \"SF\",\n  dev_eui AS \"DevEUI\",\n  f_cnt AS \"FCnt\",\n  f_port AS \"FPort\",\n  rssi_dbm AS \"RSSI\",\n  snr_db AS \"SNR\",\n  snr_db - (10 - 2.5 * spreading_factor) AS \"Marge SNR\",\n  frequency_hz AS \"Fréquence\",\n  gateway_id AS \"Gateway\",\n  upper(encode(decode(payload_base64, 'base64'), 'hex')) AS \"Payload (hex)\"\nFROM uplinks\nWHERE $__timeFilter(received_at)\n  AND dev_eui IN (${dev_eui:sqlstring})\nORDER BY received_at DESC\nLIMIT $limit;",
           "refId": "A"
         }
       ],
@@ -295,6 +343,54 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "Marge SNR"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dB"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 2.5
+                    },
+                    {
+                      "color": "green",
+                      "value": 10
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "Fréquence"
             },
             "properties": [
@@ -334,7 +430,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  r.time AS \"Time\",\n  r.dev_eui AS \"DevEUI\",\n  CASE WHEN j.id IS NULL THEN 'Non' ELSE 'Oui' END AS \"Accepté\",\n  j.raw_event->>'devAddr' AS \"DevAddr\",\n  get_byte(decode(r.phy_payload_base64, 'base64'), 17)\n    | (get_byte(decode(r.phy_payload_base64, 'base64'), 18) << 8) AS \"DevNonce\",\n  r.spreading_factor AS \"SF\",\n  r.rssi_dbm AS \"RSSI\",\n  r.snr_db AS \"SNR\",\n  r.frequency_hz AS \"Fréquence\",\n  r.gateway_id AS \"Gateway\",\n  upper(encode(decode(r.phy_payload_base64, 'base64'), 'hex')) AS \"PHYPayload (hex)\"\nFROM gateway_events r\nLEFT JOIN LATERAL (\n  SELECT d.id, d.raw_event\n  FROM device_events d\n  WHERE d.event_type = 'join'\n    AND d.dev_eui = r.dev_eui\n    AND d.time BETWEEN r.time AND r.time + interval '10 seconds'\n  ORDER BY d.time\n  LIMIT 1\n) j ON true\nWHERE r.direction = 'event'\n  AND r.event_type = 'up'\n  AND r.m_type = 'JoinRequest'\n  AND $__timeFilter(r.time)\n  AND r.dev_eui IN (${dev_eui:sqlstring})\nORDER BY r.time DESC\nLIMIT $limit;",
+          "rawSql": "SELECT\n  r.time AS \"Time\",\n  r.dev_eui AS \"DevEUI\",\n  CASE WHEN j.id IS NULL THEN 'Non' ELSE 'Oui' END AS \"Accepté\",\n  j.raw_event->>'devAddr' AS \"DevAddr\",\n  get_byte(decode(r.phy_payload_base64, 'base64'), 17)\n    | (get_byte(decode(r.phy_payload_base64, 'base64'), 18) << 8) AS \"DevNonce\",\n  r.spreading_factor AS \"SF\",\n  r.rssi_dbm AS \"RSSI\",\n  r.snr_db AS \"SNR\",\n  r.snr_db - (10 - 2.5 * r.spreading_factor) AS \"Marge SNR\",\n  r.frequency_hz AS \"Fréquence\",\n  r.gateway_id AS \"Gateway\",\n  upper(encode(decode(r.phy_payload_base64, 'base64'), 'hex')) AS \"PHYPayload (hex)\"\nFROM gateway_events r\nLEFT JOIN LATERAL (\n  SELECT d.id, d.raw_event\n  FROM device_events d\n  WHERE d.event_type = 'join'\n    AND d.dev_eui = r.dev_eui\n    AND d.time BETWEEN r.time AND r.time + interval '10 seconds'\n  ORDER BY d.time\n  LIMIT 1\n) j ON true\nWHERE r.direction = 'event'\n  AND r.event_type = 'up'\n  AND r.m_type = 'JoinRequest'\n  AND $__timeFilter(r.time)\n  AND r.dev_eui IN (${dev_eui:sqlstring})\nORDER BY r.time DESC\nLIMIT $limit;",
           "refId": "A"
         }
       ],

@@ -386,6 +386,54 @@
                 "value": 277
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Marge SNR"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dB"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 2.5
+                    },
+                    {
+                      "color": "green",
+                      "value": 10
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
           }
         ]
       },
@@ -419,7 +467,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  received_at AS \"Time\",\n  dev_eui,\n  f_cnt,\n  gateway_id,\n  rssi_dbm,\n  snr_db,\n  frequency_hz,\n  spreading_factor,\n  coding_rate,\n  payload_base64\nFROM uplinks\nWHERE $__timeFilter(received_at)\n  AND dev_eui IN (${dev_eui:sqlstring})\nORDER BY received_at DESC;",
+          "rawSql": "SELECT\n  received_at AS \"Time\",\n  dev_eui,\n  f_cnt,\n  gateway_id,\n  rssi_dbm,\n  snr_db,\n  snr_db - (10 - 2.5 * spreading_factor) AS \"Marge SNR\",\n  frequency_hz,\n  spreading_factor,\n  coding_rate,\n  payload_base64\nFROM uplinks\nWHERE $__timeFilter(received_at)\n  AND dev_eui IN (${dev_eui:sqlstring})\nORDER BY received_at DESC;",
           "refId": "A",
           "sql": {
             "columns": [
