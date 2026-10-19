@@ -1,15 +1,46 @@
+# Configuration d'une mote RN2483
+
+## Configurer la mote pour ChirpStack
+
+Lire le HWEUI de la mote, qui sert de DevEUI :
+
+```
+sys get hweui
+```
+
+Configurer la mote, en remplaçant `<HW_EUI>` par la valeur lue et
+`<APPKEY_CHIRPSTACK>` par l'AppKey du device dans ChirpStack :
+
+```
 mac reset 868
-mac set deveui 0004A30B0023F200
+mac set deveui <HW_EUI>
 mac set appeui 0000000000000000
 mac set appkey <APPKEY_CHIRPSTACK>
 mac save
+```
 
+`mac reset 868` remet les valeurs par défaut de la bande EU868 et efface une
+éventuelle configuration précédente. `mac save` conserve la configuration au
+redémarrage.
+
+Vérification :
+
+```
 mac get deveui
 mac get appeui
+```
 
+## Rejoindre le réseau et envoyer un message
+
+```
 mac join otaa
-
 mac tx uncnf 1 D93A64
+```
+
+- `mac join otaa` : join OTAA. La mote répond `ok`, puis `accepted` ou
+  `denied`.
+- `mac tx uncnf 1 D93A64` : uplink non confirmé sur le port 1, avec la charge
+  utile `D93A64` en hexadécimal.
 
 ## Désactiver le duty cycle (environnement isolé uniquement)
 
