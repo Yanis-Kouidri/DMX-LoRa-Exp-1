@@ -17,40 +17,17 @@ liaison série USB).
 | `pi-mote-5` | Raspberry Pi 4 Model B | 1.5      | 4 Go |
 | `pi-mote-6` | Raspberry Pi 4 Model B | 1.1      | 4 Go |
 
-### Problème connu : liaison série de `pi-mote-4`
+### Coupure USB à distance sur `pi-mote-4`
 
-La liaison série entre `pi-mote-4` et sa mote (HWEUI `0004A30B0023F575`) se
-bloque de temps en temps (constaté le 16 octobre 2026) :
+`uhubctl` est installé sur `pi-mote-4` uniquement. Deux commandes y sont
+autorisées sans mot de passe par `/etc/sudoers.d/020_uhubctl` :
 
-- une réponse s'interrompt en cours de route, puis la mote ne répond plus du
-  tout, même après une resynchronisation de l'auto-baud ;
-- seule une coupure de l'alimentation USB la relance
-  (`sudo uhubctl -l 1-1 -a cycle -d 5`, `uhubctl` installé sur ce Pi
-  uniquement). Cette commande exacte est autorisée sans mot de passe par
-  `/etc/sudoers.d/020_uhubctl` ;
-- la première commande après l'ouverture du port répond souvent
-  `invalid_param` ;
-- en fonctionnement normal, une série de `sys get ver` d'affilée bloque la
-  mote après 211 commandes (`pi-mote-5`, témoin : 500 sur 500) ;
-- le passage en 1.0.6 RC4 a demandé 20 coupures USB sur 1012 lignes écrites.
-  `src/flash_firmware.py` échoue sur cette mote : il a fallu un flash qui
-  reprend à la ligne bloquée après chaque coupure.
+- `sudo uhubctl -l 1-1 -a cycle -d 5` : coupe l'alimentation de tous les ports
+  USB pendant 5 s (ils sont alimentés ensemble sur un Pi 4) ;
+- `sudo reboot`.
 
-Les 5 autres Pi flashent sans erreur avec le même montage : le problème vient
-de la mote, du câble ou du port USB. Les commandes `mac tx` passent par la
-même liaison, la campagne y est donc exposée aussi.
-
-Essais (3000 `sys get ver` d'affilée, coupure USB entre deux passages) :
-
-| Date            | Montage                       | Résultat                                  |
-| --------------- | ----------------------------- | ----------------------------------------- |
-| 16 octobre 2026 | port USB 3 du hub             | bloquée après 211 commandes (sur 500)     |
-| 19 octobre 2026 | port USB 4 du hub, même câble | bloquée après 339, 62 puis 144 commandes  |
-
-`pi-mote-5`, témoin : 3000 sur 3000. Changer de port ne corrige rien : chaque
-blocage est précédé d'une réponse incorrecte puis d'une absence de réponse.
-Reste à essayer : changer de câble, puis échanger la mote avec celle d'un
-autre Pi pour savoir si le défaut suit la mote ou le Pi.
+Ce Pi héberge la mote défectueuse `0004A30B0023F575` : voir `mote.md`,
+section « Mote défectueuse ».
 
 ## Système d'exploitation
 

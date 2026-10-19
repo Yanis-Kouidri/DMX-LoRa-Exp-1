@@ -39,10 +39,54 @@ ne permet pas de relire l'AppKey : elle n'apparaît donc pas dans ce tableau.
   Le flash ne touche pas à la configuration LoRaWAN sauvegardée (`mac save`) :
   `pi-mote-2` a gardé son DevEUI.
 
-## Problème connu : mote de `pi-mote-4`
+## Mote défectueuse : `0004A30B0023F575` (`pi-mote-4`)
 
-Liaison série instable : la mote se bloque au bout de quelques dizaines à
-quelques centaines de commandes et seule une coupure de l'alimentation USB la
-relance. Changer de port USB n'a rien corrigé (19 octobre 2026). Le flash en
-RC4 a demandé 20 coupures. Détails dans `raspberry-pi.md`, section « Problème
-connu : liaison série de `pi-mote-4` ».
+**Conclusion : défaut matériel de la mote. À remplacer pour la campagne.**
+
+### Symptômes
+
+- La liaison série s'arrête en pleine réponse (par exemple
+  `RN2483 1.0.6 RC3 May 18 202`, coupée au 27e caractère), puis plus rien ne
+  sort : ni retour à la ligne seul, ni break suivi de `0x55`, ni port rouvert.
+- La mote reste visible en USB et le noyau ne signale aucune erreur.
+- Seule une coupure de l'alimentation USB la relance (voir `raspberry-pi.md`,
+  section « Coupure USB à distance sur `pi-mote-4` »).
+- Le blocage survient au bout de quelques dizaines à quelques centaines de
+  commandes. Les commandes `mac tx` passent par la même liaison : la campagne
+  y serait exposée.
+- Le passage en 1.0.6 RC4 a demandé 20 coupures USB sur 1012 lignes écrites :
+  `src/flash_firmware.py` échoue sur cette mote, il a fallu un flash qui
+  reprend à la ligne bloquée après chaque coupure.
+
+### Essais
+
+Test : 3000 `sys get ver` d'affilée, coupure USB entre deux passages. Mote
+témoin : `0004A30B00240C83` (`pi-mote-5`), 3000 sur 3000 à chaque passage.
+
+| Date            | Montage                                    | Mote `…F575`                             | Mote témoin                  |
+| --------------- | ------------------------------------------ | ---------------------------------------- | ---------------------------- |
+| 16 octobre 2026 | `pi-mote-4`, port USB 3 du hub             | bloquée après 211 commandes (sur 500)    | 500 sur 500                  |
+| 19 octobre 2026 | `pi-mote-4`, port USB 4 du hub, même câble | bloquée après 339, 62 puis 144 commandes | 3000 sur 3000                |
+| 19 octobre 2026 | câbles échangés entre `pi-mote-4` et `-5`  | bloquée après 257, 307 puis 23 commandes | 3000 sur 3000                |
+| 19 octobre 2026 | `pi-mote-4` redémarré                      | bloquée après 90, 276 puis 62 commandes  | —                            |
+| 19 octobre 2026 | motes échangées entre `pi-mote-4` et `-5`  | bloquée après 72 commandes (sur `-5`)    | 3 × 3000 sur 3000 (sur `-4`) |
+
+Le défaut suit la mote : le Pi, le port USB et le câble sont hors de cause.
+Les motes ont ensuite été remises à leur place.
+
+### Pourquoi un défaut matériel
+
+- **Firmware du RN2483 hors de cause** : le blocage existait en 1.0.1, existe
+  en 1.0.6 RC4, et survient même dans le bootloader pendant le flash. Le
+  bootloader est identique sur toutes les motes et n'utilise pas la
+  configuration stockée.
+- **Rien ne la distingue des motes saines côté logiciel** : même identité USB
+  (`04d8:000a`, `bcdDevice 1.00`, « CDC RS-232 Emulation Demo ») et même
+  firmware RN2483.
+- **Reste le matériel** : alimentation du module, horloge, soudure, ou le PIC
+  qui fait le pont entre l'USB et le RN2483.
+
+Seule piste logicielle restante, peu probable : reflasher le firmware du PIC
+(programmateur PICkit sur le connecteur ICSP de la carte). Avant de remplacer
+la mote, vérifier qu'elle n'est pas alimentée par des piles AAA faibles
+(sélecteur d'alimentation, piles restées dans le boîtier).
