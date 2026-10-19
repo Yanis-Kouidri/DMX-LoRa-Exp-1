@@ -13,7 +13,7 @@ Inventaire des 6 motes Microchip RN2483, chacune branchée en USB
 | `pi-mote-1` | `0004A30B0023F200` | 1.0.6 RC4       | oui (= HWEUI)    |
 | `pi-mote-2` | `0004A30B00FD7996` | 1.0.6 RC4       | oui (= HWEUI)    |
 | `pi-mote-3` | `0004A30B002428B8` | 1.0.6 RC4       | oui (= HWEUI)    |
-| `pi-mote-4` | `0004A30B0023F575` | 1.0.6 RC4       | oui (= HWEUI)    |
+| `pi-mote-4` | `0004A30B0023EE8A` | 1.0.6 RC4       | oui (= HWEUI)    |
 | `pi-mote-5` | `0004A30B00240C83` | 1.0.6 RC4       | oui (= HWEUI)    |
 | `pi-mote-6` | `0004A30B00240BA2` | 1.0.6 RC4       | oui (= HWEUI)    |
 
@@ -39,9 +39,21 @@ ne permet pas de relire l'AppKey : elle n'apparaît donc pas dans ce tableau.
   Le flash ne touche pas à la configuration LoRaWAN sauvegardée (`mac save`) :
   `pi-mote-2` a gardé son DevEUI.
 
-## Mote défectueuse : `0004A30B0023F575` (`pi-mote-4`)
+## Mote défectueuse : `0004A30B0023F575` (retirée)
 
-**Conclusion : défaut matériel de la mote. À remplacer pour la campagne.**
+**Conclusion : défaut matériel de la mote.** Elle a été remplacée sur
+`pi-mote-4` par la mote `0004A30B0023EE8A` le 19 octobre 2026 et ne doit pas
+servir pour la campagne.
+
+### Mote de remplacement `0004A30B0023EE8A`
+
+- Livrée en 1.0.1, avec une configuration d'un ancien usage (DevEUI
+  `DEADDEAD00090007`, AppEUI `DEAD25DEAD25DEAD`), effacée par `mac reset 868`.
+- 3 × 3000 `sys get ver` sur 3000 en 1.0.1, puis 3000 sur 3000 en 1.0.6 RC4.
+- Flash en 1.0.6 RC4 avec `src/flash_firmware.py` du premier coup, contenu
+  relu et vérifié.
+- DevEUI = HWEUI, AppEUI `0000000000000000`, `mac save`, conservés après
+  `sys reset`.
 
 ### Symptômes
 

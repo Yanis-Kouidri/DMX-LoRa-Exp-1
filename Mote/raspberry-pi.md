@@ -26,8 +26,9 @@ autorisées sans mot de passe par `/etc/sudoers.d/020_uhubctl` :
   USB pendant 5 s (ils sont alimentés ensemble sur un Pi 4) ;
 - `sudo reboot`.
 
-Ce Pi héberge la mote défectueuse `0004A30B0023F575` : voir `mote.md`,
-section « Mote défectueuse ».
+Ces commandes ont servi au diagnostic de la mote défectueuse
+`0004A30B0023F575`, remplacée depuis : voir `mote.md`, section « Mote
+défectueuse ».
 
 ## Système d'exploitation
 
