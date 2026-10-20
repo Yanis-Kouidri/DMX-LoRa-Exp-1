@@ -41,7 +41,7 @@ exclut l'emplacement.
 
 ## Lecture attendue (hypothèse, à vérifier par la balade 0a)
 
-Critère visé (voir le plan, section 5) : SF minimal fiable vers la gateway
+Critère visé (voir le [plan](plan-experimental.md#5-dispositif-expérimental), section 5) : SF minimal fiable vers la gateway
 fixe entre SF10 et SF12, et SF12 obligatoire.
 
 Estimation grossière de la portée SF12, mote et gateway en intérieur : environ

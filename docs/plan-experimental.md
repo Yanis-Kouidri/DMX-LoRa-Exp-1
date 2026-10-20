@@ -50,7 +50,7 @@ La plus-value principale est l'**expérimentation réelle** : la grande majorit�
 
 ## 3. État de l'art et positionnement
 
-### Papiers lus en détail (dossier `papers/`)
+### Papiers lus en détail (dossier `papers/` à la racine, non versionné)
 
 | | Florita et al. 2020 | MLoRaDrone, Chen et al. 2023 | Tang et al. 2025 |
 |---|---|---|---|
@@ -100,8 +100,8 @@ La plus-value principale est l'**expérimentation réelle** : la grande majorit�
 | Élément | Configuration |
 |---|---|
 | Motes | 6 × Microchip RN2483 dans 6 bâtiments (bureaux de collègues, pas de sous-sol), chacune pilotée en USB par un **Raspberry Pi** accessible en SSH. Emplacements et coordonnées : [`emplacements.md`](emplacements.md) (5 sur 6 fixés) |
-| Firmware des motes | **RN2483 1.0.6 RC4** (EU868, LoRaWAN 1.0.2), dernière version publiée par Microchip, sur **toutes** les motes. Source : dépôt [MicrochipTech/RN2xx3_LORAWAN_FIRMWARE](https://github.com/MicrochipTech/RN2xx3_LORAWAN_FIRMWARE), fichier `software/firmware/RN2483EU_1.0.6_RC4/Binary/offset/RN2483_Parser.production.hex`. Attention : `sys get ver` affiche `RN2483 1.0.6 RC3 May 18 2021`, car Microchip n'a pas mis à jour la chaîne de version dans le binaire RC4. Les motes neuves arrivent en 1.0.1 et doivent être flashées avant l'installation |
-| Gateway fixe | MikroTik wAP LR8 (RouterOS 7.24), **en intérieur, dans un bureau de l'IRIT au 4e étage**, près d'une fenêtre orientée **nord-ouest**, reliée par la prise Ethernet murale du campus (voir `gateway.md`). Elle y reste pour toute l'expérience, par simplicité : pas d'installation sur un toit |
+| Firmware des motes | **RN2483 1.0.6 RC4** (EU868, LoRaWAN 1.0.2), dernière version publiée par Microchip, sur **toutes** les motes. Source, procédure de flash et pièges : [`Mote/README.md`](../Mote/README.md#firmware) |
+| Gateway fixe | MikroTik wAP LR8 (RouterOS 7.24), **en intérieur, dans un bureau de l'IRIT au 4e étage**, près d'une fenêtre orientée **nord-ouest**, reliée par la prise Ethernet murale du campus (voir [`gateway.md`](gateway.md)). Elle y reste pour toute l'expérience, par simplicité : pas d'installation sur un toit |
 | Gateway mobile | **Deuxième MikroTik wAP LR8, identique** à la gateway fixe (RouterOS 7.24), à vélo ou à trottinette, reliée en **4G** par carte SIM. Alimentation à trouver |
 | GPS | Téléphone avec une appli d'enregistrement GPX, horloges synchronisées (NTP d'un côté, GPS de l'autre) |
 | Serveur | ChirpStack v4, avec le collecteur qui enregistre **une ligne par gateway réceptrice** dans PostgreSQL, puis Grafana |
@@ -264,7 +264,7 @@ Les deux gateways sont actives, l'ADR est désactivé et la puissance d'émissio
 - **Tournées** : 2 à 3 par semaine, soit environ 10 tournées de 2 h et environ 15 boucles chacune.
 - **SF10 à SF12 ne sont pas utilisés en 1b** : tout l'intérêt de la gateway mobile est de permettre un SF bas, et ils épuiseraient le duty cycle.
 - **SF7 à SF9 sont confirmés en 1b** pour mesurer la fiabilité réelle des accusés, qui serviront de réponse aux sondes. SF10 à SF12 restent non confirmés pour ne pas épuiser le duty cycle des gateways.
-- **Pourquoi entrelacer** : avec des blocs (une heure par SF), chaque SF voit des conditions différentes (heure, trafic, météo). Avec l'entrelacement, tous les SF voient les mêmes conditions. `sf_test_campaign.py` procède aujourd'hui par blocs et devra être adapté.
+- **Pourquoi entrelacer** : avec des blocs (une heure par SF), chaque SF voit des conditions différentes (heure, trafic, météo). Avec l'entrelacement, tous les SF voient les mêmes conditions. Aucun script ne couvre encore les régimes 1a et 1b : `sf_test_campaign.py` respecte le duty cycle mais envoie les SF à la suite, sans entrelacement ni ACK ; `sf_burst_test.py` entrelace les SF mais ignore le duty cycle. Un script dédié reste à écrire.
 - **Pourquoi sans ADR** : l'ADR de ChirpStack décide à partir du meilleur SNR sur une vingtaine d'uplinks, toutes gateways confondues. Avec une gateway mobile, le canal change plus vite que cette fenêtre : l'ADR serait une variable parasite.
 - **Atout majeur** : le balayage permet de **rejouer hors ligne** n'importe quelle stratégie (SF fixe, oracle, ADR simulé, sonde). Des données collectées avec l'ADR ou un SF fixe ne pourraient pas être réanalysées.
 
