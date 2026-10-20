@@ -26,7 +26,7 @@
 
 - **Cadre** : thèse CIFRE, première année. L'objectif est de produire des résultats expérimentaux pour un papier de **conférence principale** (pas un workshop). Les échéances visées sont janvier ou mars 2027. Mars 2027 est l'objectif réaliste pour la version complète.
 - **Principe** : on ne précipite pas l'expérience. Si elle le justifie, la publication peut être retardée.
-- **Expérience** : comparer une **gateway fixe** (toit de l'IRIT, au centre du campus) et une **gateway mobile** (à vélo ou à trottinette) dans un réseau LoRaWAN, avec 6 motes réparties dans 6 bâtiments du campus Paul Sabatier, à Toulouse.
+- **Expérience** : comparer une **gateway fixe** (MikroTik wAP LR8 en intérieur, dans un bureau de l'IRIT) et une **gateway mobile** (à vélo ou à trottinette) dans un réseau LoRaWAN, avec 6 motes réparties dans 6 bâtiments du campus Paul Sabatier, à Toulouse.
 - Le titre de la thèse (« dorsales éphémères ») n'est pas une contrainte : le sujet peut être adapté aux résultats.
 
 ## 2. Question de recherche et contribution
@@ -99,16 +99,22 @@ La plus-value principale est l'**expérimentation réelle** : la grande majorit�
 
 | Élément | Configuration |
 |---|---|
-| Motes | 6 × Microchip RN2483 dans 6 bâtiments (bureaux de collègues, pas de sous-sol), chacune pilotée en USB par un **Raspberry Pi** accessible en SSH |
+| Motes | 6 × Microchip RN2483 dans 6 bâtiments (bureaux de collègues, pas de sous-sol), chacune pilotée en USB par un **Raspberry Pi** accessible en SSH. Emplacements et coordonnées : [`emplacements.md`](emplacements.md) (5 sur 6 fixés) |
 | Firmware des motes | **RN2483 1.0.6 RC4** (EU868, LoRaWAN 1.0.2), dernière version publiée par Microchip, sur **toutes** les motes. Source : dépôt [MicrochipTech/RN2xx3_LORAWAN_FIRMWARE](https://github.com/MicrochipTech/RN2xx3_LORAWAN_FIRMWARE), fichier `software/firmware/RN2483EU_1.0.6_RC4/Binary/offset/RN2483_Parser.production.hex`. Attention : `sys get ver` affiche `RN2483 1.0.6 RC3 May 18 2021`, car Microchip n'a pas mis à jour la chaîne de version dans le binaire RC4. Les motes neuves arrivent en 1.0.1 et doivent être flashées avant l'installation |
-| Gateway fixe | Toit de l'IRIT, rattachée au même ChirpStack. **Modèle à identifier.** On suppose le même modèle que la gateway mobile |
-| Gateway mobile | MikroTik wAP LR8 (RouterOS 7.24) à vélo ou à trottinette, reliée en **4G** par carte SIM. Alimentation à trouver |
+| Gateway fixe | MikroTik wAP LR8 (RouterOS 7.24), **en intérieur, dans un bureau de l'IRIT au 4e étage**, près d'une fenêtre orientée **nord-ouest**, reliée par la prise Ethernet murale du campus (voir `gateway.md`). Elle y reste pour toute l'expérience, par simplicité : pas d'installation sur un toit |
+| Gateway mobile | **Deuxième MikroTik wAP LR8, identique** à la gateway fixe (RouterOS 7.24), à vélo ou à trottinette, reliée en **4G** par carte SIM. Alimentation à trouver |
 | GPS | Téléphone avec une appli d'enregistrement GPX, horloges synchronisées (NTP d'un côté, GPS de l'autre) |
 | Serveur | ChirpStack v4, avec le collecteur qui enregistre **une ligne par gateway réceptrice** dans PostgreSQL, puis Grafana |
 | Radio | EU868, BW 125 kHz, CR 4/5, **ADR désactivé**, **puissance d'émission fixe**, **mêmes 8 canaux** sur les deux gateways |
 | Parcours | Boucle d'environ **2 km** passant près des 6 bâtiments : environ 8 min à vélo, soit environ 15 boucles par tournée de 2 h. Ne pas la raccourcir |
 
 **Avantage de deux gateways identiques** : les écarts mesurés viennent de la position et de la mobilité, pas du matériel.
+
+**Gateway fixe en intérieur** : une gateway fixe se trouve normalement en hauteur. Un relecteur peut donc objecter que la référence est volontairement affaiblie. Parade : présenter l'expérience comme l'étude de **motes en bordure de couverture d'une gateway fixe**, car de telles zones existent autour de toute gateway, même sur un toit. Ce qui compte est le bilan de liaison vers la gateway fixe, pas sa position.
+
+- Emplacements visés : SF minimal fiable vers la gateway fixe **entre SF10 et SF12**. Avec SF10 viable, SF12 garde environ 5 dB de marge.
+- **SF12 doit passer** à chaque emplacement, sinon l'expérience ne tient plus.
+- La gateway et son antenne doivent rester **fixes pendant toute l'expérience** : position et orientation notées et photographiées, étiquette « ne pas toucher ».
 
 **Principe clé : la comparaison appariée.** Chaque paquet porte son SF et un numéro de séquence. Comme les deux gateways écoutent en même temps, on sait pour chaque paquet s'il a été reçu par l'IRIT, par la gateway mobile ou par les deux, avec RSSI, SNR et position GPS. C'est le même signal, au même instant, dans les mêmes conditions.
 
@@ -421,12 +427,13 @@ Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 
 | Le downlink arrive trop tard pour RX1 (4G) | Moyenne | Vérifications (0c) | Allonger `rx1_delay` |
 | Biais saisonnier (chute des feuilles) | Faible | — | Comparer les stratégies uniquement au sein de la phase 2 |
 | Passages d'une même tournée corrélés | Faible | — | Statistiques regroupées par tournée |
-| Reconfiguration de la gateway de l'IRIT par un tiers | À évaluer | — | Vérifier son statut et qui l'administre |
+| Gateway fixe déplacée, débranchée ou masquée (bureau partagé) | Moyenne | Statistiques de la gateway dans ChirpStack | Fixer la gateway et l'antenne, photo de référence, étiquette « ne pas toucher » |
+| Objection « gateway fixe en intérieur = référence affaiblie » | Moyenne | Relecture | Cadrage « motes en bordure de couverture », justifié par le bilan de liaison |
 
 ## 13. Points ouverts
 
 - **Conférence visée** pour une soumission en mars 2027.
-- **Gateway de l'IRIT** : modèle, gain et hauteur de l'antenne, longueur du câble, statut (partagée ou non).
+- **Gateway fixe** : 4e étage de l'IRIT, près d'une fenêtre orientée nord-ouest. Restent à noter avant la phase 0a : hauteur et orientation de l'antenne, distance à la fenêtre, photo de référence.
 - **Alimentation** de la MikroTik à vélo.
 - **Accès aux bureaux** des collègues pour le déploiement et la maintenance.
 - **Seuil de distance** définissant « le cœur du passage », à fixer après la tournée pilote.

@@ -5,6 +5,11 @@ the gateway and its uplinks reach ChirpStack and the Grafana dashboard.
 
 - Model: MikroTik wAP LoRa8 (`RBwAPR-2nD`, board `wAP R`), RouterOS 7.24
 - Gateway ID: `323531322A003300`
+- Role: **fixed gateway** of the experiment. It stays indoors, in the IRIT office
+  (4th floor, next to a north-west facing window), for the whole experiment (no rooftop install). Keep its position and antenna
+  orientation unchanged.
+- A second, identical wAP LoRa8 is the **mobile gateway** (bike, 4G). It is not
+  documented here yet.
 
 ## Network topology
 

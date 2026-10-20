@@ -1,0 +1,7 @@
+id,pi,nom,role,latitude,longitude,etage,distance_gateway_m,azimut_deg,cote
+GW,,IRIT (bureau),gateway_fixe,43.561705,1.467795,4,,,
+1,pi-mote-1,Bâtiment ADM,mote,43.563038,1.466038,,205,316,face
+2,pi-mote-2,Forum Louis Lareng,mote,43.561218,1.463896,,319,260,côté
+3,pi-mote-3,Bâtiment U3 Pierre-Paul Riquet,mote,43.562104,1.469976,,181,76,côté
+4,pi-mote-4,Centre de biologie intégrative,mote,43.559245,1.470801,,365,139,derrière
+5,pi-mote-5,Bâtiment 4R1,mote,43.558444,1.469205,,380,163,derrière
