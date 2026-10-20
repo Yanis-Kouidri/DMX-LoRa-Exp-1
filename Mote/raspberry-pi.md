@@ -27,8 +27,8 @@ autorisées sans mot de passe par `/etc/sudoers.d/020_uhubctl` :
 - `sudo reboot`.
 
 Ces commandes ont servi au diagnostic de la mote défectueuse
-`0004A30B0023F575`, remplacée depuis : voir `mote.md`, section « Mote
-défectueuse ».
+`0004A30B0023F575`, remplacée depuis : voir
+[`mote.md`](mote.md#mote-défectueuse-0004a30b0023f575-retirée).
 
 ## Système d'exploitation
 
@@ -66,7 +66,9 @@ préconfigurer :
    l'accès à Internet.
 2. Relier le Pi au PC par un câble Ethernet direct, puis le mettre sous
    tension. Attendre 1 à 2 minutes (le premier démarrage redémarre une fois).
-3. Depuis PowerShell (WSL2 ne voit pas ce réseau) :
+3. Depuis PowerShell : WSL 2 partage bien le réseau de Windows (mode
+   `networkingMode=mirrored` dans `.wslconfig`), mais ne résout pas les noms
+   mDNS en `.local`.
 
    ```bash
    ssh pi@pi-mote-N.local

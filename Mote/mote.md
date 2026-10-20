@@ -1,12 +1,14 @@
 # Motes RN2483
 
 Inventaire des 6 motes Microchip RN2483, chacune branchée en USB
-(`/dev/ttyACM0`) sur un Raspberry Pi (voir `raspberry-pi.md`).
+(`/dev/ttyACM0`) sur un Raspberry Pi (voir [`raspberry-pi.md`](raspberry-pi.md)).
+La mote N est pilotée par `pi-mote-N`. Emplacements :
+[`docs/emplacements.md`](../docs/emplacements.md).
 
 ## Inventaire
 
 État relevé le 16 octobre 2026 avec `sys get ver`, `sys get hweui` et
-`mac get deveui`.
+`mac get deveui`, puis le 19 octobre 2026 pour `pi-mote-4` (mote remplacée).
 
 | Pi          | HWEUI              | Firmware actuel | DevEUI configuré |
 | ----------- | ------------------ | --------------- | ---------------- |
@@ -17,43 +19,17 @@ Inventaire des 6 motes Microchip RN2483, chacune branchée en USB
 | `pi-mote-5` | `0004A30B00240C83` | 1.0.6 RC4       | oui (= HWEUI)    |
 | `pi-mote-6` | `0004A30B00240BA2` | 1.0.6 RC4       | oui (= HWEUI)    |
 
-Toutes les motes sont livrées avec le firmware d'origine 1.0.1.
+Toutes les motes ont été livrées en 1.0.1, puis flashées en 1.0.6 RC4 (voir
+[`README.md`](README.md#firmware)).
 
-Le DevEUI est égal au HWEUI et l'AppEUI vaut `0000000000000000`. Le RN2483
-ne permet pas de relire l'AppKey : elle n'apparaît donc pas dans ce tableau.
+Le DevEUI est égal au HWEUI et l'AppEUI vaut `0000000000000000` (configuration :
+[`config.md`](config.md)). Le RN2483 ne permet pas de relire l'AppKey : elle
+n'apparaît donc pas dans ce tableau.
 
-## Firmware 1.0.6 RC4
+## Mote défectueuse `0004A30B0023F575` (retirée)
 
-- Source : dépôt
-  [MicrochipTech/RN2xx3_LORAWAN_FIRMWARE](https://github.com/MicrochipTech/RN2xx3_LORAWAN_FIRMWARE),
-  fichier `software/firmware/RN2483EU_1.0.6_RC4/Binary/offset/RN2483_Parser.production.hex`,
-  copié dans `firmware/RN2483EU_1.0.6_RC4/` (ignoré par git).
-- `sys get ver` affiche `RN2483 1.0.6 RC3 May 18 2021 18:35:00` : Microchip
-  n'a pas mis à jour la chaîne de version dans le binaire RC4.
-- Flash avec `src/flash_firmware.py`, lancé depuis le Pi :
-
-  ```bash
-  uv run python src/flash_firmware.py firmware/RN2483EU_1.0.6_RC4/RN2483_Parser.production.hex
-  ```
-
-  Le flash ne touche pas à la configuration LoRaWAN sauvegardée (`mac save`) :
-  `pi-mote-2` a gardé son DevEUI.
-
-## Mote défectueuse : `0004A30B0023F575` (retirée)
-
-**Conclusion : défaut matériel de la mote.** Elle a été remplacée sur
-`pi-mote-4` par la mote `0004A30B0023EE8A` le 19 octobre 2026 et ne doit pas
-servir pour la campagne.
-
-### Mote de remplacement `0004A30B0023EE8A`
-
-- Livrée en 1.0.1, avec une configuration d'un ancien usage (DevEUI
-  `DEADDEAD00090007`, AppEUI `DEAD25DEAD25DEAD`), effacée par `mac reset 868`.
-- 3 × 3000 `sys get ver` sur 3000 en 1.0.1, puis 3000 sur 3000 en 1.0.6 RC4.
-- Flash en 1.0.6 RC4 avec `src/flash_firmware.py` du premier coup, contenu
-  relu et vérifié.
-- DevEUI = HWEUI, AppEUI `0000000000000000`, `mac save`, conservés après
-  `sys reset`.
+Défaut matériel : la mote a été remplacée sur `pi-mote-4` par
+`0004A30B0023EE8A` le 19 octobre 2026 et ne doit pas servir pour la campagne.
 
 ### Symptômes
 
@@ -61,8 +37,8 @@ servir pour la campagne.
   `RN2483 1.0.6 RC3 May 18 202`, coupée au 27e caractère), puis plus rien ne
   sort : ni retour à la ligne seul, ni break suivi de `0x55`, ni port rouvert.
 - La mote reste visible en USB et le noyau ne signale aucune erreur.
-- Seule une coupure de l'alimentation USB la relance (voir `raspberry-pi.md`,
-  section « Coupure USB à distance sur `pi-mote-4` »).
+- Seule une coupure de l'alimentation USB la relance (voir
+  [`raspberry-pi.md`](raspberry-pi.md#coupure-usb-à-distance-sur-pi-mote-4)).
 - Le blocage survient au bout de quelques dizaines à quelques centaines de
   commandes. Les commandes `mac tx` passent par la même liaison : la campagne
   y serait exposée.
@@ -98,7 +74,17 @@ Les motes ont ensuite été remises à leur place.
 - **Reste le matériel** : alimentation du module, horloge, soudure, ou le PIC
   qui fait le pont entre l'USB et le RN2483.
 
-Seule piste logicielle restante, peu probable : reflasher le firmware du PIC
-(programmateur PICkit sur le connecteur ICSP de la carte). Avant de remplacer
-la mote, vérifier qu'elle n'est pas alimentée par des piles AAA faibles
-(sélecteur d'alimentation, piles restées dans le boîtier).
+Pistes non explorées, si la mote devait resservir : vérifier qu'elle n'est pas
+alimentée par des piles AAA faibles (sélecteur d'alimentation, piles restées
+dans le boîtier), puis reflasher le firmware du PIC (programmateur PICkit sur
+le connecteur ICSP de la carte).
+
+### Mote de remplacement `0004A30B0023EE8A`
+
+- Livrée en 1.0.1, avec la configuration d'un ancien usage (DevEUI
+  `DEADDEAD00090007`, AppEUI `DEAD25DEAD25DEAD`), effacée par `mac reset 868`.
+- 3 × 3000 `sys get ver` sur 3000 en 1.0.1, puis 3000 sur 3000 en 1.0.6 RC4.
+- Flashée en 1.0.6 RC4 avec `src/flash_firmware.py` du premier coup, contenu
+  relu et vérifié.
+- DevEUI = HWEUI, AppEUI `0000000000000000`, `mac save`, conservés après
+  `sys reset`.
