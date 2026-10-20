@@ -24,15 +24,20 @@ position par rapport à la fenêtre de la gateway :
 - **côté** : entre 45° et 135° ;
 - **derrière** : à plus de 135°, le signal traverse le bâtiment de l'IRIT.
 
-| # | Pi | Nom | Latitude | Longitude | Étage | Distance | Azimut | Côté |
-|---|---|---|---|---|---|---|---|---|
-| 1 | `pi-mote-1` | Bâtiment ADM | 43.563038 | 1.466038 | à définir | 205 m | 316° (NO) | face |
-| 2 | `pi-mote-2` | Forum Louis Lareng | 43.561218 | 1.463896 | à définir | 319 m | 260° (O) | côté |
-| 3 | `pi-mote-3` | Bâtiment U3 Pierre-Paul Riquet | 43.562104 | 1.469976 | à définir | 181 m | 76° (E) | côté |
-| 4 | `pi-mote-4` | Centre de biologie intégrative | 43.559245 | 1.470801 | à définir | 365 m | 139° (SE) | derrière |
-| 5 | `pi-mote-5` | Bâtiment 4R1 | 43.558444 | 1.469205 | à définir | 380 m | 163° (S) | derrière |
+| # | Pi | Nom | Latitude | Longitude | Étage | Distance | Azimut | Côté | Join SF12 vers la gateway fixe |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | `pi-mote-1` | Bâtiment ADM | 43.563038 | 1.466038 | à définir | 205 m | 316° (NO) | face | à vérifier |
+| 2 | `pi-mote-2` | Forum Louis Lareng | 43.561218 | 1.463896 | à définir | 319 m | 260° (O) | côté | à vérifier |
+| 3 | `pi-mote-3` | Bâtiment U3 Pierre-Paul Riquet | 43.562104 | 1.469976 | à définir | 181 m | 76° (E) | côté | à vérifier |
+| 4 | `pi-mote-4` | Centre de biologie intégrative | 43.559245 | 1.470801 | à définir | 365 m | 139° (SE) | derrière | à vérifier |
+| 5 | `pi-mote-5` | Bâtiment 4R1 | 43.558444 | 1.469205 | à définir | 380 m | 163° (S) | derrière | à vérifier |
 
 La mote N est pilotée par le Raspberry Pi `pi-mote-N`.
+
+Dernière colonne : un join OTAA en SF12 (`mac set dr 0` puis `mac join otaa`)
+depuis l'emplacement réel est-il accepté via la gateway fixe ? Valeurs : « à
+vérifier », « oui (date) » ou « non (date) ». SF12 est obligatoire : un « non »
+exclut l'emplacement.
 
 ## Lecture attendue (hypothèse, à vérifier par la balade 0a)
 
