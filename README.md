@@ -34,7 +34,7 @@ cd Mote && uv run python src/flash_firmware.py firmware/RN2483EU_1.0.6_RC4/RN248
 - Model: MikroTik wAP LoRa8
 - Version: MikroTik RouterOS 7.24
 
-Network setup, administration access and known issues: see [gateway.md](gateway.md).
+Network setup, administration access and known issues: see [docs/gateway.md](docs/gateway.md).
 
 ## WSL 2 Mote connection
 
