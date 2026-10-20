@@ -21,3 +21,9 @@ This directory contains a Docker Compose stack for LoRaWAN experiments:
 - **Uplink Collector**: MQTT-to-PostgreSQL collector for uplinks, all device events and gateway traffic.
 - **Grafana**: metrics and dashboard visualization.
 - **Caddy**: HTTP/HTTPS reverse proxy.
+
+## Deployment server access
+
+- The deployment runs on an AWS EC2 instance, reachable with `ssh chirpstack-aws`
+- The repository is cloned in `~/DMX-LoRa-Exp-1`; run Compose commands from `~/DMX-LoRa-Exp-1/LoRaWAN-Infra`.
+- Query the experiment database read-only with the `grafana_reader` role
