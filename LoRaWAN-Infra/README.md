@@ -1,149 +1,227 @@
-# ChirpStack Docker example
+# LoRaWAN-Infra
 
-This repository contains a skeleton to setup the [ChirpStack](https://www.chirpstack.io)
-open-source LoRaWAN Network Server (v4) using [Docker Compose](https://docs.docker.com/compose/).
+Stack Docker Compose du réseau LoRaWAN de l'expérience : serveur réseau
+[ChirpStack](https://www.chirpstack.io) v4, collecte des trames dans
+PostgreSQL et tableaux de bord Grafana. Elle tourne sur une instance AWS EC2
+(région eu-west-1) et sert la région **EU868**.
 
-**Note:** Please use this `docker-compose.yml` file as a starting point for testing
-but keep in mind that for production usage it might need modifications. 
+## Services
 
-## Directory layout
+| Service | Rôle | Port exposé |
+|---|---|---|
+| `chirpstack` | Serveur réseau LoRaWAN et interface web | `127.0.0.1:8080` (public via Caddy) |
+| `chirpstack-gateway-bridge-basicstation` | Pont LoRa Basics Station (LNS), gateways authentifiées par certificat client | `3001` (public) |
+| `chirpstack-rest-api` | API REST de ChirpStack | `127.0.0.1:8090` |
+| `postgres` | Bases `chirpstack` (ChirpStack) et `lorawan_experiments` (expériences) | aucun |
+| `redis` | Cache et sessions de ChirpStack | aucun |
+| `mosquitto` | Broker MQTT entre le pont, ChirpStack et le collecteur | `127.0.0.1:1883` |
+| `uplink-collector` | Enregistre dans `lorawan_experiments` les uplinks, les événements des devices et tout le trafic des gateways | aucun |
+| `grafana` | Tableaux de bord | aucun (public via Caddy) |
+| `caddy` | Reverse proxy HTTPS, certificats Let's Encrypt automatiques | `80`, `443` (public) |
 
-* `docker-compose.yml`: the docker-compose file containing the services
-* `configuration/chirpstack`: directory containing the ChirpStack configuration files
-* `configuration/chirpstack-gateway-bridge`: directory containing the ChirpStack Gateway Bridge configuration
-* `configuration/mosquitto`: directory containing the Mosquitto (MQTT broker) configuration
-* `configuration/postgresql/initdb/`: directory containing PostgreSQL initialization scripts
-* `configuration/grafana/`: Grafana datasource and dashboard provisioning
+Les versions des images sont fixées dans `docker-compose.yml`. Les services
+non publics ne sont joignables que depuis l'instance (tunnel SSH si besoin).
 
-## Gateway connection (this deployment)
+Le pont Semtech UDP Packet Forwarder (port 1700) n'est pas déployé : ce
+protocole ne permet pas d'authentifier les gateways.
 
-Gateways connect with the LoRa Basics Station (LNS) protocol on
-`wss://chirpstack.kouidri.fr:3001`, using mutual TLS:
+## Accès
 
-* `make gateway-certs` creates the private CA and the server certificate in
-  `configuration/certs/` (not committed; never regenerate it once gateways are
-  provisioned).
-* Each gateway gets a client certificate from the ChirpStack UI
-  (Gateway → TLS certificate → Generate certificate). The Gateway Bridge
-  rejects any connection without a certificate signed by this CA.
-* The Semtech UDP Packet Forwarder bridge (port 1700) is not deployed, as that
-  protocol cannot authenticate gateways.
+| Interface | Adresse |
+|---|---|
+| ChirpStack | https://chirpstack.kouidri.fr |
+| Grafana | https://grafana.chirpstack.kouidri.fr |
+| Gateways (Basics Station) | `wss://chirpstack.kouidri.fr:3001` |
+| API REST | http://localhost:8090, depuis l'instance |
 
-## Configuration
+L'API gRPC de ChirpStack est à préférer à l'API REST.
 
-This setup is pre-configured for all regions. You can either connect a ChirpStack Gateway Bridge
-instance (v3.14.0+) to the MQTT broker (port 1883) or connect a Semtech UDP Packet Forwarder.
-Please note that:
+## Arborescence
 
-* You must prefix the MQTT topic with the region.
-  Please see the region configuration files in the `configuration/chirpstack` for a list
-  of topic prefixes (e.g. eu868, us915_0, au915_0, as923_2, ...).
-* The protobuf marshaler is configured.
+- `docker-compose.yml` : définition des services et des volumes.
+- `Makefile` : commandes `make gateway-certs` et `make import-device-profiles`.
+- `Caddyfile` : noms de domaine du reverse proxy.
+- `.env.example` : variables d'environnement à renseigner dans `.env`.
+- `scripts/gateway-certs.sh` : génération de la CA privée et du certificat
+  serveur du pont Basics Station.
+- `configuration/chirpstack/` : configuration de ChirpStack et des régions.
+- `configuration/chirpstack-gateway-bridge/` : configuration du pont, une par
+  région (seule `chirpstack-gateway-bridge-basicstation-eu868.toml` est
+  utilisée).
+- `configuration/mosquitto/` : configuration du broker MQTT.
+- `configuration/postgresql/initdb/` : schéma complet, appliqué à la création
+  du volume PostgreSQL.
+- `configuration/postgresql/migrations/` : migrations à appliquer à la main sur
+  une base existante.
+- `configuration/grafana/` : source de données et tableaux de bord provisionnés.
+- `configuration/certs/` : CA et certificats TLS (générés, non versionnés).
+- `uplink-collector/` : collecteur MQTT vers PostgreSQL (Python).
 
-This setup also comes with two instances of the ChirpStack Gateway Bridge. One
-is configured to handle the Semtech UDP Packet Forwarder data (port 1700), the
-other is configured to handle the Basics Station protocol (port 3001). Both
-instances are by default configured for EU868 (using the `eu868` MQTT topic
-prefix).
+## Installation
 
-### Reconfigure regions
+Prérequis : Docker avec le plugin Compose, `make`, les enregistrements DNS
+`chirpstack.kouidri.fr` et `grafana.chirpstack.kouidri.fr` pointant vers
+l'instance, et un groupe de sécurité ouvrant les ports TCP 80, 443 et 3001.
 
-ChirpStack has at least one configuration of each region enabled. You will find
-the list of `enabled_regions` in `configuration/chirpstack/chirpstack.toml`.
-Each entry in `enabled_regions` refers to the `id` that can be found in the
-`region_XXX.toml` file. This `region_XXX.toml` also contains a `topic_prefix`
-configuration which you need to configure the ChirpStack Gateway Bridge
-UDP instance (see below).
+1. Créer le fichier `.env` à partir de `.env.example` et renseigner les mots
+   de passe et le secret (commandes de génération indiquées dans le fichier) :
 
-#### ChirpStack Gateway Bridge (UDP)
+   ```bash
+   cp .env.example .env
+   ```
 
-Within the `docker-compose.yml` file, you must replace the `eu868` prefix in the
-`INTEGRATION__..._TOPIC_TEMPLATE` configuration with the MQTT `topic_prefix` of
-the region you would like to use (e.g. `us915_0`, `au915_0`, `in865`, ...).
+2. Générer la CA privée et le certificat serveur du pont Basics Station
+   (voir [Connexion des gateways](#connexion-des-gateways)) :
 
-#### ChirpStack Gateway Bridge (Basics Station)
+   ```bash
+   make gateway-certs
+   ```
 
-Within the `docker-compose.yml` file, you must update the configuration file
-that the ChirpStack Gateway Bridge instance must used. The default is
-`chirpstack-gateway-bridge-basicstation-eu868.toml`. For available
-configuration files, please see the `configuration/chirpstack-gateway-bridge`
-directory.
+3. Démarrer la stack :
 
-### Grafana dashboards
+   ```bash
+   docker compose up -d
+   ```
 
-The PostgreSQL datasource (read-only `grafana_reader` role, password from
-`GRAFANA_DB_PASSWORD`) and the dashboards are provisioned at startup from
-`configuration/grafana/`. Dashboards can be edited in the UI, but the JSON files in
-`configuration/grafana/dashboards/` are the source of truth: export a modified
-dashboard (Share > Export > Save to file, without "Export for sharing externally")
-into that directory and commit it, otherwise the change is lost when the file is
-updated or Grafana is reinstalled.
+4. Donner au rôle PostgreSQL `grafana_reader` le mot de passe
+   `GRAFANA_DB_PASSWORD` du fichier `.env`. Le script d'initialisation crée ce
+   rôle sans mot de passe : sans cette étape, Grafana ne peut pas lire la base.
 
-# Data persistence
+   ```bash
+   docker compose exec postgres psql -U chirpstack -c "ALTER ROLE grafana_reader WITH PASSWORD '<GRAFANA_DB_PASSWORD>';"
+   ```
 
-PostgreSQL and Redis data is persisted in Docker volumes, see the `docker-compose.yml`
-`volumes` definition.
+5. Vérifier l'état des services :
 
-## Backups and restore (this deployment)
+   ```bash
+   docker compose ps
+   ```
 
-The whole EC2 instance (eu-west-1) is backed up by an Amazon Data Lifecycle
-Manager policy, configured in the AWS console (not in this repository):
+Les services redémarrent automatiquement avec l'instance
+(`restart: unless-stopped`).
 
-* **Policy:** custom, EBS-backed AMI policy targeting instances tagged
-  `Backup` = `daily`.
-* **Schedule:** one AMI every 24 hours starting at 03:00 UTC, 14 most recent
-  AMIs kept (older AMIs and their snapshots are deleted automatically).
-* **No reboot:** AMIs are taken while the stack runs (crash-consistent);
-  PostgreSQL recovers from them like after a power loss.
-* **Scope:** the single EBS volume holds everything: OS, Docker volumes
-  (PostgreSQL, Grafana, Mosquitto...), `.env` secrets and the gateway CA in
-  `configuration/certs/`.
+### Import des profils d'appareils (facultatif)
 
-To restore:
-
-1. EC2 → Images → AMIs → select the AMI → **Launch instance from AMI**, with
-   the same instance type and security group (TCP 80, 443 and 3001).
-2. Point `chirpstack.kouidri.fr` and `grafana.chirpstack.kouidri.fr` to the new
-   instance (or reassociate the Elastic IP). The gateway reconnects on its own
-   once the name resolves to the new instance.
-3. The stack starts automatically (`restart: unless-stopped`); check it with
-   `docker compose ps`.
-
-These AMIs live in the same AWS account and region; they do not protect
-against the loss of the account.
-
-## Requirements
-
-Before using this `docker-compose.yml` file, make sure you have [Docker](https://www.docker.com/community-edition)
-installed.
-
-## Importing device repository
-
-To import the [chirpstack-device-profiles](https://github.com/chirpstack/chirpstack-device-profiles)
-repository (optional step), run the following command:
+Importe le dépôt
+[chirpstack-device-profiles](https://github.com/chirpstack/chirpstack-device-profiles)
+dans ChirpStack :
 
 ```bash
 make import-device-profiles
 ```
 
-This will clone the `chirpstack-device-profiles` repository and execute the import command of ChirpStack.
-Please note that for this step you need to have the `make` command installed.
+## Connexion des gateways
 
-## Usage
+Les gateways se connectent en LoRa Basics Station (LNS) sur
+`wss://chirpstack.kouidri.fr:3001`, avec une authentification TLS mutuelle.
 
-To start the ChirpStack simply run:
+- `make gateway-certs` crée dans `configuration/certs/` une CA privée (valable
+  10 ans) et le certificat serveur du pont (valable 825 jours). ChirpStack
+  signe les certificats clients des gateways avec cette même CA.
+- **Ne jamais régénérer la CA** une fois des gateways provisionnées : leurs
+  certificats deviendraient invalides. Le script refuse d'écraser une CA
+  existante.
+- Chaque gateway reçoit un certificat client depuis l'interface ChirpStack
+  (Gateway → TLS certificate → Generate certificate), valable 12 mois
+  (`client_cert_lifetime` dans `chirpstack.toml`). Le pont refuse toute
+  connexion sans certificat signé par la CA.
+
+⚠️ Deux échéances à surveiller :
+
+- le certificat client de chaque gateway, à renouveler dans ChirpStack avant
+  12 mois (date d'expiration de la gateway fixe :
+  [`docs/gateway.md`](../docs/gateway.md)) ;
+- le certificat serveur, à renouveler avant 825 jours. `make gateway-certs` ne
+  le fait pas (il s'arrête dès que la CA existe) : il faut le signer à la main
+  avec la CA existante.
+
+Le pont est configuré pour EU868 : il publie sur les topics MQTT préfixés par
+`eu868`. Les autres régions activées dans `chirpstack.toml` (configuration par
+défaut de ChirpStack) ne sont pas utilisées.
+
+Configuration côté gateway : voir [`docs/gateway.md`](../docs/gateway.md).
+
+## Base de données des expériences
+
+Le collecteur `uplink-collector` s'abonne aux topics MQTT des devices
+(`application/+/device/+/event/+`) et des gateways (`+/gateway/+/+/+`), et
+écrit dans la base `lorawan_experiments` :
+
+| Table | Contenu |
+|---|---|
+| `uplinks` | Une ligne par uplink **et par gateway réceptrice** (RSSI, SNR, SF, fréquence, charge utile), unique sur `(deduplication_id, gateway_id)` |
+| `device_events` | Tous les événements d'intégration ChirpStack : `up`, `join`, `ack`, `txack`, `status`, `log`… |
+| `gateway_events` | Tous les messages MQTT entre les gateways et ChirpStack : uplinks bruts, downlinks, acks, statistiques, état de connexion |
+
+L'événement brut est conservé dans la colonne `raw_event` (JSONB) de chaque
+table.
+
+### Migrations
+
+`configuration/postgresql/initdb/` ne s'exécute qu'à la création du volume
+PostgreSQL. Sur une base existante, appliquer les migrations de
+`configuration/postgresql/migrations/` dans l'ordre, une seule fois chacune :
 
 ```bash
-$ docker compose up
+docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U chirpstack -d lorawan_experiments < configuration/postgresql/migrations/<fichier>.sql
 ```
 
-After all the components have been initialized and started, you should be able
-to open http://localhost:8080/ in your browser.
+Toute modification du schéma se fait aux deux endroits : nouvelle migration et
+mise à jour de `initdb/`.
 
-##
+## Tableaux de bord Grafana
 
-The example includes the [ChirpStack REST API](https://github.com/chirpstack/chirpstack-rest-api).
-You should be able to access the UI by opening http://localhost:8090 in your browser.
+La source de données PostgreSQL (rôle en lecture seule `grafana_reader`, base
+`lorawan_experiments`) et les tableaux de bord sont provisionnés au démarrage
+depuis `configuration/grafana/` :
 
-**Note:** It is recommended to use the [gRPC](https://www.chirpstack.io/docs/chirpstack/api/grpc.html)
-interface over the [REST](https://www.chirpstack.io/docs/chirpstack/api/rest.html) interface.
+- **LoRaWAN — Uplinks** : répartition des SF, SNR et RSSI par device, uplinks
+  reçus ;
+- **LoRaWAN — Debug** : derniers uplinks, requêtes de join OTAA et downlinks
+  (avec le statut d'acquittement de la gateway).
+
+Les tableaux de bord sont modifiables dans l'interface, mais les fichiers JSON
+de `configuration/grafana/dashboards/` font foi. Pour garder une modification,
+exporter le tableau de bord (Share → Export → Save to file, sans cocher
+« Export for sharing externally ») dans ce dossier et le commiter. Sinon, la
+modification est perdue à la prochaine mise à jour du fichier ou réinstallation
+de Grafana.
+
+L'identifiant (`uid`) de la source de données est référencé par tous les
+tableaux de bord : ne pas le modifier.
+
+## Données persistantes
+
+Les données de PostgreSQL, Redis, Mosquitto, Grafana et Caddy sont dans des
+volumes Docker (section `volumes` de `docker-compose.yml`). Le volume
+`postgresqldata17` contient les données migrées de PostgreSQL 14 vers 17
+(`pg_dumpall`, le 7 octobre 2026).
+
+## Sauvegarde et restauration
+
+L'instance EC2 entière est sauvegardée par une politique Amazon Data Lifecycle
+Manager, configurée dans la console AWS (pas dans ce dépôt) :
+
+- **Politique** : politique personnalisée d'AMI adossée à EBS, qui cible les
+  instances portant le tag `Backup` = `daily`.
+- **Planification** : une AMI toutes les 24 heures à partir de 03:00 UTC ; les
+  14 plus récentes sont conservées, les plus anciennes et leurs snapshots sont
+  supprimés automatiquement.
+- **Sans redémarrage** : les AMI sont prises pendant que la stack tourne
+  (cohérence de type coupure de courant) ; PostgreSQL s'en remet comme après
+  une panne d'alimentation.
+- **Périmètre** : l'unique volume EBS contient tout : système, volumes Docker,
+  secrets du fichier `.env` et CA des gateways dans `configuration/certs/`.
+
+Pour restaurer :
+
+1. EC2 → Images → AMIs → sélectionner l'AMI → **Launch instance from AMI**,
+   avec le même type d'instance et le même groupe de sécurité (TCP 80, 443 et
+   3001).
+2. Faire pointer `chirpstack.kouidri.fr` et `grafana.chirpstack.kouidri.fr`
+   vers la nouvelle instance (ou réassocier l'Elastic IP). La gateway se
+   reconnecte d'elle-même dès que le nom résout vers la nouvelle instance.
+3. La stack démarre automatiquement ; vérifier avec `docker compose ps`.
+
+Ces AMI sont dans le même compte et la même région AWS : elles ne protègent pas
+contre la perte du compte.

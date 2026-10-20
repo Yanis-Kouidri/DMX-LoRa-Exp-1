@@ -3,6 +3,7 @@
 ## Structure
 
 The root files define and document the deployment: `docker-compose.yml` orchestrates the services, `Makefile` provides helper commands, `Caddyfile` configures the reverse proxy, and `.env.example` documents the required environment variables.
+The `scripts/` directory contains `gateway-certs.sh`, which generates the private gateway CA and the Basic Station server certificate (run through `make gateway-certs`).
 The `configuration/` directory contains ChirpStack, Gateway Bridge, Mosquitto, and PostgreSQL configuration files for the supported regions and integrations.
 The `uplink-collector/` directory contains the MQTT-to-PostgreSQL collector application (uplinks, device events and gateway traffic), its Dockerfile, and Python dependencies.
 The `configuration/postgresql/migrations/` directory contains SQL migrations to apply manually to existing databases; `initdb/` holds the full schema for fresh installs.
