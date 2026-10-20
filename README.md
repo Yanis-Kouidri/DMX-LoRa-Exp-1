@@ -1,57 +1,69 @@
 # DMX-LoRa-Exp-1
 
-## Experimental Setup & Objectives
+Expérience LoRaWAN en conditions réelles sur le campus Paul Sabatier
+(Toulouse) : comparaison d'une **gateway fixe** et d'une **gateway mobile**
+(à vélo, reliée en 4G) qui collectent les données de 6 motes installées en
+intérieur.
 
-This repository presents a comparative performance analysis of wireless sensor data harvesting in a LoRaWAN architecture, evaluating the performance of a mobile gateway versus a fixed (static) gateway. The primary objective of this experiment is to measure and compare key network performance metrics and RF signal characteristics across both deployment scenarios, including:
+## Objectif
 
-- Packet Delivery Ratio (PDR)
-- Received Signal Strength Indicator (RSSI)
-- Signal-to-Noise Ratio (SNR)
-- Dynamic Adaptation of Spreading Factor (SF) and Coding Rate (CR)
+Au-delà de la comparaison fixe/mobile (PDR, RSSI, SNR), l'expérience cherche
+à savoir si une gateway mobile de passage permet de **réduire le coût radio
+des motes** : émettre avec un SF plus bas, donc moins longtemps, sans perdre
+de données et avec une latence bornée. Le mécanisme étudié reste compatible
+avec LoRaWAN Class A.
 
-## Hardware
+- **Phase 1, caractérisation** : SF minimal fiable vers chaque gateway,
+  comparaison appariée des mêmes paquets reçus par les deux gateways, durée
+  des fenêtres de contact. ADR désactivé, puissance d'émission fixe.
+- **Phase 2, mécanisme de sonde** : la mote envoie ses données en SF7
+  confirmé et se replie vers la gateway fixe si aucun accusé n'arrive dans le
+  délai D. Indicateur principal : énergie radio par donnée livrée, mesurée sur
+  banc (PPK2).
 
-### Mote (sensor)
+Hypothèses, calendrier, protocole et risques :
+[`docs/plan-experimental.md`](docs/plan-experimental.md).
 
-This project targets the **Microchip RN2483 LoRa Technology Mote**, an evaluation board for experimenting with **LoRa** and **LoRaWAN** networks.
+## Dispositif
 
-**LoRa modem:** Microchip RN2483A (868 MHz, EU868)
-
-**Firmware:** RN2483 **1.0.6 RC4** (EU868, LoRaWAN 1.0.2), the latest firmware Microchip publishes for the RN2483.
-
-- Source: [MicrochipTech/RN2xx3_LORAWAN_FIRMWARE](https://github.com/MicrochipTech/RN2xx3_LORAWAN_FIRMWARE), file `software/firmware/RN2483EU_1.0.6_RC4/Binary/offset/RN2483_Parser.production.hex` (git blob `46f6913c06273d5d8a7fcdd86519c1cc72402def`). A local copy is kept in `Mote/firmware/` (git-ignored).
-- `sys get ver` reports `RN2483 1.0.6 RC3 May 18 2021 18:35:00`. This is expected: Microchip did not update the version string in the RC4 build, so the official RC4 binary still contains "1.0.6 RC3".
-- LoRaWAN version: **1.0.2**. This is the most recent LoRaWAN version officially supported by Microchip for this mote: no official RN2483 firmware implements LoRaWAN 1.0.4 or 1.1.
-- LoRaWAN 1.1 is not achievable on this hardware in practice. The RN2483 runs on a PIC18LF46K22 (64 KB flash, ~3.9 KB RAM), and the 1.0.6 RC4 image already fills 904 of the 1012 flash rows (~7 KB left). LoRaWAN 1.1 reworks the security layer (NwkKey + AppKey, three network session keys, new MIC computation, FOpts encryption, rekey and rejoin procedures), which would not fit in the remaining memory.
-- New motes ship with an older firmware (1.0.1 seen out of the box) and must be flashed before use:
-
-```bash
-cd Mote && uv run python src/flash_firmware.py firmware/RN2483EU_1.0.6_RC4/RN2483_Parser.production.hex
+```
+Mote RN2483 ──USB── Raspberry Pi            (× 6, un par bâtiment)
+     │ LoRa EU868
+     ├──► Gateway fixe  (wAP LR8, IRIT, prise murale) ──┐
+     └──► Gateway mobile (wAP LR8, vélo, 4G) ───────────┤ Basics Station (TLS)
+                                                        ▼
+               ChirpStack ─► collecteur ─► PostgreSQL ─► Grafana   (AWS EC2)
 ```
 
-### Gateway
+| Élément | Matériel | Documentation |
+|---|---|---|
+| Motes | 6 × Microchip RN2483 Mote, firmware 1.0.6 RC4 (LoRaWAN 1.0.2) | [`Mote/README.md`](Mote/README.md), [`Mote/mote.md`](Mote/mote.md) |
+| Pilotage des motes | 6 × Raspberry Pi 4, sur eduroam et Tailscale | [`Mote/raspberry-pi.md`](Mote/raspberry-pi.md) |
+| Gateway fixe | MikroTik wAP LR8, RouterOS 7.24 | [`docs/gateway.md`](docs/gateway.md) |
+| Gateway mobile | MikroTik wAP LR8 identique, en 4G | à documenter |
+| Serveur | ChirpStack v4, PostgreSQL, Grafana (Docker Compose) | [`LoRaWAN-Infra/README.md`](LoRaWAN-Infra/README.md) |
 
-- Model: MikroTik wAP LoRa8
-- Version: MikroTik RouterOS 7.24
+## Documentation
 
-Network setup, administration access and known issues: see [docs/gateway.md](docs/gateway.md).
+| Document | Contenu |
+|---|---|
+| [`docs/plan-experimental.md`](docs/plan-experimental.md) | Plan d'expérience : question de recherche, état de l'art, hypothèses, phases, statistiques |
+| [`docs/emplacements.md`](docs/emplacements.md) | Emplacements de la gateway fixe et des motes (données dans [`emplacements.csv`](docs/emplacements.csv)) |
+| [`docs/gateway.md`](docs/gateway.md) | Gateway fixe : réseau, configuration LoRa, accès d'administration, pièges |
+| [`Mote/README.md`](Mote/README.md) | Firmware des motes, installation, connexion sous WSL, scripts |
+| [`Mote/config.md`](Mote/config.md) | Commandes RN2483 : configuration ChirpStack, join, duty cycle |
+| [`Mote/mote.md`](Mote/mote.md) | Inventaire des motes, mote défectueuse retirée |
+| [`Mote/raspberry-pi.md`](Mote/raspberry-pi.md) | Installation des Raspberry Pi |
+| [`LoRaWAN-Infra/README.md`](LoRaWAN-Infra/README.md) | Stack serveur : services, installation, certificats, base de données, sauvegardes |
 
-## WSL 2 Mote connection
+## Structure du dépôt
 
-To work on WSL and connect to the mote you need to run on Windows PowerShell:
+- `docs/` : documentation de l'expérience.
+- `Mote/` : projet Python (uv, Python 3.14) de pilotage des motes par liaison
+  série, et script d'installation des Raspberry Pi.
+- `LoRaWAN-Infra/` : stack Docker Compose du serveur LoRaWAN.
+- `secrets-example.md` : modèle du fichier `secrets.md`, qui contient les
+  secrets et n'est pas versionné.
+- `AGENTS.md` : consignes pour les agents de code (en anglais).
 
-```bash
-usbipd list
-```
-
-and, with the correct busid
-
-```bash
-usbipd attach --wsl --busid 6-2
-```
-
-Or better
-
-```bash
-usbipd attach --hardware-id 04d8:000a --wsl
-```
+Le dépôt est public : ni secret ni nom de collègue dans les fichiers versionnés.

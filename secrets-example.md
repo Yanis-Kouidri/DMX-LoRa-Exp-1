@@ -1,12 +1,15 @@
 # Secrets
 
+Modèle de `secrets.md` (non versionné). Les secrets du serveur sont dans
+`LoRaWAN-Infra/.env` (modèle : `LoRaWAN-Infra/.env.example`).
+
 ## Mote
 
-- AppKey:
-- Device EUI:
-- Join EUI:
+- AppKey :
+- DevEUI (= HWEUI) :
+- AppEUI :
 
 ## MikroTik
 
-- Gateway-ID:
-- Admin Wi-Fi (wAP-LoRa-admin) password:
+- Gateway ID :
+- Mot de passe du Wi-Fi d'administration (wAP-LoRa-admin) :
