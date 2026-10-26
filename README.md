@@ -5,6 +5,12 @@ Expérience LoRaWAN en conditions réelles sur le campus Paul Sabatier
 (à vélo, reliée en 4G) qui collectent les données de 6 motes installées en
 intérieur.
 
+## Cadre
+
+Expérience menée dans le cadre d'une thèse de doctorat (CIFRE) avec l'IRIT,
+sur la collecte de données dans les réseaux de capteurs. Les résultats visent
+une publication en conférence principale (échéance réaliste : mars 2027).
+
 ## Objectif
 
 Au-delà de la comparaison fixe/mobile (PDR, RSSI, SNR), l'expérience cherche

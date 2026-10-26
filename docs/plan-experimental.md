@@ -24,7 +24,7 @@
 
 ## 1. Contexte et objectif
 
-- **Cadre** : thèse CIFRE, première année. L'objectif est de produire des résultats expérimentaux pour un papier de **conférence principale** (pas un workshop). Les échéances visées sont janvier ou mars 2027. Mars 2027 est l'objectif réaliste pour la version complète.
+- **Cadre** : thèse CIFRE avec l'IRIT, première année, sur la collecte de données dans les réseaux de capteurs. L'objectif est de produire des résultats expérimentaux pour un papier de **conférence principale** (pas un workshop). Les échéances visées sont janvier ou mars 2027. Mars 2027 est l'objectif réaliste pour la version complète.
 - **Principe** : on ne précipite pas l'expérience. Si elle le justifie, la publication peut être retardée.
 - **Expérience** : comparer une **gateway fixe** (MikroTik wAP LR8 en intérieur, dans un bureau de l'IRIT) et une **gateway mobile** (à vélo ou à trottinette) dans un réseau LoRaWAN, avec 6 motes réparties dans 6 bâtiments du campus Paul Sabatier, à Toulouse.
 - Le titre de la thèse (« dorsales éphémères ») n'est pas une contrainte : le sujet peut être adapté aux résultats.
