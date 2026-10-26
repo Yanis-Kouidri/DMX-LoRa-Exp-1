@@ -108,6 +108,22 @@ else
     fi
 fi
 
+step "Mise à l'heure (NTP via wlan0)"
+# La Pi n'a pas d'horloge RTC. Tant que le câble est branché, la route par
+# défaut passe par eth0, où le NTP peut être filtré : systemd-timesyncd ne se
+# synchronise alors pas. On interroge donc le NTP en forçant wlan0, avant apt
+# (qui refuse les dépôts si l'horloge retarde) et Tailscale.
+python3 - <<'EOF' || die "mise à l'heure impossible via wlan0"
+import socket, struct, time
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, b"wlan0")
+s.settimeout(5)
+s.sendto(b"\x1b" + 47 * b"\0", ("pool.ntp.org", 123))
+seconds, fraction = struct.unpack("!II", s.recv(48)[40:48])
+time.clock_settime(time.CLOCK_REALTIME, seconds - 2208988800 + fraction / 2**32)
+print(time.strftime("Heure réglée : %F %T %Z"))
+EOF
+
 step "Passage des dépôts APT en HTTPS"
 # Le HTTP est bloqué sur eduroam.
 shopt -s nullglob
