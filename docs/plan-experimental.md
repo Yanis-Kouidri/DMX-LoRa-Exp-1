@@ -101,7 +101,7 @@ La plus-value principale est l'**expérimentation réelle** : la grande majorit�
 |---|---|
 | Motes | 6 × Microchip RN2483 dans 6 bâtiments (bureaux de collègues, pas de sous-sol), chacune pilotée en USB par un **Raspberry Pi** accessible en SSH. Emplacements et coordonnées : [`emplacements.md`](emplacements.md) (5 sur 6 fixés) |
 | Firmware des motes | **RN2483 1.0.6 RC4** (EU868, LoRaWAN 1.0.2), dernière version publiée par Microchip, sur **toutes** les motes. Source, procédure de flash et pièges : [`Mote/README.md`](../Mote/README.md#firmware) |
-| Gateway fixe | MikroTik wAP LR8 (RouterOS 7.24), **en intérieur, dans un bureau de l'IRIT au 4e étage**, près d'une fenêtre orientée **nord-ouest**, reliée par la prise Ethernet murale du campus (voir [`gateway.md`](gateway.md)). Elle y reste pour toute l'expérience, par simplicité : pas d'installation sur un toit |
+| Gateway fixe | MikroTik wAP LR8 (RouterOS 7.24), **en intérieur, dans un bureau de l'IRIT au 4e étage**, près d'une fenêtre orientée **nord-ouest**, reliée à Internet par un Raspberry Pi connecté à eduroam (voir [`gateway.md`](gateway.md)). Elle y reste pour toute l'expérience, par simplicité : pas d'installation sur un toit |
 | Gateway mobile | **Deuxième MikroTik wAP LR8, identique** à la gateway fixe (RouterOS 7.24), à vélo ou à trottinette, reliée en **4G** par carte SIM. Alimentation à trouver |
 | GPS | Téléphone avec une appli d'enregistrement GPX, horloges synchronisées (NTP d'un côté, GPS de l'autre) |
 | Serveur | ChirpStack v4, avec le collecteur qui enregistre **une ligne par gateway réceptrice** dans PostgreSQL, puis Grafana |

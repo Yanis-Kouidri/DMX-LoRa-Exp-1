@@ -1,8 +1,10 @@
 # Gateway MikroTik : état actuel
 
-État au **12 octobre 2026**, vérifié de bout en bout : la mote a rejoint le
-réseau en OTAA via la gateway, et ses uplinks arrivent dans ChirpStack et dans
-le tableau de bord Grafana.
+État au **27 octobre 2026**. La gateway accède à Internet par un Raspberry Pi
+(`pi-gateway`) connecté à eduroam (voir
+[Historique de la liaison Internet](#historique-de-la-liaison-internet)). Des
+joins OTAA en SF12 ont été acceptés depuis les 5 emplacements de motes, au sol
+(résultats provisoires : [`emplacements.md`](emplacements.md)).
 
 - Modèle : MikroTik wAP LR8 (`RBwAPR-2nD`, carte `wAP R`), RouterOS 7.24
 - Gateway ID : `323531322A003300`
@@ -17,14 +19,14 @@ le tableau de bord Grafana.
 ## Topologie réseau
 
 ```
-Prise murale campus ──(DHCP)── ether1 [WAN]   wAP LR8   wlan1 [LAN] ── PC (admin)
-                                                         Wi-Fi AP « wAP-LoRa-admin »
-                                                         192.168.88.1/24
+eduroam ))) wlan0  pi-gateway  eth0 ──(DHCP)── ether1 [WAN]   wAP LR8   wlan1 [LAN] ── PC (admin)
+               (Raspberry Pi 4, NAT)                                     Wi-Fi AP « wAP-LoRa-admin »
+                                    10.42.0.1/24                         192.168.88.1/24
 ```
 
 | Interface | Rôle | Adressage |
 |---|---|---|
-| `ether1` | WAN, accès à Internet par la prise murale du campus | Client DHCP (`defconf`), bail obtenu `192.168.1.143/24`, passerelle `192.168.1.1` |
+| `ether1` | WAN, accès à Internet par `pi-gateway` | Client DHCP (`defconf`), bail obtenu `10.42.0.33/24`, passerelle `10.42.0.1` |
 | `wlan1` | LAN, point d'accès privé d'administration `wAP-LoRa-admin` (WPA2-PSK, profil `wap-admin`) | `192.168.88.1/24`, serveur DHCP `defconf` (plage `192.168.88.10-254`) |
 
 - NAT masquerade sur la liste d'interfaces `WAN` : un PC connecté à
@@ -41,6 +43,57 @@ gateway en Ethernet (conservés pour pouvoir revenir en arrière facilement) :
 - adresse statique `192.168.1.60/24` sur `ether1` ;
 - route par défaut statique via `192.168.1.99` (distance 10) ;
 - client DHCP `client1` sur `wlan1`.
+
+## Raspberry Pi `pi-gateway`
+
+Raspberry Pi 4 (Debian 13 trixie) qui sert de routeur à la gateway : il est
+connecté à eduroam en Wi-Fi et partage cette connexion sur son port Ethernet,
+relié à `ether1`.
+
+- Installation de base (eduroam, Tailscale, mise à l'heure) : même script que
+  pour les Pi des motes,
+  [`Mote/scripts/setup-pi.sh`](../Mote/scripts/setup-pi.sh).
+- Partage de connexion : profil NetworkManager `gw-share` sur `eth0`
+  (`ipv4.method shared`, IPv6 désactivé). NetworkManager y lance un serveur
+  DHCP (`10.42.0.0/24`) et un NAT vers `wlan0`.
+- L'ancien profil client DHCP `Wired connection 1` est conservé, mais sa
+  connexion automatique est désactivée pour qu'il n'entre pas en concurrence
+  avec `gw-share`.
+- Économie d'énergie du Wi-Fi désactivée dans le profil `eduroam`
+  (`802-11-wireless.powersave 2`) : ses micro-coupures cassent la connexion
+  vers ChirpStack.
+- Accès SSH par Tailscale : `ssh pi@pi-gateway`.
+- Après une coupure de courant, tout repart seul (vérifié le 26 octobre) :
+  eduroam, `gw-share`, Tailscale, NTP, puis le bail et la connexion de la
+  gateway.
+
+Création du partage, à refaire sur un Pi neuf :
+
+```bash
+sudo nmcli connection add type ethernet ifname eth0 con-name gw-share \
+  ipv4.method shared ipv6.method disabled \
+  connection.autoconnect yes connection.autoconnect-priority 10
+sudo nmcli connection modify "Wired connection 1" connection.autoconnect no
+sudo nmcli connection modify eduroam 802-11-wireless.powersave 2
+```
+
+Point ouvert : le Pi se connecte à eduroam avec un compte personnel. Pour
+l'expérience, un accès dédié aux objets connectés est à demander à la DSI (voir
+[Wi-Fi du campus](#wi-fi-du-campus--ne-fonctionne-pas-problème-ouvert)).
+
+## Historique de la liaison Internet
+
+| Période | Liaison | Coupures de la connexion à ChirpStack |
+|---|---|---|
+| Début oct. → 26 oct. | Routeur Teltonika RUTX50 (LAN `192.168.1.0/24`) sur la 5G privée de l'université (neOCampus) | **42 à 61 par jour** du 21 au 25 octobre (logs du serveur disponibles depuis le 19) |
+| Depuis le 26 oct., 13:50 UTC | `pi-gateway` sur eduroam | **0** en 22 h 45 (26 oct., 15:48 → 27 oct., 14:34 UTC) |
+
+Avec la 5G, chaque coupure faisait perdre plusieurs minutes de trafic. Le lien
+restait bloqué sans erreur, puis la gateway journalisait
+`socket error onRecv [2001]` et attendait 60 s avant de se reconnecter. Pendant
+le blocage, ChirpStack croyait la gateway connectée : les join requests
+n'arrivaient plus, et des join-accepts envoyés à la gateway n'étaient jamais
+émis. La mote recevait alors `denied` alors qu'elle était à portée.
 
 ## Configuration LoRa
 
@@ -88,7 +141,7 @@ sans succès :
   l'authentification 802.1X réussit, mais les DHCP DISCOVER restent sans
   réponse. Le PC obtient un bail sur le même point d'accès, la même bande et le
   même compte, et la gateway obtient immédiatement un bail sur un partage de
-  connexion de téléphone et sur la prise murale. La cause la plus probable est
+  connexion de téléphone et en Ethernet derrière la RUTX50. La cause la plus probable est
   un filtrage des appareils par l'infrastructure Wi-Fi du campus ; seule la
   DSI (dsi-support.inp-toulouse.fr) peut le confirmer ou le lever.
 - **Ne pas** contourner le problème en usurpant ou en clonant une adresse MAC :
@@ -104,7 +157,9 @@ sans succès :
   identifiant personnel n'est stocké sur la gateway.
 
 Les Raspberry Pi, eux, se connectent sans problème à eduroam (voir
-[`Mote/raspberry-pi.md`](../Mote/raspberry-pi.md#3-eduroam)).
+[`Mote/raspberry-pi.md`](../Mote/raspberry-pi.md#3-eduroam)) : c'est ce qui a
+conduit au montage actuel, avec la gateway derrière
+[`pi-gateway`](#raspberry-pi-pi-gateway).
 
 ## Pièges
 
@@ -117,6 +172,20 @@ Les Raspberry Pi, eux, se connectent sans problème à eduroam (voir
   redémarrage tant que NTP n'a pas synchronisé (client NTP activé avec
   `pool.ntp.org`). Le TLS vers ChirpStack et l'horodatage des uplinks en
   dépendent.
+- **Gateway sourde environ 18 minutes après une coupure de `pi-gateway`** : si
+  le Pi s'éteint ou redémarre, la table NAT qui suivait la connexion TLS vers
+  ChirpStack est perdue. ChirpStack détecte la déconnexion en moins d'une
+  minute, mais la gateway, elle, continue de retransmettre sur l'ancienne
+  connexion TCP jusqu'à ce que TCP abandonne, puis se reconnecte. Mesuré le
+  26 octobre : coupure du Pi à 15:29, reconnexion de la gateway à 15:48 UTC
+  (au redémarrage précédent, avec moins de 40 s de coupure, elle s'était
+  reconnectée en 2 minutes). Éviter de couper le Pi pendant une campagne ;
+  sinon, relancer la LoRa sur la gateway (`/lora disable` puis `/lora enable`)
+  depuis `wAP-LoRa-admin`.
+- **Un `denied` au join ne prouve pas que la mote est hors de portée** : avant
+  de conclure, vérifier dans les logs du pont Basics Station que la gateway
+  était connectée et a bien confirmé l'émission du join-accept
+  (`downlink transmitted message received`).
 
 ## Commandes utiles
 

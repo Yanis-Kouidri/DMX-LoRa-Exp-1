@@ -35,7 +35,7 @@ Hypothèses, calendrier, protocole et risques :
 ```
 Mote RN2483 ──USB── Raspberry Pi            (× 6, un par bâtiment)
      │ LoRa EU868
-     ├──► Gateway fixe  (wAP LR8, IRIT, prise murale) ──┐
+     ├──► Gateway fixe  (wAP LR8, IRIT, Pi + eduroam) ──┐
      └──► Gateway mobile (wAP LR8, vélo, 4G) ───────────┤ Basics Station (TLS)
                                                         ▼
                ChirpStack ─► collecteur ─► PostgreSQL ─► Grafana   (AWS EC2)
