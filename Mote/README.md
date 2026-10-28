@@ -104,6 +104,7 @@ mention contraire, ils utilisent le port `/dev/ttyACM0`.
 | `disable_duty_cycle.py` | Désactive le duty cycle sur les 16 canaux et vérifie chaque valeur (voir [`config.md`](config.md)) |
 | `send_data_tuple.py` | Envoie toutes les 30 s un uplink non confirmé avec des mesures fictives (température, humidité, batterie). La mote doit déjà avoir rejoint le réseau |
 | `sf_test_campaign.py` | Envoie des paquets numérotés de SF12 à SF7, sans ACK, en respectant le duty cycle, et les journalise dans `campagne_sf.csv` (non versionné) |
+| `regime_1a.py` | Régime 1a de la phase 1 : join OTAA en SF12 si besoin, puis en continu un paquet par SF (SF7 → SF12, ordre tiré au hasard à chaque cycle), un cycle toutes les 300 s, **duty cycle respecté**. Journal CSV de chaque événement (émission, FCnt, abandon, join) dans `~/lora-logs/regime_1a_<hôte>.csv`. Options `--cycles`, `--log-dir`, `-p` |
 | `sf_burst_test.py` | Join OTAA si besoin, puis 100 tours entrelacés SF7 → SF12, un paquet toutes les 5 s. **Désactive le duty cycle** |
 | `sf_sweep.py` | Join OTAA si besoin, puis un paquet par SF, de SF12 à SF7, sans pause. **Désactive le duty cycle** |
 | `serial_connection.py` | Classe `RN2483Connection`, utilisée par tous les scripts |

@@ -9,11 +9,14 @@ class RN2483Connection:
         port: str,
         baudrate: int = 57600,
         timeout: float = 1.0,
+        exclusive: bool | None = None,
     ) -> None:
+        # exclusive=True : verrou sur le port, un second script échoue à l'ouverture
         self._serial = Serial(
             port=port,
             baudrate=baudrate,
             timeout=timeout,
+            exclusive=exclusive,
         )
 
     def send_command(self, command: str) -> str:
