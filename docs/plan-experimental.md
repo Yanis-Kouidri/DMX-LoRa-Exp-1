@@ -146,13 +146,13 @@ Mote 2 (gateway mobile jamais rencontrée)
 1. Toutes les T_p, la mote envoie ses données dans un message confirmé en SF7.
 2. ACK reçu : données livrées, tampon vidé, un nouveau cycle commence.
 3. Pas d'ACK : les données restent dans le tampon, nouvel essai à la T_p suivante.
-4. D atteint sans ACK : envoi **confirmé** au SF fixe (par exemple SF12) vers la gateway de l'IRIT, avec au plus une retransmission (R = 1). Le délai est borné par D, plus l'attente imposée par le duty cycle si la retransmission a lieu.
+4. D atteint sans ACK : envoi **non confirmé** au SF fixe (par exemple SF12) vers la gateway de l'IRIT, comme B1. Le délai est borné par D.
 
 **Propriétés**
 
 - **LoRaWAN Class A strictement standard** : la mote ne reçoit que juste après avoir émis, et c'est l'émission de la sonde qui ouvre les fenêtres RX1 et RX2. Il n'y a pas d'écoute permanente, contrairement à Florita, et **l'ACK LoRaWAN standard suffit** : si une gateway, quelle qu'elle soit, reçoit le message en SF7, les données sont livrées. Comme les motes sont choisies là où le SF7 passe mal vers l'IRIT, un ACK signifie en pratique que la gateway mobile est passée. Le filtrage côté serveur (ne répondre que si la gateway mobile a reçu) n'est plus nécessaire dans ce cadrage.
 - **Une sonde réussie ne coûte rien de plus qu'un envoi normal** : il n'y a pas de second message.
-- **Repli** : la latence reste bornée par D (plus une éventuelle retransmission du repli) et le taux de livraison est au moins celui de la gateway fixe seule. LoRaWAN ne garantit pas la livraison ; on vise « au moins aussi bien que la gateway fixe ».
+- **Repli** : la latence reste bornée par D et le taux de livraison est au moins celui de la gateway fixe seule. LoRaWAN ne garantit pas la livraison ; on vise « au moins aussi bien que la gateway fixe ».
 
 ### Le budget de sondes et le seuil de rentabilité
 - **Même une sonde réussie coûte quelque chose.** La sonde n'est rentable que si, sur une période D, le coût des sondes reste inférieur au coût d'un message au SF de repli.
@@ -173,11 +173,9 @@ Le banc PPK2 donne les coûts unitaires E ; le terrain (phase 1, puis phase 2) d
 ### Contenu et taille des messages
 - **Limites de charge utile en EU868** : 222 octets en SF7 et SF8, 115 octets en SF9, **51 octets de SF10 à SF12**. Le repli en SF élevé est donc le facteur limitant : au-delà de 51 octets accumulés pendant D, il faudrait plusieurs messages de repli, chacun suivi d'environ 2 minutes d'attente (duty cycle). Il faut dimensionner ensemble la taille d'une mesure, sa période et D. Exemple : 6 octets toutes les 2 min avec D = 10 min, soit 30 octets.
 - **Hypothèse simplificatrice retenue** : les données accumulées pendant D tiennent toujours dans **un seul message au SF de repli**, soit 51 octets au plus, et donc aussi dans une sonde SF7. Une sonde transporte ainsi toujours tout le tampon, et le repli tient en un seul envoi. On vise **30 à 40 octets** pour garder une marge, car le serveur peut ajouter des commandes MAC (FOpts) qui réduisent la place disponible. Le cas d'un tampon plus volumineux (plusieurs messages de repli, sondes partielles) est hors du périmètre de cette expérience et pourra faire l'objet de travaux futurs. Cette hypothèse sera annoncée explicitement dans le papier.
-- **Repli et B1 confirmés, avec la même politique** : uplink confirmé avec **une retransmission au plus (R = 1)**, valeur identique pour B1 et pour le repli de P. Après deux échecs (envoi initial et retransmission), les données sont comptées comme perdues et le tampon est vidé : il ne déborde jamais sur la période suivante.
-  - **Justification** : toutes les stratégies visent la même garantie, une livraison avec accusé. B1 confirmé n'est pas une référence affaiblie, c'est la version de la gateway fixe qui offre la même garantie que la sonde.
-  - **Parade à l'objection de la référence affaiblie** : le résultat sera aussi calculé hors ligne contre **B1 non confirmé**, la version la moins chère de la gateway fixe, à partir des journaux et du coût PPK2 d'un uplink sans ACK. Si la sonde ne gagne que contre B1 confirmé, le papier le dira.
-  - **Latence** : une retransmission impose d'attendre la fin du duty cycle, soit environ 2 à 5 min en SF12 selon la taille du tampon (1,32 s à 2,79 s d'émission). La borne de latence devient donc D plus ce délai.
-  - **Charge de la gateway fixe** : chaque ACK de repli ou de B1 occupe aussi le downlink de la gateway. Avec 6 motes et un envoi par période D, la charge reste faible, mais elle sera mentionnée.
+- **Repli et B1 non confirmés, avec la même politique** : comme dans la plupart des déploiements réels de capteurs périodiques, l'envoi de B1 et le repli de P sont des **uplinks non confirmés**, sans retransmission. Une donnée non reçue est **comptée comme perdue** (perte tolérée), et le tampon est vidé après le repli dans tous les cas : il ne déborde jamais sur la période suivante.
+  - **Justification** : c'est la gateway fixe telle qu'on l'utilise vraiment, et dans sa version la moins chère. La référence n'est donc pas affaiblie. La latence est bornée **exactement par D**.
+  - **Livraison** : une donnée part soit par une sonde réussie (avec ACK, donc livrée), soit par le repli, exactement comme B1. Le taux de livraison de P est donc au moins celui de B1 par construction. Le SF de repli étant le SF minimal fiable (PDR ≥ 90 %), les pertes au repli restent faibles ; elles sont mesurées et publiées.
 - **Le coût d'une sonde augmente quand le tampon se remplit** :
 
   | Données | SF7 | SF12 |
@@ -193,9 +191,9 @@ Le banc PPK2 donne les coûts unitaires E ; le terrain (phase 1, puis phase 2) d
 
 | Stratégie | Rôle | Comportement | Ce qu'elle mesure |
 |---|---|---|---|
-| **B1 — Fixe** | Référence | Un message confirmé (R = 1) toutes les D, au SF minimal fiable vers l'IRIT, avec toutes les données de la période | Le coût de référence |
+| **B1 — Fixe** | Référence | Un message non confirmé toutes les D, au SF minimal fiable vers l'IRIT, avec toutes les données de la période | Le coût de référence |
 | **B2 — Mobile aveugle** | Témoin | Toutes les T_p, un message SF7 sans ACK, sans repli | Le gaspillage d'une émission à l'aveugle (H2) |
-| **P — Sonde** | Notre mécanisme | Toutes les T_p, un message SF7 confirmé avec tout le tampon ; repli confirmé (R = 1) à D vers l'IRIT | Le gain d'énergie avec un délai borné (H3) |
+| **P — Sonde** | Notre mécanisme | Toutes les T_p, un message SF7 confirmé avec tout le tampon ; repli non confirmé à D vers l'IRIT | Le gain d'énergie avec un délai borné (H3) |
 
 Les trois stratégies transmettent **le même flux de données** : la comparaison d'énergie n'est valable qu'à volume égal.
 
@@ -329,7 +327,8 @@ Le simulateur sur traces rejoue les paquets réellement reçus. Une simulation s
 - **Indicateurs** :
   - **l'énergie radio par donnée livrée** (journaux × coûts PPK2), indicateur principal ;
   - le taux de livraison des données ;
-  - la latence de chaque donnée, qui doit rester inférieure à D, plus l'attente d'une éventuelle retransmission du repli ;
+  - la latence de chaque donnée, qui doit rester inférieure à D ;
+  - la part des données perdues au repli (perte tolérée, comme pour B1) ;
   - le temps d'antenne par donnée livrée ;
   - la réussite des sondes et la part de doublons.
 - **Lien avec le simulateur** : les tournées (un passage toutes les 8 min) représentent le cas des passages fréquents. Si le simulateur prédit correctement les mesures réelles, il peut extrapoler de façon crédible aux passages rares.
@@ -389,9 +388,7 @@ La fiche technique de la RN2483 ne suffit pas : elle donne quelques courants, ma
 
 | Événement | SF | Pourquoi |
 |---|---|---|
-| Uplink sans ACK, séquence complète (émission + RX1 + RX2) | SF7 → SF12 | Coût d'un envoi de B2, et de B1 non confirmé (analyse de sensibilité) |
-| Uplink confirmé avec ACK reçu en RX1 | SF10 → SF12 | Coût d'un envoi de B1 et du repli |
-| Uplink confirmé sans ACK (RX1 et RX2 expirent) | SF10 → SF12 | Coût d'un envoi de B1 ou d'un repli qui déclenche la retransmission |
+| Uplink sans ACK, séquence complète (émission + RX1 + RX2) | SF7 → SF12 | Coût d'un envoi de B1, de B2 et du repli |
 | Sonde avec ACK reçu en RX1 | SF7 → SF9 | Coût d'une sonde **réussie** |
 | Sonde sans ACK (RX1 et RX2 expirent) | SF7 → SF9 | Coût d'une sonde **ratée** : le paramètre clé |
 | Veille (`sys sleep`) et repos | — | Coût de fond |
