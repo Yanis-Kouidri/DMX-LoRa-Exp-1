@@ -85,7 +85,7 @@ La plus-value principale est l'**expérimentation réelle** : la grande majorit�
 | Tang et al. 2025 | Réelle (drone immobile) | Oui | Non (1 SF) | Non |
 | **Notre travail** | **Réelle (6 motes, 2 gateways)** | **Oui** | **Oui (SF7 → SF12)** | **Oui (PPK2)** |
 
-> À faire : compléter l'état de l'art sur Google Scholar et IEEE Xplore (*mobile gateway LoRaWAN*, *data mule LoRa*, *gateway discovery LPWAN*, *opportunistic uplink LoRa*), et regarder qui cite Florita 2020.
+> À faire : compléter l'état de l'art sur Google Scholar et IEEE Xplore (*mobile gateway LoRaWAN*, *data mule LoRa*, *gateway discovery LPWAN*, *opportunistic uplink LoRa*), et regarder qui cite Florita 2020. Chercher aussi les comparaisons entre simulation et mesures réelles en LoRa (*LoRa simulation validation measurements*, *ns-3 LoRaWAN real deployment*), pour la simulation sur modèle optionnelle (voir la phase intermédiaire).
 
 ## 4. Hypothèses
 
@@ -301,6 +301,17 @@ Le régime 1b **ne fait pas tourner le mécanisme** : c'est une mesure de caract
   - **le flux de données**, identique pour toutes les stratégies (par exemple 6 octets toutes les 2 min).
 - **Implémenter** la stratégie P sur les Raspberry Pi et la tester au labo.
 
+**Optionnel : simulation sur modèle (non prioritaire)**
+
+Le simulateur sur traces rejoue les paquets réellement reçus. Une simulation sur modèle (ns-3 avec son module LoRaWAN, FLoRa sous OMNeT++, LoRaSim) génère au contraire les réceptions à partir d'un modèle de propagation (log-distance, shadowing), de la mobilité et du MAC. Elle viendrait **en complément**, sans retarder le terrain ni le simulateur sur traces.
+
+- **Intérêt** :
+  - **mesurer l'écart entre simulation et réalité** sur nos données : durée des contacts, SF minimal, PDR selon la distance. Cela renforce l'argument principal du papier (la plupart des travaux sont simulés) : on montre de combien un modèle standard se trompe ;
+  - **extrapoler** ce qu'on ne peut pas mesurer (plus de motes, autre vitesse, autre fréquence de passage), à condition de calibrer le modèle sur les traces de la phase 1.
+- **Mise en œuvre** : rejouer les mêmes stratégies, avec le même outil d'analyse, soit sur les traces réelles, soit sur des traces générées par le modèle. La comparaison des deux devient alors presque gratuite.
+- **Ce qu'il faut dès la phase 1** : un enregistrement complet (chaque émission côté Raspberry Pi, même non reçue, avec son SF et son horodatage, plus la trace GPS). Ce sont ces journaux qui serviront aux deux simulations.
+- **Limites** : résultat secondaire (une figure ou une sous-section), pas une contribution. Des comparaisons entre simulation et mesures LoRa existent déjà, surtout avec une gateway fixe : vérifier la littérature avant de revendiquer une nouveauté.
+
 ### Phase 2 — Évaluation du mécanisme (4 → 31 janv. 2027)
 
 **Objectif** : vérifier en réel que la sonde est rentable (H2 et H3) : moins d'énergie par donnée livrée que la gateway fixe seule, avec un délai borné par D et aucune donnée perdue. La phase 2 sert aussi à **valider le simulateur**.
@@ -440,6 +451,7 @@ Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 
 - **Flux de données, T_p, k et D** pour la phase 2, à fixer pendant la phase intermédiaire.
 - **Phase 2 : mesure pendant les tournées seulement, ou sur des journées complètes**, à décider après la phase 1.
 - **Variante de sonde** (sonde minimale puis données, ou sonde porteuse des données), à trancher avec le banc PPK2.
+- **Simulation sur modèle** (ns-3, FLoRa, LoRaSim) : optionnelle, à lancer pendant la phase intermédiaire si le temps le permet (voir la [phase intermédiaire](#phase-intermédiaire--conception-de-la-sonde-23-nov--20-déc-2026)). Choix du simulateur à faire.
 
 ## 14. Constats techniques en cours
 
