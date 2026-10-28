@@ -9,7 +9,7 @@ intérieur.
 
 Expérience menée dans le cadre d'une thèse de doctorat (CIFRE) avec l'IRIT,
 sur la collecte de données dans les réseaux de capteurs. Les résultats visent
-une publication en conférence principale (échéance réaliste : mars 2027).
+une publication en conférence principale (soumission visée au printemps 2027).
 
 ## Objectif
 

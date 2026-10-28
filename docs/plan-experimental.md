@@ -1,6 +1,6 @@
 # Plan expérimental — Gateway fixe et gateway mobile en LoRaWAN
 
-> Document de travail, rédigé le 9 octobre 2026. Il récapitule le plan d'expérience défini à ce jour. Les valeurs marquées « à confirmer » dépendent des mesures de la phase 0.
+> Document de travail, rédigé le 9 octobre 2026 et recalé le 28 octobre 2026 (voir la [vue d'ensemble du plan](#vue-densemble)). Il récapitule le plan d'expérience défini à ce jour. Les valeurs marquées « à confirmer » dépendent des mesures de la phase 0.
 
 ## Sommaire
 
@@ -24,7 +24,7 @@
 
 ## 1. Contexte et objectif
 
-- **Cadre** : thèse CIFRE avec l'IRIT, première année, sur la collecte de données dans les réseaux de capteurs. L'objectif est de produire des résultats expérimentaux pour un papier de **conférence principale** (pas un workshop). Les échéances visées sont janvier ou mars 2027. Mars 2027 est l'objectif réaliste pour la version complète.
+- **Cadre** : thèse CIFRE avec l'IRIT, première année, sur la collecte de données dans les réseaux de capteurs. L'objectif est de produire des résultats expérimentaux pour un papier de **conférence principale** (pas un workshop). La phase 0 ayant pris du retard, le plan a été recalé le 28 octobre 2026 : la soumission vise désormais le **printemps 2027** (avril ou mai), la conférence n'étant pas encore choisie.
 - **Principe** : on ne précipite pas l'expérience. Si elle le justifie, la publication peut être retardée.
 - **Expérience** : comparer une **gateway fixe** (MikroTik wAP LR8 en intérieur, dans un bureau de l'IRIT) et une **gateway mobile** (à vélo ou à trottinette) dans un réseau LoRaWAN, avec 6 motes réparties dans 6 bâtiments du campus Paul Sabatier, à Toulouse.
 - Le titre de la thèse (« dorsales éphémères ») n'est pas une contrainte : le sujet peut être adapté aux résultats.
@@ -206,13 +206,23 @@ La gateway de l'IRIT est **conservée comme référence** (stratégie B1) et com
 
 | Phase | Dates | Objectif |
 |---|---|---|
-| **0** | 8 → 25 oct. 2026 | Tout préparer et valider avant le déploiement |
-| **1** | 26 oct. → 22 nov. 2026 | Caractériser les liens fixe et mobile |
-| **Intermédiaire** | 23 nov. → 20 déc. 2026 | Concevoir et régler la sonde à partir des traces |
-| **2** | 4 → 31 janv. 2027 | Évaluer le mécanisme en réel |
-| **3** | févr. → mi-mars 2027 | Analyser et rédiger, puis **soumettre en mars 2027** |
+| **0** | 8 oct. → 13 nov. 2026 | Tout préparer et valider avant le déploiement |
+| **1** | 16 nov. → 13 déc. 2026 | Caractériser les liens fixe et mobile |
+| **Intermédiaire** | 14 déc. 2026 → 22 janv. 2027 | Concevoir et régler la sonde à partir des traces (pause de fin d'année comprise) |
+| **2** | 25 janv. → 21 févr. 2027 | Évaluer le mécanisme en réel |
+| **3** | 22 févr. → fin avril 2027 | Analyser et rédiger, puis **soumettre au printemps 2027** selon la conférence choisie |
 
-### Phase 0 — Préparation (8 → 25 oct. 2026)
+**Recalage du 28 octobre 2026.** Le plan initial prévoyait la phase 0 du 8 au 25 octobre, la phase 1 du 26 octobre au 22 novembre et une soumission en mars 2027. Au 28 octobre, les motes ne sont pas encore installées dans les bureaux, le script du régime 1a n'est pas écrit et la gateway fixe vient seulement d'être stabilisée (passage sur eduroam le 26 octobre). Chaque phase garde sa durée ; seules les dates glissent, d'environ trois semaines, plus la pause de fin d'année. Le régime 1a démarre **dès que les motes sont installées**, sans attendre la fin de la phase 0 : il ne dépend pas de la gateway mobile.
+
+### Phase 0 — Préparation (8 oct. → 13 nov. 2026)
+
+**Reste à faire au 28 octobre 2026**
+
+| Échéance | Tâche |
+|---|---|
+| 30 oct. | Gateway fixe : redémarrage automatique de LoRa après une coupure du Pi (voir [`gateway.md`](gateway.md)) |
+| 6 nov. | Script du régime 1a (balayage entrelacé, journalisation complète sur les Pi) ; motes installées dans les bureaux, join SF12 vérifié **sur place** ; démarrage du régime 1a |
+| 13 nov. | Banc PPK2, dont le coût d'une sonde ratée (0b) ; vérifications de l'infrastructure (0c) ; alimentation de la gateway mobile et tournée pilote (0d) ; 6e emplacement trouvé, sinon l'expérience continue avec 5 motes |
 
 **0a. Balade de repérage de la couverture de l'IRIT**
 
@@ -252,7 +262,7 @@ La gateway de l'IRIT est **conservée comme référence** (stratégie B1) et com
 
 **Livrables de la phase 0** : emplacements validés, modèle d'énergie, infrastructure vérifiée, durée des contacts.
 
-### Phase 1 — Caractérisation (26 oct. → 22 nov. 2026, 4 semaines)
+### Phase 1 — Caractérisation (16 nov. → 13 déc. 2026, 4 semaines)
 
 Les deux gateways sont actives, l'ADR est désactivé et la puissance d'émission est fixe. Les Raspberry Pi basculent automatiquement entre deux régimes selon les plages horaires des tournées.
 
@@ -293,7 +303,7 @@ Le régime 1b **ne fait pas tourner le mécanisme** : c'est une mesure de caract
 - carte de couverture du campus ;
 - ADR simulé sur les traces. Résultat bonus possible : l'ADR est inadapté à une gateway mobile.
 
-### Phase intermédiaire — Conception de la sonde (23 nov. → 20 déc. 2026)
+### Phase intermédiaire — Conception de la sonde (14 déc. 2026 → 22 janv. 2027)
 
 - **Simulateur sur traces** : rejouer B1, B2 et P (sonde porteuse des données, budget k par SF de repli) et l'ADR sur les traces de la phase 1.
 - **Simuler des passages plus rares** en ne gardant qu'une boucle sur *k*. Avec un passage toutes les 8 min, la latence serait artificiellement bonne. On obtient la **courbe du gain selon la fréquence de passage**, avec le seuil de rentabilité.
@@ -316,7 +326,7 @@ Le simulateur sur traces rejoue les paquets réellement reçus. Une simulation s
 - **Ce qu'il faut dès la phase 1** : un enregistrement complet (chaque émission côté Raspberry Pi, même non reçue, avec son SF et son horodatage, plus la trace GPS). Ce sont ces journaux qui serviront aux deux simulations.
 - **Limites** : résultat secondaire (une figure ou une sous-section), pas une contribution. Des comparaisons entre simulation et mesures LoRa existent déjà, surtout avec une gateway fixe : vérifier la littérature avant de revendiquer une nouveauté.
 
-### Phase 2 — Évaluation du mécanisme (4 → 31 janv. 2027)
+### Phase 2 — Évaluation du mécanisme (25 janv. → 21 févr. 2027)
 
 **Objectif** : vérifier en réel que la sonde est rentable (H2 et H3) : moins d'énergie par donnée livrée que la gateway fixe seule, avec un délai borné par D et aucune donnée perdue. La phase 2 sert aussi à **valider le simulateur**.
 
@@ -334,12 +344,12 @@ Le simulateur sur traces rejoue les paquets réellement reçus. Une simulation s
 - **Lien avec le simulateur** : les tournées (un passage toutes les 8 min) représentent le cas des passages fréquents. Si le simulateur prédit correctement les mesures réelles, il peut extrapoler de façon crédible aux passages rares.
 - **Figures attendues** : énergie par donnée livrée par stratégie et par mote selon le SF de repli ; distribution des latences avec la borne D ; courbe du gain selon la fréquence de passage, simulée et confirmée par les points réels.
 - **Point à trancher** : mesurer uniquement pendant les tournées (simple, mais seulement le cas des passages fréquents), ou faire tourner chaque stratégie sur une journée complète contenant une tournée (plus réaliste : on mesure aussi les replis pendant les heures sans passage). Préférence : la journée complète, avec une rotation des stratégies par jour. À décider après la phase 1.
-- **Les stratégies se comparent uniquement à l'intérieur de la phase 2**, à cause du biais saisonnier (chute des feuilles entre novembre et janvier).
+- **Les stratégies se comparent uniquement à l'intérieur de la phase 2**, à cause du biais saisonnier (feuillage et météo différents entre la phase 1, en novembre et décembre, et la phase 2, en février).
 
-### Phase 3 — Analyse et rédaction (févr. → mi-mars 2027)
+### Phase 3 — Analyse et rédaction (22 févr. → fin avril 2027)
 
 - Statistiques regroupées par tournée.
-- Soumission en conférence en **mars 2027**. Janvier n'est pas réaliste pour la version complète avec le mécanisme.
+- Soumission au **printemps 2027**, à ajuster selon la date limite de la conférence choisie. Si la date limite tombe plus tard, le temps gagné va à l'analyse et à la simulation sur modèle optionnelle.
 
 ## 8. Méthode de test de H1
 
@@ -396,7 +406,7 @@ La fiche technique de la RN2483 ne suffit pas : elle donne quelques courants, ma
 Comme la sonde transporte les données, les sondes et les envois au SF de repli sont mesurés **à plusieurs tailles de charge utile** (par exemple 6, 20 et 51 octets).
 
 ### La question clé : combien coûte une sonde ratée ?
-Hors contact, la plupart des sondes échouent. En EU868, la fenêtre RX2 est par défaut en **SF12** (`rx2_dr=0` dans `region_eu868.toml`). Une sonde ratée pourrait donc coûter plus cher que l'émission SF7 elle-même. Si c'est le cas, P peut perdre contre B1. Le banc répond à cette question **dès octobre**. Si nécessaire, on réglera le débit de RX2 de façon cohérente entre ChirpStack et la mote (`mac set rx2`) et on espacera les sondes.
+Hors contact, la plupart des sondes échouent. En EU868, la fenêtre RX2 est par défaut en **SF12** (`rx2_dr=0` dans `region_eu868.toml`). Une sonde ratée pourrait donc coûter plus cher que l'émission SF7 elle-même. Si c'est le cas, P peut perdre contre B1. Le banc répond à cette question **pendant la phase 0, d'ici le 13 novembre**. Si nécessaire, on réglera le débit de RX2 de façon cohérente entre ChirpStack et la mote (`mac set rx2`) et on espacera les sondes.
 
 Bonus : une figure de courbe de courant annotée par type d'événement, pour le papier.
 
@@ -448,7 +458,7 @@ Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 
 
 ## 13. Points ouverts
 
-- **Conférence visée** pour une soumission en mars 2027.
+- **Conférence visée** : pas encore choisie ; soumission visée au printemps 2027 (avril ou mai).
 - **Gateway fixe** : 4e étage de l'IRIT, près d'une fenêtre orientée nord-ouest. Restent à noter avant la phase 0a : hauteur et orientation de l'antenne, distance à la fenêtre, photo de référence.
 - **Alimentation** de la MikroTik à vélo.
 - **Accès aux bureaux** des collègues pour le déploiement et la maintenance.
