@@ -1,0 +1,20 @@
+# Service utilisateur du régime 1a (Mote/src/regime_1a.py), voir Mote/README.md.
+# Installation : systemctl --user link ~/DMX-LoRa-Exp-1/Mote/systemd/regime-1a.service
+# Nécessite le lingering de l'utilisateur (loginctl enable-linger, fait par setup-pi.sh).
+
+[Unit]
+Description=Régime 1a : balayage entrelacé SF7 → SF12 (phase 1)
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=%h/DMX-LoRa-Exp-1/Mote
+# Pas de RTC sur la Pi : attendre la synchronisation NTP pour des horodatages fiables
+ExecStartPre=/bin/sh -c 'until [ "$(timedatectl show -p NTPSynchronized --value)" = yes ]; do sleep 5; done'
+TimeoutStartSec=15min
+ExecStart=%h/.local/bin/uv run --frozen --offline python src/regime_1a.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target

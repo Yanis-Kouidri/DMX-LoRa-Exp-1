@@ -11,4 +11,7 @@
 ## Guardrails
 
 - Only one process can use the serial port: check that no script (campaign,
-  terminal) is already running on the Pi before talking to the mote.
+  terminal) is already running on the Pi before talking to the mote. This
+  includes the `regime-1a.service` user unit (`systemctl --user status
+  regime-1a.service`); never stop it on a deployed mote without the user's
+  approval, as it collects phase 1 measurements.

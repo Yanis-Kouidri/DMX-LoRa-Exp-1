@@ -109,6 +109,28 @@ mention contraire, ils utilisent le port `/dev/ttyACM0`.
 | `sf_sweep.py` | Join OTAA si besoin, puis un paquet par SF, de SF12 à SF7, sans pause. **Désactive le duty cycle** |
 | `serial_connection.py` | Classe `RN2483Connection`, utilisée par tous les scripts |
 
+### Régime 1a en service
+
+Sur les Raspberry Pi, `regime_1a.py` tourne comme service **utilisateur**
+systemd ([`systemd/regime-1a.service`](systemd/regime-1a.service)), sans
+`sudo` : il démarre au boot grâce au lingering de `pi` (activé par
+`setup-pi.sh`), attend la synchronisation NTP, et redémarre 30 s après un
+plantage. Un arrêt (`systemctl --user stop`) ajoute une ligne `stop` au journal.
+
+```bash
+cd ~/DMX-LoRa-Exp-1/Mote && ~/.local/bin/uv sync --frozen
+systemctl --user link ~/DMX-LoRa-Exp-1/Mote/systemd/regime-1a.service
+systemctl --user enable --now regime-1a.service
+```
+
+Suivi : `systemctl --user status regime-1a.service`, et pour les messages
+`journalctl _SYSTEMD_USER_UNIT=regime-1a.service` (`journalctl --user` n'affiche
+rien : le journal des utilisateurs n'est pas conservé sur disque). Le journal de
+mesure reste `~/lora-logs/regime_1a_<hôte>.csv`.
+
+⚠️ N'activer le service qu'une fois la mote installée à son emplacement : tout
+ce qui est émis est journalisé comme mesure du régime 1a.
+
 ⚠️ `sf_burst_test.py`, `sf_sweep.py` et `disable_duty_cycle.py` ne respectent
 pas le duty cycle réglementaire de 1 % en EU868 : à n'utiliser qu'en
 environnement fermé, jamais sur le campus. Ils ne font pas de `mac save` : un

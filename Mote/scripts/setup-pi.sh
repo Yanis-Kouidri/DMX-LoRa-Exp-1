@@ -164,6 +164,10 @@ else
     curl -LsSf https://astral.sh/uv/install.sh | sudo -u "$SUDO_USER" -H sh
 fi
 
+step "Lingering de ${SUDO_USER}"
+# Démarre les services utilisateur (regime-1a.service) au boot, sans session ouverte.
+loginctl enable-linger "$SUDO_USER"
+
 step "Tailscale"
 if ! command -v tailscale >/dev/null; then
     curl -fsSL https://tailscale.com/install.sh | sh
