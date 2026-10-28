@@ -53,10 +53,11 @@ def airtime_seconds(
 
     # Low Data Rate Optimization obligatoire en SF11/SF12 @ 125 kHz
     low_data_rate_optimize = 1 if (sf >= 11 and bw_hz == 125_000) else 0
+    # Formule Semtech (AN1200.13) : H = 0 quand l'en-tête explicite est présent
     h = 0 if explicit_header else 1
 
     numerator = (
-        8 * payload_bytes - 4 * sf + 28 + 16 * (1 if crc_enabled else 0) - 20 * (1 - h)
+        8 * payload_bytes - 4 * sf + 28 + 16 * (1 if crc_enabled else 0) - 20 * h
     )
     denominator = 4 * (sf - 2 * low_data_rate_optimize)
 
