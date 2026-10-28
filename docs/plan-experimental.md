@@ -102,7 +102,7 @@ La plus-value principale est l'**expérimentation réelle** : la grande majorit�
 | Motes | 6 × Microchip RN2483 dans 6 bâtiments (bureaux de collègues, pas de sous-sol), chacune pilotée en USB par un **Raspberry Pi** accessible en SSH. Emplacements et coordonnées : [`emplacements.md`](emplacements.md) (5 sur 6 fixés) |
 | Firmware des motes | **RN2483 1.0.6 RC4** (EU868, LoRaWAN 1.0.2), dernière version publiée par Microchip, sur **toutes** les motes. Source, procédure de flash et pièges : [`Mote/README.md`](../Mote/README.md#firmware) |
 | Gateway fixe | MikroTik wAP LR8 (RouterOS 7.24), **en intérieur, dans un bureau de l'IRIT au 4e étage**, près d'une fenêtre orientée **nord-ouest**, reliée à Internet par un Raspberry Pi connecté à eduroam (voir [`gateway.md`](gateway.md)). Elle y reste pour toute l'expérience, par simplicité : pas d'installation sur un toit |
-| Gateway mobile | **Deuxième MikroTik wAP LR8, identique** à la gateway fixe (RouterOS 7.24), à vélo ou à trottinette, reliée en **4G** par carte SIM. Alimentation à trouver |
+| Gateway mobile | **Deuxième MikroTik wAP LR8, identique** à la gateway fixe (RouterOS 7.24), à vélo ou à trottinette, reliée en **4G** par carte SIM. Alimentation externe et carte SIM fournies par le directeur de thèse (à récupérer) |
 | GPS | Téléphone avec une appli d'enregistrement GPX, horloges synchronisées (NTP d'un côté, GPS de l'autre) |
 | Serveur | ChirpStack v4, avec le collecteur qui enregistre **une ligne par gateway réceptrice** dans PostgreSQL, puis Grafana |
 | Radio | EU868, BW 125 kHz, CR 4/5, **ADR désactivé**, **puissance d'émission fixe**, **mêmes 8 canaux** sur les deux gateways |
@@ -212,7 +212,7 @@ La gateway de l'IRIT est **conservée comme référence** (stratégie B1) et com
 | **2** | 25 janv. → 21 févr. 2027 | Évaluer le mécanisme en réel |
 | **3** | 22 févr. → fin avril 2027 | Analyser et rédiger, puis **soumettre au printemps 2027** selon la conférence choisie |
 
-**Recalage du 28 octobre 2026.** Le plan initial prévoyait la phase 0 du 8 au 25 octobre, la phase 1 du 26 octobre au 22 novembre et une soumission en mars 2027. Au 28 octobre, les motes ne sont pas encore installées dans les bureaux, le script du régime 1a n'est pas écrit et la gateway fixe vient seulement d'être stabilisée (passage sur eduroam le 26 octobre). Chaque phase garde sa durée ; seules les dates glissent, d'environ trois semaines, plus la pause de fin d'année. Le régime 1a démarre **dès que les motes sont installées**, sans attendre la fin de la phase 0 : il ne dépend pas de la gateway mobile.
+**Recalage du 28 octobre 2026.** Le plan initial prévoyait la phase 0 du 8 au 25 octobre, la phase 1 du 26 octobre au 22 novembre et une soumission en mars 2027. Au 28 octobre, les motes ne sont pas encore installées dans les bureaux et la gateway fixe vient seulement d'être stabilisée (passage sur eduroam le 26 octobre). Le script du régime 1a est prêt (`Mote/src/regime_1a.py`, prévu pour tourner comme service systemd), mais il attend l'installation des motes. Chaque phase garde sa durée ; seules les dates glissent, d'environ trois semaines, plus la pause de fin d'année. Le régime 1a démarre **dès que les motes sont installées**, sans attendre la fin de la phase 0 : il ne dépend pas de la gateway mobile.
 
 ### Phase 0 — Préparation (8 oct. → 13 nov. 2026)
 
@@ -220,9 +220,17 @@ La gateway de l'IRIT est **conservée comme référence** (stratégie B1) et com
 
 | Échéance | Tâche |
 |---|---|
-| 30 oct. | Gateway fixe : redémarrage automatique de LoRa après une coupure du Pi (voir [`gateway.md`](gateway.md)) |
-| 6 nov. | Script du régime 1a (balayage entrelacé, journalisation complète sur les Pi) ; motes installées dans les bureaux, join SF12 vérifié **sur place** ; démarrage du régime 1a |
-| 13 nov. | Banc PPK2, dont le coût d'une sonde ratée (0b) ; vérifications de l'infrastructure (0c) ; alimentation de la gateway mobile et tournée pilote (0d) ; 6e emplacement trouvé, sinon l'expérience continue avec 5 motes |
+| 30 oct. | Gateway fixe : redémarrage automatique de LoRa après une coupure du Pi (voir [`gateway.md`](gateway.md)) ; photo de référence, hauteur et orientation de l'antenne |
+| 3 nov., 9 h | Réunion avec les directeurs de thèse : présentation du cadrage (sonde, hypothèses, repli non confirmé), décision sur la reformulation de H2, récupération de l'alimentation externe et de la carte SIM 4G de la gateway mobile |
+| 6 nov. | Motes installées dans les bureaux (le directeur de thèse a sollicité ses collègues par mail le 28 octobre), join SF12 vérifié **sur place** ; démarrage du service `regime-1a` sur chaque Pi dès que sa mote est posée |
+| 13 nov. | Banc PPK2, dont le coût d'une sonde ratée (0b) ; vérifications de l'infrastructure (0c) ; gateway mobile alimentée et en 4G, tournée pilote (0d) ; 6e emplacement trouvé, sinon l'expérience continue avec 5 motes |
+
+**Avancement au 28 octobre 2026**
+
+- Script du régime 1a écrit (`Mote/src/regime_1a.py`), prêt à tourner comme service systemd utilisateur sur chaque Pi (voir [`Mote/README.md`](../Mote/README.md#régime-1a-en-service)).
+- Installation des motes : le directeur de thèse a demandé par mail à ses collègues d'accueillir les motes dans leurs bureaux ; réponses attendues.
+- Gateway mobile : alimentation externe et carte SIM 4G disponibles chez le directeur de thèse, à récupérer.
+- Réunion avec les directeurs de thèse fixée au 3 novembre 2026 à 9 h.
 
 **0a. Balade de repérage de la couverture de l'IRIT**
 
@@ -460,8 +468,8 @@ Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 
 
 - **Conférence visée** : pas encore choisie ; soumission visée au printemps 2027 (avril ou mai).
 - **Gateway fixe** : 4e étage de l'IRIT, près d'une fenêtre orientée nord-ouest. Restent à noter avant la phase 0a : hauteur et orientation de l'antenne, distance à la fenêtre, photo de référence.
-- **Alimentation** de la MikroTik à vélo.
-- **Accès aux bureaux** des collègues pour le déploiement et la maintenance.
+- **Alimentation** de la MikroTik à vélo : alimentation externe et carte SIM 4G disponibles chez le directeur de thèse, à récupérer (au plus tard à la réunion du 3 novembre).
+- **Accès aux bureaux** des collègues pour le déploiement et la maintenance : demande envoyée par le directeur de thèse le 28 octobre, réponses attendues.
 - **Seuil de distance** définissant « le cœur du passage », à fixer après la tournée pilote.
 - **Flux de données, T_p, k et D** pour la phase 2, à fixer pendant la phase intermédiaire.
 - **Phase 2 : mesure pendant les tournées seulement, ou sur des journées complètes**, à décider après la phase 1.
