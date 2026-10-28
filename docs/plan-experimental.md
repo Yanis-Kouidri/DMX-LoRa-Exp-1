@@ -90,7 +90,8 @@ La plus-value principale est l'**expérimentation réelle** : la grande majorit�
 ## 4. Hypothèses
 
 - **H1 (caractérisation)** : pendant un passage, le SF minimal fiable vers la gateway mobile est **au moins deux crans plus bas** que vers la gateway fixe, pour une partie des motes. Testée en phase 1.
-- **H2 (coût de l'aveuglement)** : une mote qui émet périodiquement en SF bas sans savoir si la gateway mobile est là gaspille une part de ses émissions à peu près égale à la part du temps passée hors contact. Testée en phase 1, puis en phase 2.
+- **H2 (détectabilité)** : pendant un passage, la mote peut détecter la gateway mobile avec une sonde. Concrètement : (a) la fenêtre de contact en SF7 dure plus longtemps que la période de sonde T_p, pour des valeurs de T_p compatibles avec le budget de sondes ; (b) une sonde émise pendant le contact reçoit son ACK à temps (RX1, via la 4G pour la gateway mobile) dans au moins 90 % des cas (seuil à confirmer). Testée en phase 1 (régime 1b) : durée des contacts, fiabilité des ACK, puis part des passages détectés en rejouant des sondes à différentes T_p sur les traces. Confirmée en phase 2. Elle peut être fausse : contacts trop courts, ou ACK trop tardif via la 4G.
+- **Reformulation de H2 (28 octobre 2026)** : l'ancienne H2 (« émettre en SF bas à l'aveugle gaspille une part des émissions à peu près égale à la part du temps hors contact ») ne pouvait pas être réfutée : c'est une mesure, pas une hypothèse. Le coût de l'aveuglement reste mesuré (phase 1, puis stratégie B2) comme **paramètre** : il correspond à l'axe horizontal de la figure du gain selon la fréquence de passage. La nouvelle H2 porte sur ce que le mécanisme suppose sans le garantir : que la sonde détecte réellement le passage.
 - **H3 (le mécanisme)** : la stratégie de sonde consomme moins d'énergie par donnée livrée que la stratégie « fixe seule », avec un taux de livraison au moins égal et une latence bornée grâce au repli. Testée sur traces, puis en phase 2.
 
 **Pourquoi deux crans** : chaque cran de SF double à peu près le temps d'émission. Passer de SF9 (185 ms) à SF7 (51 ms) divise le temps d'émission par **3,6**. Un gain d'un seul cran risquerait d'être absorbé par le coût des sondes.
@@ -192,7 +193,7 @@ Le banc PPK2 donne les coûts unitaires E ; le terrain (phase 1, puis phase 2) d
 | Stratégie | Rôle | Comportement | Ce qu'elle mesure |
 |---|---|---|---|
 | **B1 — Fixe** | Référence | Un message non confirmé toutes les D, au SF minimal fiable vers l'IRIT, avec toutes les données de la période | Le coût de référence |
-| **B2 — Mobile aveugle** | Témoin | Toutes les T_p, un message SF7 sans ACK, sans repli | Le gaspillage d'une émission à l'aveugle (H2) |
+| **B2 — Mobile aveugle** | Témoin | Toutes les T_p, un message SF7 sans ACK, sans repli | Le coût d'une émission à l'aveugle (paramètre mesuré) |
 | **P — Sonde** | Notre mécanisme | Toutes les T_p, un message SF7 confirmé avec tout le tampon ; repli non confirmé à D vers l'IRIT | Le gain d'énergie avec un délai borné (H3) |
 
 Les trois stratégies transmettent **le même flux de données** : la comparaison d'énergie n'est valable qu'à volume égal.
@@ -221,7 +222,7 @@ La gateway de l'IRIT est **conservée comme référence** (stratégie B1) et com
 | Échéance | Tâche |
 |---|---|
 | 30 oct. | Gateway fixe : redémarrage automatique de LoRa après une coupure du Pi (voir [`gateway.md`](gateway.md)) ; photo de référence, hauteur et orientation de l'antenne |
-| 3 nov., 9 h | Réunion avec les directeurs de thèse : présentation du cadrage (sonde, hypothèses, repli non confirmé), décision sur la reformulation de H2, récupération de l'alimentation externe et de la carte SIM 4G de la gateway mobile |
+| 3 nov., 9 h | Réunion avec les directeurs de thèse : présentation du cadrage (sonde, hypothèses, repli non confirmé), validation de la nouvelle H2 (détectabilité), récupération de l'alimentation externe et de la carte SIM 4G de la gateway mobile |
 | 6 nov. | Motes installées dans les bureaux (le directeur de thèse a sollicité ses collègues par mail le 28 octobre), join SF12 vérifié **sur place** ; démarrage du service `regime-1a` sur chaque Pi dès que sa mote est posée |
 | 13 nov. | Banc PPK2, dont le coût d'une sonde ratée (0b) ; vérifications de l'infrastructure (0c) ; gateway mobile alimentée et en 4G, tournée pilote (0d) ; 6e emplacement trouvé, sinon l'expérience continue avec 5 motes |
 
@@ -296,8 +297,8 @@ Le régime 1a répond à « combien coûte la gateway fixe pour chaque mote ? »
 
 1. **SF minimal fiable vers la gateway mobile** au cœur du passage (deuxième moitié de H1), et courbes de PDR selon la distance.
 2. **Comparaison appariée** : pour chaque paquet, reçu par l'IRIT, par la gateway mobile ou par les deux (McNemar, ΔSNR).
-3. **Durée des fenêtres de contact** en SF7, passage par passage. C'est l'objectif le plus important pour la suite : elle fixe T_p (si un contact dure 90 s et qu'on sonde toutes les 2 min, on rate des passages).
-4. **Fiabilité réelle de la sonde** : chaque paquet confirmé sans retransmission se comporte comme une sonde. On mesure la probabilité que l'uplink arrive **et** que l'ACK revienne à temps (via la 4G pour la gateway mobile), et la part d'ACK perdus (doublons).
+3. **Durée des fenêtres de contact** en SF7, passage par passage (H2). C'est l'objectif le plus important pour la suite : elle fixe T_p (si un contact dure 90 s et qu'on sonde toutes les 2 min, on rate des passages).
+4. **Fiabilité réelle de la sonde** (H2) : chaque paquet confirmé sans retransmission se comporte comme une sonde. On mesure la probabilité que l'uplink arrive **et** que l'ACK revienne à temps (via la 4G pour la gateway mobile), et la part d'ACK perdus (doublons).
 5. **Traces pour le simulateur** : avec un essai SF7 toutes les 34 s environ, on sait à chaque instant si une sonde aurait réussi.
 
 Le régime 1b **ne fait pas tourner le mécanisme** : c'est une mesure de caractérisation. Le mécanisme complet est évalué en phase 2.
@@ -336,7 +337,7 @@ Le simulateur sur traces rejoue les paquets réellement reçus. Une simulation s
 
 ### Phase 2 — Évaluation du mécanisme (25 janv. → 21 févr. 2027)
 
-**Objectif** : vérifier en réel que la sonde est rentable (H2 et H3) : moins d'énergie par donnée livrée que la gateway fixe seule, avec un délai borné par D et aucune donnée perdue. La phase 2 sert aussi à **valider le simulateur**.
+**Objectif** : vérifier en réel que la sonde détecte les passages (H2) et qu'elle est rentable (H3) : moins d'énergie par donnée livrée que la gateway fixe seule, avec un délai borné par D et une livraison au moins égale à celle de la gateway fixe. La phase 2 sert aussi à **valider le simulateur**.
 
 - **Stratégies** : B1, B2 et P (voir la [section 6](#6-le-mécanisme-de-sonde)).
 - **Protocole** : environ **12 tournées**, soit **4 par stratégie**, avec une **rotation contrebalancée**. Pendant une tournée, toutes les motes appliquent la même stratégie : répartir les motes entre stratégies mélangerait l'effet de la stratégie et celui de l'emplacement.
