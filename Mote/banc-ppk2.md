@@ -187,7 +187,9 @@ temps que le courant, ce qui permet de découper les traces par événement :
 
 | Date | Opération | Relevé |
 |---|---|---|
-| | Tension du rail avant modification (étape 1) | |
+| 29 octobre 2026 | Tension du rail avant modification (étape 1), mote en USB, multimètre sur `+3.3V` / `GND` de J4 | 3,31 V |
+| 29 octobre 2026 | R4 identifiée sur la carte (marquage `000`, entre C4 et U2) ; pastille gauche (vers C4) présumée côté rail, à confirmer à l'étape 3 | — |
+| 29 octobre 2026 | Première tentative de dessoudage de R4 : échec, matériel inadapté. R4 toujours en place | Nouvelle tentative le 2 novembre 2026 avec du meilleur matériel |
 | | R4 dessoudée, fils soudés | |
 | | Contrôles de l'étape 5 | |
 | | Premier essai PPK2 (étape 7) | |
