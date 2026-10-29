@@ -397,6 +397,7 @@ On ne mesure pas les motes sur le terrain : il faudrait un PPK2 par mote pendant
 La fiche technique de la RN2483 ne suffit pas : elle donne quelques courants, mais pas le coût réel d'une séquence complète (réveil, émission, fenêtres RX1 et RX2, retour en veille).
 
 ### Montage
+- Mote mesurée : la **mote de test** `0004A30B00FD7330` (device `mote-test` dans ChirpStack), hors campagne, avec le même firmware et la même configuration LoRaWAN que les 6 motes du terrain. Voir [`Mote/mote.md`](../Mote/mote.md#mote-de-test-0004a30b00fd7330).
 - PPK2 **en série** sur l'alimentation de la mote, entre le Raspberry Pi et la mote.
 - Échantillonnage d'au moins **10 kHz**, pour voir les fenêtres de réception de quelques millisecondes.
 - Idéalement, mesurer le **module RN2483 seul**. Sinon, mesurer la carte entière (PIC, écran, capteurs) au repos et soustraire. Il faut regarder le schéma de la carte.

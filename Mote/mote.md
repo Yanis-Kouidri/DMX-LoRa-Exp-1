@@ -1,8 +1,9 @@
 # Motes RN2483
 
-Inventaire des 6 motes Microchip RN2483, chacune branchée en USB
-(`/dev/ttyACM0`) sur un Raspberry Pi (voir [`raspberry-pi.md`](raspberry-pi.md)).
-La mote N est pilotée par `pi-mote-N`. Emplacements :
+Inventaire des 6 motes Microchip RN2483 de la campagne, chacune branchée en
+USB (`/dev/ttyACM0`) sur un Raspberry Pi (voir [`raspberry-pi.md`](raspberry-pi.md)).
+La mote N est pilotée par `pi-mote-N`. Une 7e mote sert aux tests et au banc
+PPK2 ([mote de test](#mote-de-test-0004a30b00fd7330)). Emplacements :
 [`docs/emplacements.md`](../docs/emplacements.md).
 
 ## Inventaire
@@ -25,6 +26,27 @@ Toutes les motes ont été livrées en 1.0.1, puis flashées en 1.0.6 RC4 (voir
 Le DevEUI est égal au HWEUI et l'AppEUI vaut `0000000000000000` (configuration :
 [`config.md`](config.md)). Le RN2483 ne permet pas de relire l'AppKey : elle
 n'apparaît donc pas dans ce tableau.
+
+## Mote de test `0004A30B00FD7330`
+
+Mote hors campagne, non déployée : tests et mesure du coût énergétique avec le
+PPK2 (banc de la
+[section 9 du plan](../docs/plan-experimental.md#9-modèle-énergétique-et-banc-ppk2)).
+Relevé du 29 octobre 2026 :
+
+- Livrée en 1.0.5, avec la configuration d'un ancien usage (DevEUI
+  `DEADDEAD00090005`, AppEUI `DEAD25DEAD25DEAD`), effacée par `mac reset 868`.
+- Flashée en 1.0.6 RC4 avec `src/flash_firmware.py` du premier coup, contenu
+  relu et vérifié.
+- DevEUI = HWEUI, AppEUI `0000000000000000`, `mac save`, conservés après
+  `sys reset`.
+- Device `mote-test` créé dans ChirpStack (application `mote-rn2483`, profil
+  `rn2483-eu868-otaa`, tag `role=test` pour l'exclure des analyses), AppKey
+  propre configurée et sauvegardée (`mac save`).
+- 3 × 3000 `sys get ver` sur 3000 en 1.0.6 RC4.
+- Join OTAA tenté hors du campus : `denied`, aucune gateway n'a reçu la
+  requête (hors de portée). Join à refaire sur le campus ; en cas d'échec,
+  vérifier dans ChirpStack (LoRaWAN frames) l'absence d'erreur MIC (AppKey).
 
 ## Mote défectueuse `0004A30B0023F575` (retirée)
 

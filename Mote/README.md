@@ -6,7 +6,7 @@ par liaison série USB, depuis un Raspberry Pi ou un PC.
 | Document | Contenu |
 |---|---|
 | [`config.md`](config.md) | Commandes RN2483 : configuration pour ChirpStack, join OTAA, désactivation du duty cycle |
-| [`mote.md`](mote.md) | Inventaire des 6 motes, mote défectueuse retirée |
+| [`mote.md`](mote.md) | Inventaire des 6 motes, mote de test (banc PPK2), mote défectueuse retirée |
 | [`raspberry-pi.md`](raspberry-pi.md) | Matériel, OS et installation des Raspberry Pi (eduroam, Tailscale) |
 
 ## Matériel

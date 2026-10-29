@@ -43,7 +43,7 @@ Mote RN2483 ──USB── Raspberry Pi            (× 6, un par bâtiment)
 
 | Élément | Matériel | Documentation |
 |---|---|---|
-| Motes | 6 × Microchip RN2483 Mote, firmware 1.0.6 RC4 (LoRaWAN 1.0.2) | [`Mote/README.md`](Mote/README.md), [`Mote/mote.md`](Mote/mote.md) |
+| Motes | 6 × Microchip RN2483 Mote, firmware 1.0.6 RC4 (LoRaWAN 1.0.2), plus 1 mote de test pour le banc PPK2 | [`Mote/README.md`](Mote/README.md), [`Mote/mote.md`](Mote/mote.md) |
 | Pilotage des motes | 6 × Raspberry Pi 4, sur eduroam et Tailscale | [`Mote/raspberry-pi.md`](Mote/raspberry-pi.md) |
 | Gateway fixe | MikroTik wAP LR8, RouterOS 7.24 | [`docs/gateway.md`](docs/gateway.md) |
 | Gateway mobile | MikroTik wAP LR8 identique, en 4G | à documenter |
