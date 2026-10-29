@@ -47,6 +47,8 @@ Relevé du 29 octobre 2026 :
 - Join OTAA tenté hors du campus : `denied`, aucune gateway n'a reçu la
   requête (hors de portée). Join à refaire sur le campus ; en cas d'échec,
   vérifier dans ChirpStack (LoRaWAN frames) l'absence d'erreur MIC (AppKey).
+- Montage PPK2 prévu par la résistance R4 du rail 3,3 V : voir
+  [`banc-ppk2.md`](banc-ppk2.md).
 
 ## Mote défectueuse `0004A30B0023F575` (retirée)
 

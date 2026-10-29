@@ -7,6 +7,7 @@ par liaison série USB, depuis un Raspberry Pi ou un PC.
 |---|---|
 | [`config.md`](config.md) | Commandes RN2483 : configuration pour ChirpStack, join OTAA, désactivation du duty cycle |
 | [`mote.md`](mote.md) | Inventaire des 6 motes, mote de test (banc PPK2), mote défectueuse retirée |
+| [`banc-ppk2.md`](banc-ppk2.md) | Banc de mesure d'énergie : chaîne d'alimentation de la carte, point de mesure R4, montage du PPK2 |
 | [`raspberry-pi.md`](raspberry-pi.md) | Matériel, OS et installation des Raspberry Pi (eduroam, Tailscale) |
 
 ## Matériel

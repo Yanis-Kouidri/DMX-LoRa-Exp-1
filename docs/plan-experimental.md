@@ -402,9 +402,9 @@ La fiche technique de la RN2483 ne suffit pas : elle donne quelques courants, ma
 
 ### Montage
 - Mote mesurée : la **mote de test** `0004A30B00FD7330` (device `mote-test` dans ChirpStack), hors campagne, avec le même firmware et la même configuration LoRaWAN que les 6 motes du terrain. Voir [`Mote/mote.md`](../Mote/mote.md#mote-de-test-0004a30b00fd7330).
-- PPK2 **en série** sur l'alimentation de la mote, entre le Raspberry Pi et la mote.
+- PPK2 **en série** sur le rail 3,3 V de la carte, à la place de la résistance de 0 Ω R4 (mode ampèremètre). Le 5 V USB est écarté, car il passe par un convertisseur boost dont le rendement varie avec la charge. Détails et procédure : [`Mote/banc-ppk2.md`](../Mote/banc-ppk2.md).
 - Échantillonnage d'au moins **10 kHz**, pour voir les fenêtres de réception de quelques millisecondes.
-- Idéalement, mesurer le **module RN2483 seul**. Sinon, mesurer la carte entière (PIC, écran, capteurs) au repos et soustraire. Il faut regarder le schéma de la carte.
+- Le rail alimente aussi le PIC, l'écran et les capteurs : leur consommation (le fond) est mesurée module en sleep, puis soustraite. Le sleep du module (1,6 µA) est noyé dans ce fond : on retient la valeur de la fiche technique. Mesurer le module seul demanderait de couper ses pistes d'alimentation (solution de repli).
 - **Même puissance d'émission** que sur le terrain. Une seule valeur suffit, sauf si on décide de la baisser.
 - Le **Raspberry Pi est exclu** du bilan énergétique. Il faudra le dire explicitement dans le papier.
 
