@@ -114,6 +114,7 @@ La plus-value principale est l'**expérimentation réelle** : la grande majorit�
 **Gateway fixe en intérieur** : une gateway fixe se trouve normalement en hauteur. Un relecteur peut donc objecter que la référence est volontairement affaiblie. Parade : présenter l'expérience comme l'étude de **motes en bordure de couverture d'une gateway fixe**, car de telles zones existent autour de toute gateway, même sur un toit. Ce qui compte est le bilan de liaison vers la gateway fixe, pas sa position.
 
 - Emplacements visés : SF minimal fiable vers la gateway fixe **entre SF10 et SF12**. Avec SF10 viable, SF12 garde environ 5 dB de marge.
+- **Critère de réussite**, vérifié par le régime 1a : **au moins 4 motes** ont un SF minimal fiable vers la gateway fixe **d'au moins SF10**. Sinon, les motes concernées sont déplacées vers des emplacements plus difficiles.
 - **SF12 doit passer** à chaque emplacement, sinon l'expérience ne tient plus.
 - La gateway et son antenne doivent rester **fixes pendant toute l'expérience** : position et orientation notées et photographiées, étiquette « ne pas toucher ».
 
@@ -266,8 +267,9 @@ La gateway de l'IRIT est **conservée comme référence** (stratégie B1) et com
 **0d. Déploiement et tournée pilote**
 
 - Installation des 6 motes et de leurs Raspberry Pi.
-- Tournée pilote : 2 ou 3 boucles, motes en balayage SF7 → SF9.
+- Tournée pilote : 2 ou 3 boucles, motes en balayage SF7 → SF9, gateway mobile alimentée, en 4G et sur les mêmes 8 canaux que la gateway fixe.
 - **Question à trancher** : quelle part de chaque boucle chaque mote passe-t-elle à portée SF7 de la gateway mobile ? Si le contact est presque permanent, la gateway mobile se comporte comme une gateway plus proche et la sonde perd son intérêt. Il faudra alors ajuster les emplacements ou baisser la puissance d'émission.
+- **Critère de passage (go/no-go)** : pour chaque mote, la part de la boucle passée à portée SF7 est mesurée et reste **nettement inférieure à 100 %**. C'est le deuxième go/no-go de la phase 0, avec le coût d'une sonde ratée mesuré au banc PPK2.
 
 **Livrables de la phase 0** : emplacements validés, modèle d'énergie, infrastructure vérifiée, durée des contacts.
 
@@ -309,6 +311,8 @@ Le régime 1b **ne fait pas tourner le mécanisme** : c'est une mesure de caract
 - courbes de PDR selon la distance, par SF (gateway mobile) ;
 - durée des fenêtres de contact ;
 - fiabilité des accusés de réception ;
+- **verdict sur H1 et sur H2 pour chaque mote**. Pour H2 : part des passages détectés par une sonde rejouée sur les traces pour plusieurs valeurs de T_p, et part des ACK reçus à temps (cible : au moins 90 %) ;
+- vérification du critère de réussite des emplacements (au moins 4 motes à SF10 ou plus vers la gateway fixe) ;
 - carte de couverture du campus ;
 - ADR simulé sur les traces. Résultat bonus possible : l'ADR est inadapté à une gateway mobile.
 
@@ -457,7 +461,7 @@ Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 
 
 | Risque | Gravité | Détecté par | Parade |
 |---|---|---|---|
-| Toutes les motes passent en SF7 vers l'IRIT | Élevée | Balade (0a) | Déployer plus loin ou à des endroits plus difficiles ; cadrage « zones sans infrastructure fixe » |
+| Toutes les motes passent en SF7 vers l'IRIT | Élevée | Balade (0a), puis régime 1a (au moins 4 motes à SF10 ou plus) | Déployer plus loin ou à des endroits plus difficiles ; cadrage « zones sans infrastructure fixe » |
 | La gateway mobile est à portée en permanence | Élevée | Tournée pilote (0d) | Ajuster les emplacements ou baisser la puissance d'émission (facteur secondaire, à justifier par le bilan de liaison) |
 | Une sonde ratée coûte trop cher (RX2 en SF12) | Moyenne | Banc PPK2 (0b) | Régler RX2, espacer les sondes |
 | Le downlink arrive trop tard pour RX1 (4G) | Moyenne | Vérifications (0c) | Allonger `rx1_delay` |
