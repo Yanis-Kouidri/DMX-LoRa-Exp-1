@@ -1,6 +1,6 @@
 # Gateway MikroTik : état actuel
 
-État au **27 octobre 2026**. La gateway accède à Internet par un Raspberry Pi
+État au **30 octobre 2026**. La gateway accède à Internet par un Raspberry Pi
 (`pi-gateway`) connecté à eduroam (voir
 [Historique de la liaison Internet](#historique-de-la-liaison-internet)). Des
 joins OTAA en SF12 ont été acceptés depuis les 5 emplacements de motes, au sol
@@ -26,14 +26,18 @@ eduroam ))) wlan0  pi-gateway  eth0 ──(DHCP)── ether1 [WAN]   wAP LR8   
 
 | Interface | Rôle | Adressage |
 |---|---|---|
-| `ether1` | WAN, accès à Internet par `pi-gateway` | Client DHCP (`defconf`), bail obtenu `10.42.0.33/24`, passerelle `10.42.0.1` |
+| `ether1` | WAN, accès à Internet par `pi-gateway` | Client DHCP (`defconf`), bail réservé `10.42.0.33/24`, passerelle `10.42.0.1` ; script de relance LoRa (voir [Pièges](#pièges)) |
 | `wlan1` | LAN, point d'accès privé d'administration `wAP-LoRa-admin` (WPA2-PSK, profil `wap-admin`) | `192.168.88.1/24`, serveur DHCP `defconf` (plage `192.168.88.10-254`) |
 
 - NAT masquerade sur la liste d'interfaces `WAN` : un PC connecté à
   `wAP-LoRa-admin` accède à Internet à travers la gateway.
 - Pare-feu RouterOS par défaut : les connexions entrantes depuis `WAN` sont
-  rejetées, la gateway n'est donc administrable **que depuis le Wi-Fi
-  `wAP-LoRa-admin`**.
+  rejetées, avec une seule exception ajoutée le 30 octobre : la règle
+  `SSH admin from pi-gateway only` (chaîne `input`, placée avant
+  `defconf: drop all not coming from LAN`) accepte le port TCP 22 sur `ether1`
+  **uniquement depuis `10.42.0.1`** (`pi-gateway`). WebFig (80) et Winbox
+  (8291) restent fermés côté `WAN` (vérifié depuis le Pi). Voir
+  [Accès à distance](#accès-à-distance-par-pi-gateway).
 - Le mot de passe de `wAP-LoRa-admin` n'est pas stocké ici : il est dans
   `secrets.md` (modèle : [`secrets-example.md`](../secrets-example.md)).
 
@@ -63,6 +67,13 @@ relié à `ether1`.
   (`802-11-wireless.powersave 2`) : ses micro-coupures cassent la connexion
   vers ChirpStack.
 - Accès SSH par Tailscale : `ssh pi@pi-gateway`.
+- Adresses figées (30 octobre), car la règle de pare-feu de la gateway et
+  l'accès à distance en dépendent : `gw-share` a l'adresse fixe
+  `10.42.0.1/24` (sans elle, NetworkManager peut choisir un autre sous-réseau
+  `10.42.x.0/24`), et le fichier
+  `/etc/NetworkManager/dnsmasq-shared.d/wap-gateway.conf` réserve
+  `10.42.0.33` à l'adresse MAC d'`ether1` (`C4:AD:34:B2:0E:3A`). Vérifié
+  après un redémarrage du Pi le 30 octobre.
 - Après une coupure de courant, tout repart seul (vérifié le 26 octobre) :
   eduroam, `gw-share`, Tailscale, NTP, puis le bail et la connexion de la
   gateway.
@@ -73,8 +84,12 @@ Création du partage, à refaire sur un Pi neuf :
 sudo nmcli connection add type ethernet ifname eth0 con-name gw-share \
   ipv4.method shared ipv6.method disabled \
   connection.autoconnect yes connection.autoconnect-priority 10
+sudo nmcli connection modify gw-share ipv4.addresses 10.42.0.1/24
 sudo nmcli connection modify "Wired connection 1" connection.autoconnect no
 sudo nmcli connection modify eduroam 802-11-wireless.powersave 2
+sudo mkdir -p /etc/NetworkManager/dnsmasq-shared.d
+echo "dhcp-host=C4:AD:34:B2:0E:3A,10.42.0.33" | \
+  sudo tee /etc/NetworkManager/dnsmasq-shared.d/wap-gateway.conf
 ```
 
 Point ouvert : le Pi se connecte à eduroam avec un compte personnel. Pour
@@ -116,6 +131,9 @@ RouterOS et ne sont pas utilisées.
 1. Connecter le PC au Wi-Fi `wAP-LoRa-admin`.
 2. WebFig : `http://192.168.88.1`, avec le compte `admin`.
 
+À distance, seul SSH est possible, par `pi-gateway` : voir
+[Accès à distance par `pi-gateway`](#accès-à-distance-par-pi-gateway).
+
 ### Accès de Claude Code
 
 Claude administre la gateway en SSH avec un compte dédié. Cet accès est à
@@ -131,6 +149,32 @@ ssh -i ~/.ssh/claude_wap claude@192.168.88.1
   la connexion Wi-Fi de Windows est visible depuis WSL).
 - Pour le révoquer : `/user remove claude` sur la gateway, puis
   `rm ~/.ssh/claude_wap ~/.ssh/claude_wap.pub` sur le PC.
+
+### Accès à distance par `pi-gateway`
+
+Depuis le 30 octobre, la gateway est joignable en SSH sans être sur
+`wAP-LoRa-admin`, par rebond sur `pi-gateway` (Tailscale) :
+
+```bash
+ssh wap-gateway
+```
+
+Entrée correspondante dans `~/.ssh/config` du PC (la clé d'hôte est la même que
+celle déjà connue pour `192.168.88.1`) :
+
+```
+Host wap-gateway
+    HostName 10.42.0.33
+    User claude
+    IdentityFile ~/.ssh/claude_wap
+    ProxyJump pi@pi-gateway
+    HostKeyAlias 192.168.88.1
+```
+
+Seul SSH passe. Pour WebFig à distance, utiliser un tunnel :
+`ssh -L 8080:127.0.0.1:80 wap-gateway`, puis `http://localhost:8080`
+(nécessite `/ip ssh set forwarding-enabled=local`, désactivé actuellement). Pour
+supprimer cet accès : `/ip firewall filter remove [find comment="SSH admin from pi-gateway only"]`.
 
 ## Wi-Fi du campus : ne fonctionne pas (problème ouvert)
 
@@ -172,16 +216,28 @@ conduit au montage actuel, avec la gateway derrière
   redémarrage tant que NTP n'a pas synchronisé (client NTP activé avec
   `pool.ntp.org`). Le TLS vers ChirpStack et l'horodatage des uplinks en
   dépendent.
-- **Gateway sourde environ 18 minutes après une coupure de `pi-gateway`** : si
-  le Pi s'éteint ou redémarre, la table NAT qui suivait la connexion TLS vers
-  ChirpStack est perdue. ChirpStack détecte la déconnexion en moins d'une
-  minute, mais la gateway, elle, continue de retransmettre sur l'ancienne
-  connexion TCP jusqu'à ce que TCP abandonne, puis se reconnecte. Mesuré le
-  26 octobre : coupure du Pi à 15:29, reconnexion de la gateway à 15:48 UTC
-  (au redémarrage précédent, avec moins de 40 s de coupure, elle s'était
-  reconnectée en 2 minutes). Éviter de couper le Pi pendant une campagne ;
-  sinon, relancer la LoRa sur la gateway (`/lora disable` puis `/lora enable`)
-  depuis `wAP-LoRa-admin`.
+- **Gateway sourde environ 18 minutes après une coupure de `pi-gateway`
+  (corrigé le 30 octobre)** : si le Pi s'éteint ou redémarre, la table NAT qui
+  suivait la connexion TLS vers ChirpStack est perdue. ChirpStack détecte la
+  déconnexion en moins d'une minute, mais la gateway, elle, continue de
+  retransmettre sur l'ancienne connexion TCP jusqu'à ce que TCP abandonne, puis
+  se reconnecte. Mesuré le 26 octobre : coupure du Pi à 15:29, reconnexion de
+  la gateway à 15:48 UTC.
+
+  Correctif : le client DHCP d'`ether1` exécute un script qui relance la LoRa
+  dès que le bail est obtenu (le lien Ethernet tombe quand le Pi redémarre,
+  donc le bail est perdu puis repris) :
+
+  ```
+  :if ($bound=1) do={ :log warning "dhcp ether1 bound $"lease-address": restarting LoRa"; /lora disable [find]; :delay 2s; /lora enable [find] } else={ :log warning "dhcp ether1 unbound" }
+  ```
+
+  Test du 30 octobre (redémarrage de `pi-gateway` à 14:12:30 UTC, heures du
+  journal de la gateway en heure de Paris) : bail perdu à 15:12:34, repris à
+  15:13:01 avec la même adresse, relance de la LoRa, `forwarder is ready` à
+  15:13:27. **Gateway sourde 53 s au lieu de 18 min.** Limite : une coupure
+  d'eduroam sans redémarrage du Pi ne fait pas tomber le bail, ce script ne
+  s'applique donc pas à ce cas.
 - **Un `denied` au join ne prouve pas que la mote est hors de portée** : avant
   de conclure, vérifier dans les logs du pont Basics Station que la gateway
   était connectée et a bien confirmé l'émission du join-accept
