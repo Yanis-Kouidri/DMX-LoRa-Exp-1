@@ -254,13 +254,14 @@ conduit au montage actuel, avec la gateway derrière
   |---|---|---|---|
   | Redémarrage de `pi-gateway`, relance par le script DHCP (premier essai) | bail perdu à 15:12:34, repris à 15:13:01 | — | 15:13:27, **53 s** après la perte du bail |
   | eduroam coupé 60 s sur le Pi (`nmcli con down`), sans redémarrage | 15:29:21 → 15:30:21 | `down` 15:29:33, `up` 15:30:32 | 15:30:59, **98 s** après le début de la coupure, 38 s après le retour d'eduroam |
+  | Redémarrage de `pi-gateway`, relance par le netwatch | bail perdu à 15:35:07, repris à 15:35:35 | `down` 15:35:13, `up` 15:35:42 | 15:36:08, **61 s** après la perte du bail |
 
-  Pendant le second test, Basics Station n'a journalisé aucune erreur avant
-  la relance : sans le netwatch, la gateway serait restée bloquée sur
-  l'ancienne connexion. Une relance coûte environ 26 s d'écoute perdue
-  (mesuré à l'activation du netwatch). Le scénario « redémarrage du Pi » n'a
-  pas été refait avec le netwatch ; il repose sur le même mécanisme (perte
-  puis retour de l'accès à Internet).
+  Pendant le test de coupure d'eduroam, Basics Station n'a journalisé aucune
+  erreur avant la relance : sans le netwatch, la gateway serait restée bloquée
+  sur l'ancienne connexion. Une relance coûte environ 26 s d'écoute perdue
+  (mesuré à l'activation du netwatch). Par rapport au script DHCP, le netwatch
+  ajoute quelques secondes (jusqu'à un intervalle de 10 s) au redémarrage du
+  Pi : 61 s au lieu de 53 s.
 - **Un `denied` au join ne prouve pas que la mote est hors de portée** : avant
   de conclure, vérifier dans les logs du pont Basics Station que la gateway
   était connectée et a bien confirmé l'émission du join-accept
