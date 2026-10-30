@@ -26,7 +26,7 @@ eduroam ))) wlan0  pi-gateway  eth0 ──(DHCP)── ether1 [WAN]   wAP LR8   
 
 | Interface | Rôle | Adressage |
 |---|---|---|
-| `ether1` | WAN, accès à Internet par `pi-gateway` | Client DHCP (`defconf`), bail réservé `10.42.0.33/24`, passerelle `10.42.0.1` ; script de relance LoRa (voir [Pièges](#pièges)) |
+| `ether1` | WAN, accès à Internet par `pi-gateway` | Client DHCP (`defconf`), bail réservé `10.42.0.33/24`, passerelle `10.42.0.1` ; script qui journalise la perte et la reprise du bail |
 | `wlan1` | LAN, point d'accès privé d'administration `wAP-LoRa-admin` (WPA2-PSK, profil `wap-admin`) | `192.168.88.1/24`, serveur DHCP `defconf` (plage `192.168.88.10-254`) |
 
 - NAT masquerade sur la liste d'interfaces `WAN` : un PC connecté à
@@ -216,28 +216,51 @@ conduit au montage actuel, avec la gateway derrière
   redémarrage tant que NTP n'a pas synchronisé (client NTP activé avec
   `pool.ntp.org`). Le TLS vers ChirpStack et l'horodatage des uplinks en
   dépendent.
-- **Gateway sourde environ 18 minutes après une coupure de `pi-gateway`
-  (corrigé le 30 octobre)** : si le Pi s'éteint ou redémarre, la table NAT qui
-  suivait la connexion TLS vers ChirpStack est perdue. ChirpStack détecte la
-  déconnexion en moins d'une minute, mais la gateway, elle, continue de
-  retransmettre sur l'ancienne connexion TCP jusqu'à ce que TCP abandonne, puis
-  se reconnecte. Mesuré le 26 octobre : coupure du Pi à 15:29, reconnexion de
-  la gateway à 15:48 UTC.
+- **Gateway sourde après une coupure de la liaison Internet (corrigé le
+  30 octobre)** : si `pi-gateway` redémarre ou perd eduroam, la connexion TLS
+  vers ChirpStack meurt sans que la gateway le voie (perte de la table NAT ou
+  changement d'adresse publique). ChirpStack détecte la déconnexion en moins
+  d'une minute, mais Basics Station continue de retransmettre sur l'ancienne
+  connexion TCP jusqu'à ce que TCP abandonne. Mesuré le 26 octobre : coupure du
+  Pi à 15:29, reconnexion de la gateway à 15:48 UTC, soit environ 18 minutes
+  sans réception.
 
-  Correctif : le client DHCP d'`ether1` exécute un script qui relance la LoRa
-  dès que le bail est obtenu (le lien Ethernet tombe quand le Pi redémarre,
-  donc le bail est perdu puis repris) :
+  Correctif : un netwatch relance la LoRa dès que l'accès à Internet revient.
+  Il envoie toutes les 10 s une salve de 10 pings vers `1.1.1.1` et ne
+  déclare la liaison coupée qu'au-delà de 90 % de pertes (seuils de latence
+  relevés à 5 s pour ne pas réagir à une simple lenteur). La cible est
+  `1.1.1.1` et non ChirpStack : netwatch n'accepte qu'une adresse IP, et celle
+  de l'instance AWS change en cas de restauration. Une panne de ChirpStack
+  seul n'a pas besoin de ce mécanisme : le serveur ferme la connexion et
+  Basics Station se reconnecte de lui-même.
 
   ```
-  :if ($bound=1) do={ :log warning "dhcp ether1 bound $"lease-address": restarting LoRa"; /lora disable [find]; :delay 2s; /lora enable [find] } else={ :log warning "dhcp ether1 unbound" }
+  /tool netwatch add name=backhaul type=icmp host=1.1.1.1 interval=10s \
+      packet-count=10 packet-interval=200ms thr-loss-percent=90% \
+      thr-avg=5s thr-max=5s thr-jitter=5s thr-stdev=5s \
+      comment="LoRa restart after backhaul outage" \
+      down-script=":log warning \"netwatch backhaul down (1.1.1.1)\"" \
+      up-script=":log warning \"netwatch backhaul up: restarting LoRa\"; /lora disable [find]; :delay 2s; /lora enable [find]"
   ```
 
-  Test du 30 octobre (redémarrage de `pi-gateway` à 14:12:30 UTC, heures du
-  journal de la gateway en heure de Paris) : bail perdu à 15:12:34, repris à
-  15:13:01 avec la même adresse, relance de la LoRa, `forwarder is ready` à
-  15:13:27. **Gateway sourde 53 s au lieu de 18 min.** Limite : une coupure
-  d'eduroam sans redémarrage du Pi ne fait pas tomber le bail, ce script ne
-  s'applique donc pas à ce cas.
+  Le client DHCP d'`ether1` a aussi un script, qui se contente de journaliser
+  (`dhcp ether1 bound` / `unbound`). Il relançait la LoRa lors d'un premier
+  essai, retiré pour éviter une double relance quand le Pi redémarre (le
+  netwatch couvre aussi ce cas).
+
+  Tests du 30 octobre (heures du journal de la gateway, heure de Paris) :
+
+  | Scénario | Coupure | Netwatch | Gateway de nouveau à l'écoute (`forwarder is ready`) |
+  |---|---|---|---|
+  | Redémarrage de `pi-gateway`, relance par le script DHCP (premier essai) | bail perdu à 15:12:34, repris à 15:13:01 | — | 15:13:27, **53 s** après la perte du bail |
+  | eduroam coupé 60 s sur le Pi (`nmcli con down`), sans redémarrage | 15:29:21 → 15:30:21 | `down` 15:29:33, `up` 15:30:32 | 15:30:59, **98 s** après le début de la coupure, 38 s après le retour d'eduroam |
+
+  Pendant le second test, Basics Station n'a journalisé aucune erreur avant
+  la relance : sans le netwatch, la gateway serait restée bloquée sur
+  l'ancienne connexion. Une relance coûte environ 26 s d'écoute perdue
+  (mesuré à l'activation du netwatch). Le scénario « redémarrage du Pi » n'a
+  pas été refait avec le netwatch ; il repose sur le même mécanisme (perte
+  puis retour de l'accès à Internet).
 - **Un `denied` au join ne prouve pas que la mote est hors de portée** : avant
   de conclure, vérifier dans les logs du pont Basics Station que la gateway
   était connectée et a bien confirmé l'émission du join-accept
@@ -251,5 +274,7 @@ conduit au montage actuel, avec la gateway derrière
 /lora print                                           # état LoRa et compteurs de paquets
 /lora traffic print                                   # dernières trames (join, uplinks, downlinks)
 /log print where topics~"lora"                        # journal de connexion à ChirpStack
+/tool netwatch print detail                           # état du netwatch backhaul
+/log print where topics~"script"                      # passages down/up et relances LoRa
 /interface wireless registration-table print          # clients de wAP-LoRa-admin
 ```
