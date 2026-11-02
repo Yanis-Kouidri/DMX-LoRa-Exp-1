@@ -27,7 +27,7 @@ position par rapport à la fenêtre de la gateway :
 | # | Pi | Nom | Latitude | Longitude | Étage | Distance | Azimut | Côté | Join SF12 vers la gateway fixe |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | `pi-mote-1` | Bâtiment ADM | 43.563038 | 1.466038 | à définir | 205 m | 316° (NO) | face | oui, provisoire (2026-10-26, au sol) |
-| 2 | `pi-mote-2` | Forum Louis Lareng | 43.561218 | 1.463896 | à définir | 319 m | 260° (O) | côté | oui, provisoire (2026-10-26, au sol) |
+| 2 | `pi-mote-2` | Forum Louis Lareng | 43.561218 | 1.463896 | 1 | 319 m | 260° (O) | côté | oui, provisoire (2026-10-26, au sol) |
 | 3 | `pi-mote-3` | Bâtiment U3 Pierre-Paul Riquet | 43.562104 | 1.469976 | à définir | 181 m | 76° (E) | côté | oui, provisoire (2026-10-26, au sol) |
 | 4 | `pi-mote-4` | Centre de biologie intégrative | 43.559245 | 1.470801 | à définir | 365 m | 139° (SE) | derrière | oui, provisoire (2026-10-26, au sol) |
 | 5 | `pi-mote-5` | Bâtiment 4R1 | 43.558444 | 1.469205 | à définir | 380 m | 163° (S) | derrière | oui, provisoire (2026-10-26, au sol) |
