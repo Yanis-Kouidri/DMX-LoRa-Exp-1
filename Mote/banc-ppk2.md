@@ -5,9 +5,51 @@ Montage du Nordic Power Profiler Kit II (PPK2) sur la
 pour mesurer le coût énergétique de chaque événement LoRaWAN (principe et
 événements à mesurer : [section 9 du plan](../docs/plan-experimental.md#9-modèle-énergétique-et-banc-ppk2)).
 
-> Procédure définie le 29 octobre 2026 à partir du schéma de la carte. La
-> modification de la mote n'est pas encore faite : le
-> [journal](#journal-des-modifications) est à compléter au fur et à mesure.
+> Procédure définie le 29 octobre 2026 à partir du schéma de la carte. Le
+> [journal](#journal-des-modifications) est complété au fur et à mesure.
+>
+> **Changement de montage le 2 novembre 2026** : R4 est retirée, mais souder
+> des fils sur ses pastilles 0603 s'est révélé impossible. Les étapes 4 à 7
+> ci-dessous (fils sur R4, PPK2 en mode AMP) sont abandonnées au profit du
+> [montage sans USB](#montage-retenu-sans-usb-2-novembre-2026). Cette page
+> sera réécrite une fois ce montage validé par un premier essai.
+
+## Montage retenu : sans USB (2 novembre 2026)
+
+R4 retirée, le rail 3,3 V est isolé du régulateur, du boost et de l'entrée
+piles. Sans USB ni piles, ce côté n'est pas alimenté, et on alimente le rail
+directement (vérifié sur les figures A-1 et A-2 du guide) :
+
+| De | Vers (mote) |
+|---|---|
+| PPK2 VOUT, mode **SMU** à 3,31 V | J4 `+3.3V` |
+| PPK2 GND | J4 `GND` |
+| Raspberry Pi broche 8 (GPIO14, TX) | J4 `UARTRX` (entrée du module, broche 7) |
+| Raspberry Pi broche 10 (GPIO15, RX) | J4 `UARTTX` (sortie du module, broche 6) |
+| Raspberry Pi broche 6 (GND) | J4 `GND` |
+| J2 broche 1 (`MCLR` du PIC) | J2 broche 3 (`GND`) |
+
+- **PIC en reset par J2** : sans USB, son firmware passerait en mode piles
+  (join et envois automatiques, guide section 2.4.2) et occuperait la ligne
+  série. En reset, ses broches sont en haute impédance. **J2 et non J5** : J5
+  est le connecteur de programmation du RN2483 ; relier son MCLR à GND
+  bloquerait le module.
+- **Effets sur le fond** : écran et capteurs éteints (Q2 coupé par R17), LED
+  D2 non alimentée. Résidu connu : R14, environ 330 µA (3,3 V / 10 kΩ).
+- **Mode SMU sans risque** : le boost n'est plus alimenté.
+- **Port logique** : D0 sur `UARTRX`, D1 sur `UARTTX`, VCC sur le 3,3 V du
+  Pi (broche 1), pas sur le rail mesuré.
+- **Risque identifié** : la grille de Q4 (`MODRST`) n'est reliée qu'au PIC et
+  flotte quand il est en reset ; R20 maintient normalement le module actif.
+  Un reset du module se détecte par l'envoi spontané de sa chaîne de version :
+  la mesure en cours est alors rejetée.
+- **Précautions** : PPK2 alimenté avant de brancher le TX du Pi (sinon le Pi
+  alimente le module par la ligne série) ; rétroéclairage débranché ; antenne
+  vissée sur J3.
+- **Sonde réussie** : nécessite un banc à portée de la gateway de l'IRIT et
+  un join OTAA.
+- **Pilotage** : Raspberry Pi 4 ou 5, modèle à confirmer (le nom du port
+  série en dépend).
 
 ## Référence : schéma de la mote
 
@@ -190,6 +232,10 @@ temps que le courant, ce qui permet de découper les traces par événement :
 | 29 octobre 2026 | Tension du rail avant modification (étape 1), mote en USB, multimètre sur `+3.3V` / `GND` de J4 | 3,31 V |
 | 29 octobre 2026 | R4 identifiée sur la carte (marquage `000`, entre C4 et U2) ; pastille gauche (vers C4) présumée côté rail, à confirmer à l'étape 3 | — |
 | 29 octobre 2026 | Première tentative de dessoudage de R4 : échec, matériel inadapté. R4 toujours en place | Nouvelle tentative le 2 novembre 2026 avec du meilleur matériel |
-| | R4 dessoudée, fils soudés | |
-| | Contrôles de l'étape 5 | |
-| | Premier essai PPK2 (étape 7) | |
+| 2 novembre 2026 | R4 dessoudée ; flux nettoyé à l'alcool isopropylique | Pastilles intactes, pas de pont avec C4 |
+| 2 novembre 2026 | Continuité (étape 3), mote débranchée | Pastille gauche ↔ droite : ouvert. Gauche ↔ `+3.3V` de J4 : continuité (côté rail confirmé). Gauche ↔ `GND` : pas de court-circuit |
+| 2 novembre 2026 | Tentative de soudure de fils sur les pastilles de R4 (étape 4) : échec, pastilles trop petites | Montage sur R4 abandonné |
+| 2 novembre 2026 | Choix du [montage sans USB](#montage-retenu-sans-usb-2-novembre-2026), vérifié sur le schéma | — |
+| | Barrettes mâles soudées dans J4 et J2 ; sens de J2 vérifié (broche 3 ↔ `GND`, broche 2 ↔ `+3.3V`) | |
+| | Port série du Raspberry Pi configuré | |
+| | Premier essai : fond, puis `radio tx` en SF7 | |

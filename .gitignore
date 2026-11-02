@@ -16,3 +16,6 @@ Mote/firmware/
 
 # Reference papers (local only)
 papers/
+
+# Vendor datasheets and user guides (Microchip, local only)
+Mote/datasheets/
