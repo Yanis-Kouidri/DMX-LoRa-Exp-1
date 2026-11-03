@@ -240,8 +240,19 @@ conduit au montage actuel, avec la gateway derrière
       thr-avg=5s thr-max=5s thr-jitter=5s thr-stdev=5s \
       comment="LoRa restart after backhaul outage" \
       down-script=":log warning \"netwatch backhaul down (1.1.1.1)\"" \
-      up-script=":log warning \"netwatch backhaul up: restarting LoRa\"; /lora disable [find]; :delay 2s; /lora enable [find]"
+      up-script=":log warning \"netwatch backhaul up: restarting LoRa\"; /iot lora disable [find]; :delay 2s; :for i from=1 to=10 do={ :if ([:len [/iot lora find disabled=yes]] > 0) do={ :do { /iot lora enable [find] } on-error={ :log warning \"netwatch: LoRa busy, retry\" }; :delay 3s } }; :if ([:len [/iot lora find disabled=yes]] > 0) do={ :log error \"netwatch: LoRa still disabled after 10 tries\" } else={ :log warning \"netwatch: LoRa enabled\" }"
   ```
+
+  La réactivation est retentée jusqu'à 10 fois, toutes les 3 s. La première
+  version (`disable`, 2 s, `enable`) a échoué le 3 novembre 2026 : après une
+  micro-coupure du backhaul à 15:57 (manipulation de la gateway), `enable` a
+  répondu `Device is busy` à 15:58:18 et la LoRa est restée désactivée
+  jusqu'à sa réactivation manuelle à 16:20:40, soit **22 minutes sans
+  réception**. Les émissions des motes pendant cette fenêtre sont à exclure
+  de l'analyse. La nouvelle version a tourné une fois à son installation
+  (16:22:59) : LoRa réactivée au premier essai, gateway à l'écoute 26 s plus
+  tard. Pour vérifier l'état : `/iot lora print` (le drapeau `X` signale une
+  LoRa désactivée).
 
   Le client DHCP d'`ether1` a aussi un script, qui se contente de journaliser
   (`dhcp ether1 bound` / `unbound`). Il relançait la LoRa lors d'un premier

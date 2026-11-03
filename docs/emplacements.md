@@ -128,6 +128,16 @@ journal `~/lora-logs/regime_1a_<hôte>.csv` sur chaque Pi.
 | 4 | `pi-mote-4` | 2026-11-03, 16:09 | Non joint : joins SF12 répétés (60 s, 120 s, 300 s, puis toutes les 10 min) |
 | 5 | `pi-mote-5` | 2026-11-03, 16:09 | Joint (session du pré-test), balayage SF7 → SF12 dès le cycle 0 |
 
+**Fenêtres d'exclusion** (gateway fixe hors service, voir [`gateway.md`](gateway.md)) :
+
+| Début | Fin | Cause |
+|---|---|---|
+| 2026-11-03 15:58:15 | 2026-11-03 16:21:04 | LoRa restée désactivée après une micro-coupure du backhaul (relance du netwatch en échec) |
+| 2026-11-03 16:22:59 | 2026-11-03 16:23:25 | Relance de la LoRa à l'installation du nouveau netwatch |
+
+Heures de Paris. Les émissions faites dans ces fenêtres ne comptent pas dans
+le PDR.
+
 ## Lecture attendue (hypothèse, à vérifier par la balade 0a)
 
 Critère visé (voir le [plan](plan-experimental.md#5-dispositif-expérimental), section 5) : SF minimal fiable vers la gateway
