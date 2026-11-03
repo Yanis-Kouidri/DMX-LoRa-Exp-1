@@ -30,7 +30,7 @@ position par rapport à la fenêtre de la gateway :
 | 2 | `pi-mote-2` | Forum Louis Lareng | 43.561218 | 1.463896 | 1 | 319 m | 260° (O) | côté | oui, provisoire (2026-10-26, au sol) |
 | 3 | `pi-mote-3` | Bâtiment U3 Pierre-Paul Riquet | 43.562104 | 1.469976 | à définir | 181 m | 76° (E) | côté | oui, provisoire (2026-10-26, au sol) |
 | 4 | `pi-mote-4` | Centre de biologie intégrative | 43.559245 | 1.470801 | à définir | 365 m | 139° (SE) | derrière | oui, provisoire (2026-10-26, au sol) |
-| 5 | `pi-mote-5` | Bâtiment 4R1 | 43.558444 | 1.469205 | à définir | 380 m | 163° (S) | derrière | oui, provisoire (2026-10-26, au sol) |
+| 5 | `pi-mote-5` | Bâtiment 4R1 | 43.558444 | 1.469205 | 3 | 380 m | 163° (S) | derrière | oui (2026-11-03, sur place) |
 
 La mote N est pilotée par le Raspberry Pi `pi-mote-N`.
 
@@ -83,6 +83,25 @@ campagne : aucune déconnexion Basic Station entre 14:10 et 15:10 UTC.
   les 2 premiers joins ; au CBI, elle a été tenue en hauteur à la main après
   les premiers refus. À Forum, seulement 3 essais (duty cycle réactivé sur la
   mote).
+
+## Pré-tests sur place (installation des motes)
+
+Test rapide à l'emplacement définitif, juste avant de laisser la mote en
+place : join OTAA en SF12, puis quelques `mac tx uncnf` en SF11, ADR coupé.
+Ce n'est pas une mesure du SF minimal : le régime 1a la donnera. RSSI et SNR
+sont ceux reçus par la gateway fixe (tables `gateway_events` et `uplinks`).
+
+| # | Nom | Date, heure (locale) | Position | Join requests SF12 reçues | SNR des joins | Uplinks SF11 reçus | SNR SF11 |
+|---|---|---|---|---|---|---|---|
+| 5 | Bâtiment 4R1 | 2026-11-03, 14:37–14:43 | 3ᵉ étage, près d'une fenêtre exposée nord-est | 3, toutes acceptées | −14,25 ; −17,5 ; −18 dB | 2 (2 envoyés) | −17,5 dB (×2) |
+
+- **4R1** : la marge est faible, environ 2 dB au-dessus du seuil SF12
+  (−20 dB) pour les deux derniers joins, et 0 dB au-dessus du seuil SF11
+  (−17,5 dB). C'est environ 3 dB de moins que le SNR médian mesuré au sol le
+  26 octobre (−14,6 dB). La fenêtre est exposée nord-est alors que la gateway
+  est au nord-nord-ouest (azimut 343° depuis la mote) : le signal ne passe pas
+  directement par la fenêtre. Des pertes en SF12 sont possibles pendant le
+  régime 1a ; à surveiller les premières heures.
 
 ## Lecture attendue (hypothèse, à vérifier par la balade 0a)
 
