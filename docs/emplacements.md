@@ -29,7 +29,7 @@ position par rapport à la fenêtre de la gateway :
 | 1 | `pi-mote-1` | Bâtiment ADM | 43.563038 | 1.466038 | à définir | 205 m | 316° (NO) | face | oui, provisoire (2026-10-26, au sol) |
 | 2 | `pi-mote-2` | Forum Louis Lareng | 43.561218 | 1.463896 | 1 | 319 m | 260° (O) | côté | oui, provisoire (2026-10-26, au sol) |
 | 3 | `pi-mote-3` | Bâtiment U3 Pierre-Paul Riquet | 43.562104 | 1.469976 | à définir | 181 m | 76° (E) | côté | oui, provisoire (2026-10-26, au sol) |
-| 4 | `pi-mote-4` | Centre de biologie intégrative | 43.559245 | 1.470801 | à définir | 365 m | 139° (SE) | derrière | oui, provisoire (2026-10-26, au sol) |
+| 4 | `pi-mote-4` | Centre de biologie intégrative | 43.559245 | 1.470801 | 4 | 365 m | 139° (SE) | derrière | non sur place (2026-11-03), gardé : voir les pré-tests |
 | 5 | `pi-mote-5` | Bâtiment 4R1 | 43.558444 | 1.469205 | 3 | 380 m | 163° (S) | derrière | oui (2026-11-03, sur place) |
 
 La mote N est pilotée par le Raspberry Pi `pi-mote-N`.
@@ -93,7 +93,22 @@ sont ceux reçus par la gateway fixe (tables `gateway_events` et `uplinks`).
 
 | # | Nom | Date, heure (locale) | Position | Join requests SF12 reçues | SNR des joins | Uplinks SF11 reçus | SNR SF11 |
 |---|---|---|---|---|---|---|---|
+| 4 | Centre de biologie intégrative | 2026-11-03, vers 15:37 | 4ᵉ étage, laboratoire, près d'une fenêtre donnant sur l'IRIT | 1, accept émis mais non reçu par la mote | −18 dB | — | — |
 | 5 | Bâtiment 4R1 | 2026-11-03, 14:37–14:43 | 3ᵉ étage, près d'une fenêtre exposée nord-est | 3, toutes acceptées | −14,25 ; −17,5 ; −18 dB | 2 (2 envoyés) | −17,5 dB (×2) |
+
+- **CBI** : aucun join accepté côté mote. Une seule join request est arrivée
+  (RSSI −107 dBm, SNR −18 dB, soit 2 dB au-dessus du seuil SF12). ChirpStack
+  a répondu en RX1 (868,3 MHz, SF12, 16 dBm) et la gateway a confirmé
+  l'émission (`txack` OK), mais la mote ne l'a pas reçue : les pertes sont à
+  la montée et à la descente. Le laboratoire voit le bâtiment de l'IRIT, mais
+  la gateway est sur la façade opposée (fenêtre nord-ouest) : le signal
+  traverse le bâtiment. Selon la règle ci-dessus, ce « non » devrait exclure
+  l'emplacement ; il est **gardé** car c'est le seul possible dans ce
+  bâtiment. Le régime 1a refait un join SF12 toutes les 10 min jusqu'au
+  succès : les tentatives (journal CSV de la mote et `gateway_events`)
+  mesurent le lien en attendant. Ces joins répétés respectent le duty cycle
+  de 1 %, mais pas le join backoff de LoRaWAN (8,7 s d'émission par 24 h après
+  les 11 premières heures) : écart accepté, sur notre propre réseau.
 
 - **4R1** : la marge est faible, environ 2 dB au-dessus du seuil SF12
   (−20 dB) pour les deux derniers joins, et 0 dB au-dessus du seuil SF11
@@ -102,6 +117,16 @@ sont ceux reçus par la gateway fixe (tables `gateway_events` et `uplinks`).
   est au nord-nord-ouest (azimut 343° depuis la mote) : le signal ne passe pas
   directement par la fenêtre. Des pertes en SF12 sont possibles pendant le
   régime 1a ; à surveiller les premières heures.
+
+## Régime 1a
+
+Service `regime-1a` (voir [`Mote/README.md`](../Mote/README.md#régime-1a-en-service)),
+journal `~/lora-logs/regime_1a_<hôte>.csv` sur chaque Pi.
+
+| # | Pi | Démarrage (heure locale) | État au démarrage |
+|---|---|---|---|
+| 4 | `pi-mote-4` | 2026-11-03, 16:09 | Non joint : joins SF12 répétés (60 s, 120 s, 300 s, puis toutes les 10 min) |
+| 5 | `pi-mote-5` | 2026-11-03, 16:09 | Joint (session du pré-test), balayage SF7 → SF12 dès le cycle 0 |
 
 ## Lecture attendue (hypothèse, à vérifier par la balade 0a)
 

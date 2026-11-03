@@ -234,6 +234,14 @@ La gateway de l'IRIT est **conservée comme référence** (stratégie B1) et com
 - Gateway mobile : alimentation externe et carte SIM 4G disponibles chez le directeur de thèse, à récupérer.
 - Réunion avec les directeurs de thèse fixée au 3 novembre 2026 à 9 h.
 
+**Avancement au 3 novembre 2026**
+
+- Motes installées : `pi-mote-5` au bâtiment 4R1 (3ᵉ étage) et `pi-mote-4` au
+  CBI (4ᵉ étage). Le service `regime-1a` tourne sur les deux depuis le
+  3 novembre à 16:09. Au CBI, aucun join n'a encore été accepté : le régime 1a
+  refait un join toutes les 10 min (détails dans
+  [`emplacements.md`](emplacements.md#pré-tests-sur-place-installation-des-motes)).
+
 **0a. Balade de repérage de la couverture de l'IRIT**
 
 - **Objectif** : choisir des emplacements où le lien SF7 vers l'IRIT est **faible ou peu fiable**. Ce n'est pas une preuve, c'est un choix d'emplacements.

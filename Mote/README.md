@@ -118,7 +118,13 @@ systemd ([`systemd/regime-1a.service`](systemd/regime-1a.service)), sans
 `setup-pi.sh`), attend la synchronisation NTP, et redémarre 30 s après un
 plantage. Un arrêt (`systemctl --user stop`) ajoute une ligne `stop` au journal.
 
+Vérifier d'abord le lingering : il était désactivé sur `pi-mote-4` et
+`pi-mote-5` le 3 novembre 2026, malgré `setup-pi.sh`. Sans lui, le service
+s'arrête à la fin de la session SSH et ne redémarre pas au boot.
+
 ```bash
+loginctl show-user pi -p Linger    # attendu : Linger=yes
+loginctl enable-linger pi          # sinon (sans sudo)
 cd ~/DMX-LoRa-Exp-1/Mote && ~/.local/bin/uv sync --frozen
 systemctl --user link ~/DMX-LoRa-Exp-1/Mote/systemd/regime-1a.service
 systemctl --user enable --now regime-1a.service
