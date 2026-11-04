@@ -242,6 +242,19 @@ La gateway de l'IRIT est **conservée comme référence** (stratégie B1) et com
   refait un join toutes les 10 min (détails dans
   [`emplacements.md`](emplacements.md#pré-tests-sur-place-installation-des-motes)).
 
+**Avancement au 4 novembre 2026**
+
+- Trois motes en régime 1a : `pi-mote-2` (Forum, depuis le 3 novembre à
+  17:01), `pi-mote-4` et `pi-mote-5`. Toutes ont joint.
+- Gateway fixe déplacée le 3 novembre vers 17:00, après des épisodes de
+  réception dégradée : même bureau, surélevée de 30 cm et rapprochée de la fenêtre de 10 cm.
+- Première nuit (résultats préliminaires dans
+  [`emplacements.md`](emplacements.md#résultats-préliminaires-du-régime-1a-première-nuit-34-novembre-2026)) :
+  aucune mote n'atteint 90 % de PDR, même en SF12 (Forum 87 %, 4R1 64 %,
+  CBI 15 %). Le régime 1a continue plusieurs jours avant toute décision ; le
+  seuil de 90 % du SF minimal fiable pourra être adapté. Pertes probables
+  par collision avec les autres réseaux LoRa du campus.
+
 **0a. Balade de repérage de la couverture de l'IRIT**
 
 - **Objectif** : choisir des emplacements où le lien SF7 vers l'IRIT est **faible ou peu fiable**. Ce n'est pas une preuve, c'est un choix d'emplacements.

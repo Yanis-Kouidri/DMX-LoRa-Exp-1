@@ -13,6 +13,18 @@ joins OTAA en SF12 ont été acceptés depuis les 5 emplacements de motes, au so
   toute l'expérience (pas d'installation sur un toit). Ne modifier ni sa
   position ni l'orientation de son antenne. Coordonnées :
   [`emplacements.md`](emplacements.md).
+- **Déplacée le 3 novembre 2026 vers 17:00**, après deux épisodes de
+  réception dégradée (13:15–14:10 et 16:21–17:00 : RSSI médian des trames
+  étrangères −120 dBm au lieu de −107, trafic reçu divisé par 3 à 4), apparus
+  après des manipulations de la gateway. Depuis, elle reçoit 60 à 90 trames
+  étrangères par heure, avec un RSSI médian de −103 dBm (22 à 36 par heure
+  et −107 dBm avant). Elle reste dans le même bureau, devant la même
+  fenêtre nord-ouest : elle a été **surélevée de 30 cm et rapprochée de la
+  fenêtre de 10 cm**. Les coordonnées, l'azimut et le « côté » des motes dans
+  [`emplacements.md`](emplacements.md) ne changent pas.
+  L'antenne est un peu lâche sur son connecteur : à resserrer à la main, en
+  notant l'heure, car un mauvais contact peut expliquer des pertes de
+  plusieurs dB.
 - Une deuxième wAP LR8, identique, sert de **gateway mobile** (vélo, 4G). Elle
   n'est pas encore documentée ici.
 

@@ -5,7 +5,11 @@ Sabatier. Les données sont aussi dans [`emplacements.csv`](emplacements.csv),
 pour les croiser avec les traces GPX et faire la carte.
 
 - Coordonnées relevées sur Google Maps à l'emplacement supposé de chaque
-  mote, à affiner si besoin après l'installation.
+  mote, à affiner si besoin après l'installation. Affinées le 4 novembre 2026
+  pour les motes installées (2, 4 et 5), une fois les bureaux connus : les
+  distances changent de 3 à 14 m et les azimuts de 1 à 7°, sans changer le
+  côté. Valeurs arrondies à 6 décimales ; la précision réelle,
+  celle du pointage sur la carte, est de quelques mètres.
 - Pas de nom de collègue ici : le dépôt est public.
 
 ## Gateway fixe
@@ -27,10 +31,10 @@ position par rapport à la fenêtre de la gateway :
 | # | Pi | Nom | Latitude | Longitude | Étage | Distance | Azimut | Côté | Join SF12 vers la gateway fixe |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | `pi-mote-1` | Bâtiment ADM | 43.563038 | 1.466038 | à définir | 205 m | 316° (NO) | face | oui, provisoire (2026-10-26, au sol) |
-| 2 | `pi-mote-2` | Forum Louis Lareng | 43.561218 | 1.463896 | 1 | 319 m | 260° (O) | côté | oui, provisoire (2026-10-26, au sol) |
+| 2 | `pi-mote-2` | Forum Louis Lareng | 43.560857 | 1.464050 | 1 (au sol) | 316 m | 253° (O) | côté | non sur place (2026-11-03, gateway dégradée) ; joint par le régime 1a à 17:05 |
 | 3 | `pi-mote-3` | Bâtiment U3 Pierre-Paul Riquet | 43.562104 | 1.469976 | à définir | 181 m | 76° (E) | côté | oui, provisoire (2026-10-26, au sol) |
-| 4 | `pi-mote-4` | Centre de biologie intégrative | 43.559245 | 1.470801 | 4 | 365 m | 139° (SE) | derrière | non sur place (2026-11-03), gardé : voir les pré-tests |
-| 5 | `pi-mote-5` | Bâtiment 4R1 | 43.558444 | 1.469205 | 3 | 380 m | 163° (S) | derrière | oui (2026-11-03, sur place) |
+| 4 | `pi-mote-4` | Centre de biologie intégrative | 43.559482 | 1.470894 | 4 | 351 m | 135° (SE) | derrière | non sur place (2026-11-03), gardé : voir les pré-tests |
+| 5 | `pi-mote-5` | Bâtiment 4R1 | 43.558449 | 1.469104 | 3 | 377 m | 164° (S) | derrière | oui (2026-11-03, sur place) |
 
 La mote N est pilotée par le Raspberry Pi `pi-mote-N`.
 
@@ -93,8 +97,15 @@ sont ceux reçus par la gateway fixe (tables `gateway_events` et `uplinks`).
 
 | # | Nom | Date, heure (locale) | Position | Join requests SF12 reçues | SNR des joins | Uplinks SF11 reçus | SNR SF11 |
 |---|---|---|---|---|---|---|---|
+| 2 | Forum Louis Lareng | 2026-11-03, vers 16:30–16:55 | 1er étage, mote posée au sol d'un bureau côté route (le signal traverse le bâtiment) ; essai aussi depuis un bureau côté campus | 0 | — | — | — |
 | 4 | Centre de biologie intégrative | 2026-11-03, vers 15:37 | 4ᵉ étage, laboratoire, près d'une fenêtre donnant sur l'IRIT | 1, accept émis mais non reçu par la mote | −18 dB | — | — |
 | 5 | Bâtiment 4R1 | 2026-11-03, 14:37–14:43 | 3ᵉ étage, près d'une fenêtre exposée nord-est | 3, toutes acceptées | −14,25 ; −17,5 ; −18 dB | 2 (2 envoyés) | −17,5 dB (×2) |
+
+- **Forum** : aucun join accepté, ni depuis le bureau côté route, ni depuis
+  la fenêtre d'un bureau côté campus, et aucune join request reçue. Le test a
+  eu lieu pendant que la réception de la gateway était dégradée (voir les
+  fenêtres d'exclusion ci-dessous) : il ne dit rien du lien. La mote a joint
+  à 17:05, juste après le déplacement de la gateway.
 
 - **CBI** : aucun join accepté côté mote. Une seule join request est arrivée
   (RSSI −107 dBm, SNR −18 dB, soit 2 dB au-dessus du seuil SF12). ChirpStack
@@ -127,16 +138,78 @@ journal `~/lora-logs/regime_1a_<hôte>.csv` sur chaque Pi.
 |---|---|---|---|
 | 4 | `pi-mote-4` | 2026-11-03, 16:09 | Non joint : joins SF12 répétés (60 s, 120 s, 300 s, puis toutes les 10 min) |
 | 5 | `pi-mote-5` | 2026-11-03, 16:09 | Joint (session du pré-test), balayage SF7 → SF12 dès le cycle 0 |
+| 2 | `pi-mote-2` | 2026-11-03, 17:01 | Non joint ; join accepté à 17:05 (3ᵉ essai) |
 
-**Fenêtres d'exclusion** (gateway fixe hors service, voir [`gateway.md`](gateway.md)) :
+`pi-mote-4` a joint le 3 novembre à 18:08, au 15ᵉ essai. De 17:18 à 17:58,
+cinq essais ont été bloqués par la mote elle-même (`no_free_ch`) : le firmware
+du RN2483 limite aussi le temps d'émission des joins.
+
+**Fenêtres d'exclusion** (gateway fixe hors service ou dégradée, voir [`gateway.md`](gateway.md)) :
 
 | Début | Fin | Cause |
 |---|---|---|
+| 2026-11-03 13:15 | 2026-11-03 14:10 | Réception dégradée (RSSI médian des trames étrangères −120 dBm au lieu de −107, trafic divisé par 4) ; cause non établie. Avant le régime 1a |
 | 2026-11-03 15:58:15 | 2026-11-03 16:21:04 | LoRa restée désactivée après une micro-coupure du backhaul (relance du netwatch en échec) |
+| 2026-11-03 16:21:04 | 2026-11-03, vers 17:00 | Réception dégradée, même signature qu'à 13:15 ; fin au déplacement de la gateway (heure exacte non relevée, première trame d'une mote à 17:04:59) |
 | 2026-11-03 16:22:59 | 2026-11-03 16:23:25 | Relance de la LoRa à l'installation du nouveau netwatch |
+| 2026-11-04 08:53:06 | 2026-11-04, vers 08:53:32 | Relance de la LoRa par le netwatch après une micro-coupure du backhaul (9 s), sans intervention sur la gateway |
+| 2026-11-04 09:01:47 | 2026-11-04, vers 09:02:13 | Idem (micro-coupure de 9 s) |
+
+Les fins « vers » sont estimées avec la durée habituelle d'une relance
+(26 s), le journal de la gateway ne gardant pas toujours la ligne
+`forwarder is ready`.
 
 Heures de Paris. Les émissions faites dans ces fenêtres ne comptent pas dans
 le PDR.
+
+## Résultats préliminaires du régime 1a (première nuit, 3–4 novembre 2026)
+
+⚠️ **Une seule nuit de mesures.** Ces chiffres donnent une tendance, pas un
+SF minimal fiable : le régime 1a doit tourner plusieurs jours, et l'effet de
+l'heure (voir le 4R1) impose de couvrir plusieurs journées complètes. La
+gateway a été surélevée de 30 cm et rapprochée de la fenêtre de 10 cm le
+3 novembre vers 17:00 (voir [`gateway.md`](gateway.md)). Ce petit
+déplacement a suffi à relever d'environ 4 dB le RSSI médian des trames
+étrangères (−107 → −103 dBm) et à doubler leur nombre : ces résultats ne
+sont pas directement comparables à la campagne 0 ni aux pré-tests, faits
+depuis l'ancienne position.
+
+- **Période** : 2026-11-03 17:05 → 2026-11-04 08:50 (heure de Paris), sans
+  fenêtre d'exclusion ; `pi-mote-4` n'émet qu'à partir de son join (18:08).
+- **Méthode** : chaque émission du journal CSV de la mote (`event=tx`,
+  réponse immédiate `ok`, y compris les `mac_err`) est cherchée dans la table
+  `uplinks` par sa charge utile (numéro de cycle, DR, marqueur `0x1A`), unique
+  par mote. PDR = paquets reçus / paquets émis. Environ 175 à 189 émissions
+  par SF et par mote. Calcul :
+  `python Mote/src/bilan_regime_1a.py <dossier> --debut 2026-11-03T17:05 --fin 2026-11-04T08:50`
+  (données copiées le 4 novembre vers 10:05).
+
+| # | Nom | SF7 | SF8 | SF9 | SF10 | SF11 | SF12 | SNR médian SF12 (reçus) |
+|---|---|---|---|---|---|---|---|---|
+| 2 | Forum Louis Lareng | 0 % | 7 % | 29 % | 70 % | 84 % | 87 % | −12 dB |
+| 4 | Centre de biologie intégrative | 0 % | 0 % | 0 % | 0 % | 1 % | 15 % | −17,75 dB |
+| 5 | Bâtiment 4R1 | 1 % | 1 % | 6 % | 26 % | 42 % | 64 % | −16 dB |
+
+**Lecture**
+
+- **Aucune mote n'atteint 90 % de PDR**, quel que soit le SF : selon la
+  définition du [plan](plan-experimental.md) (section 8), aucune n'a encore
+  de SF minimal fiable. Le seuil de 90 % sera peut-être adapté une fois
+  plusieurs jours de mesures disponibles.
+- **Forum** : SF7 ne passe jamais, SF9 à 29 %. Contrairement à la lecture
+  attendue ci-dessous (campagne 0, au sol), l'emplacement est dans la cible.
+- **4R1 : fort effet de l'heure.** En SF12, 2 paquets reçus sur 46 de 17h à
+  21h, puis 119 sur 143 (83 %) de 21h à 8h50. Cause non établie (activité
+  dans le bâtiment, brouillage en journée).
+- **CBI** : SF12 à 15 %, SNR toujours proche du seuil de démodulation
+  (−20 dB).
+- **Pertes sans lien avec le SNR** : le Forum perd 13 % de ses paquets SF12
+  avec environ 8 dB de marge médiane, à raison d'environ une perte par heure,
+  sans regroupement dans le temps. Hypothèse principale : collisions avec les
+  autres réseaux LoRa du campus. La gateway reçoit 60 à 90 trames étrangères
+  par heure depuis son déplacement, et un paquet SF12 dure environ 1,2 s.
+  Autre piste : les émissions de la gateway, pendant lesquelles elle ne
+  reçoit pas.
 
 ## Lecture attendue (hypothèse, à vérifier par la balade 0a)
 
