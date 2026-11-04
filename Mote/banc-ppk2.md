@@ -236,6 +236,10 @@ temps que le courant, ce qui permet de découper les traces par événement :
 | 2 novembre 2026 | Continuité (étape 3), mote débranchée | Pastille gauche ↔ droite : ouvert. Gauche ↔ `+3.3V` de J4 : continuité (côté rail confirmé). Gauche ↔ `GND` : pas de court-circuit |
 | 2 novembre 2026 | Tentative de soudure de fils sur les pastilles de R4 (étape 4) : échec, pastilles trop petites | Montage sur R4 abandonné |
 | 2 novembre 2026 | Choix du [montage sans USB](#montage-retenu-sans-usb-2-novembre-2026), vérifié sur le schéma | — |
+| 4 novembre 2026 | Barrettes mâles enfichées dans J4 et J2, **non soudées** (pas de fer ni de multimètre ce jour) | Mote à ne pas alimenter avant soudure et tests |
+| 4 novembre 2026 | nRF Connect for Desktop installé (avec SEGGER J-Link V9.82) ; Power Profiler v4.4.1 reconnaît le PPK2 | N° de série PPK2 : `EB86C5E77852` |
+| 4 novembre 2026 | Essai à vide du PPK2 : mode Source meter, 3300 mV, rien de branché, 100 kS/s pendant 10 s | Moyenne 52,8 nA, max 0,56 µA (plancher de mesure du PPK2) |
+| 4 novembre 2026 | Essai sur résistance (marron-noir-orange-doré, 10 kΩ ±5 %) entre VOUT et GND : Source meter, 3300 mV, 100 kS/s pendant 10 s | Moyenne 330,83 µA, max 335,12 µA, bruit crête à crête d'environ 6 µA ; R déduite 9,97 kΩ, conforme |
 | | Barrettes mâles soudées dans J4 et J2 ; sens de J2 vérifié (broche 3 ↔ `GND`, broche 2 ↔ `+3.3V`) | |
 | | Port série du Raspberry Pi configuré | |
 | | Premier essai : fond, puis `radio tx` en SF7 | |
