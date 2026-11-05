@@ -242,11 +242,14 @@ Les enregistrements bruts de Power Profiler (`.ppk2`, environ 2 Go par heure à 
 | 4 novembre 2026 | nRF Connect for Desktop installé (avec SEGGER J-Link V9.82) ; Power Profiler v4.4.1 reconnaît le PPK2 | N° de série PPK2 : `EB86C5E77852` |
 | 4 novembre 2026 | Essai à vide du PPK2 : mode Source meter, 3300 mV, rien de branché, 100 kS/s pendant 10 s | Moyenne 52,8 nA, max 0,56 µA (plancher de mesure du PPK2) |
 | 4 novembre 2026 | Essai sur résistance (marron-noir-orange-doré, 10 kΩ ±5 %) entre VOUT et GND : Source meter, 3300 mV, 100 kS/s pendant 10 s | Moyenne 330,83 µA, max 335,12 µA, bruit crête à crête d'environ 6 µA ; R déduite 9,97 kΩ, conforme |
-| 5 novembre 2026 | Barrettes mâles soudées dans J4 (12 broches) et J2 (6 broches) | |
+| 5 novembre 2026 | Barrettes mâles soudées dans J4 (12 broches) et J2 (6 broches) | — |
 | 5 novembre 2026 | Tests de continuité, mote débranchée : J2 broche 3 ↔ J4 `GND` ; J2 broche 2 ↔ J4 `+3.3V` ; J4 `+3.3V` ↔ `GND` ; J2 broche 1 ↔ broche 3 | Continuité ; continuité (sens de J2 confirmé) ; ouvert (bip bref de charge de C4) ; ouvert |
 | 5 novembre 2026 | Première mise sous tension de la mote par le PPK2 (sans Pi) : Source meter 3300 mV, 100 kS/s, cavalier J2 broche 1 ↔ 3, câble du rétroéclairage débranché (nappe de l'écran en place), antenne vissée, ni USB ni piles ; sortie active 34 s. Fichier `2026-11-05_1621_7330_smu3300_demarrage-reset.ppk2` (36,3 s) | Pas de court-circuit. Démarrage : pic d'appel de 96 mA, environ 7,4 mA pendant environ 0,2 s, salves à 22 mA et 15 mA, puis fond stable de 4,4 à 4,5 mA |
 | 5 novembre 2026 | Un événement isolé vers 17 s après la mise sous tension | Même signature que le démarrage (creux bref vers 3,6 mA, pic à 45 mA, paliers vers 10 et 12,5 mA, salves à 22 et 15 mA, environ 0,25 s) : reset probable du RN2483 (grille flottante de Q4, ou contact du cavalier J2), à confirmer par la liaison série |
-
 | 5 novembre 2026 | Enregistrement de 6 min 53 s (début à 16:33:48) sans manipulation, même montage (cavalier J2 vérifié). Fichier `2026-11-05_1633_7330_smu3300_fond-7min.ppk2` | Aucun événement hors du démarrage. Fond : 4,38 mA en moyenne sur une fenêtre de 2,6 s, de 4,2 à 4,53 mA |
-| | Port série du Raspberry Pi configuré | |
+| 5 novembre 2026 | Raspberry Pi du banc identifié par SSH (Ethernet, adresse DHCP 192.168.1.212) | Raspberry Pi 5 Model B Rev 1.0, nom `pi-ppk2`, Debian 13 (Trixie), noyau 6.18.50+rpt-rpi-2712, MAC `2c:cf:67:97:8a:b0`. `/dev/serial0` pointe sur `ttyAMA10` (connecteur de débogage, console système), pas sur GPIO14/15 |
+| 5 novembre 2026 | Réseau de `pi-ppk2` : Wi-Fi du bureau géré par NetworkManager (profil netplan, connexion automatique), Tailscale installé | `tailscaled` activé au démarrage, connecté (100.126.54.98, Tailscale SSH actif) ; SSH vérifié par Tailscale. Redémarrage du 5 novembre 2026 à 17:20 : Tailscale et Wi-Fi revenus seuls, SSH par `pi-ppk2` en 10 s environ |
+| 5 novembre 2026 | Port série du Raspberry Pi configuré : `dtparam=uart0=on` ajouté à `/boot/firmware/config.txt`, redémarrage | `/dev/ttyAMA0` présent (groupe `dialout`), GPIO14 = TXD0 et GPIO15 = RXD0 (`pinctrl`). `/dev/serial0` reste sur `ttyAMA10` (console de débogage) |
+| 5 novembre 2026 | Logiciel de `pi-ppk2` : uv 0.13.7 (sans sudo), git 2.47.3, dépôt cloné dans `~/DMX-LoRa-Exp-1` (commit `826d607`), `uv sync` dans `Mote/` | Python 3.14.10, pyserial 3.5 (mêmes versions que les Pi de terrain) |
+| | Liaison série Pi ↔ RN2483 : `sys get ver` sur `/dev/ttyAMA0` | |
 | | Premier essai : fond, puis `radio tx` en SF7 | |
