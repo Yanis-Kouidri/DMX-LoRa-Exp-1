@@ -212,7 +212,11 @@
     downlink_tx_power=-1
 
     # ADR is disabled.
-    adr_disabled=false
+    #
+    # Disabled for the experiment (fixed SF and TX power). With ADR enabled, the
+    # ADR bit set in every downlink made the RN2483 motes turn their own ADR back
+    # on, then ADRACKReq made ChirpStack resend NewChannelReq / LinkADRReq.
+    adr_disabled=true
 
     # Minimum data-rate.
     min_dr=0
