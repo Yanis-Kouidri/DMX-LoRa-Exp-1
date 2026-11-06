@@ -146,7 +146,7 @@ step "Mise à jour du système et outils"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get -y upgrade
-apt-get -y install git vim tree
+apt-get -y install git vim tree uhubctl
 
 step "Dépôt ${REPO_URL}"
 user_home=$(getent passwd "$SUDO_USER" | cut -d: -f6)
@@ -167,6 +167,21 @@ fi
 step "Lingering de ${SUDO_USER}"
 # Démarre les services utilisateur (regime-1a.service) au boot, sans session ouverte.
 loginctl enable-linger "$SUDO_USER"
+
+step "Coupure USB sans mot de passe (uhubctl)"
+# regime_1a.py relance une mote muette par une coupure USB : voir raspberry-pi.md.
+sudoers_file="/etc/sudoers.d/020_uhubctl"
+sudoers_rule="${SUDO_USER} ALL=(root) NOPASSWD: /usr/sbin/uhubctl"
+if [[ -f $sudoers_file ]] && grep -qxF "$sudoers_rule" "$sudoers_file"; then
+    echo "Règle déjà en place : ${sudoers_file}."
+else
+    tmp=$(mktemp)
+    printf '%s\n' "$sudoers_rule" > "$tmp"
+    visudo -cf "$tmp" >/dev/null || die "règle sudo invalide : ${sudoers_rule}"
+    install -m 0440 -o root -g root "$tmp" "$sudoers_file"
+    rm -f "$tmp"
+    echo "Règle installée : ${sudoers_file}."
+fi
 
 step "Tailscale"
 if ! command -v tailscale >/dev/null; then

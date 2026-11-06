@@ -35,7 +35,8 @@ session SSH n'est pas touchée.
 C'est le seul moyen connu de relancer un RN2483 bloqué (liaison série muette,
 mote toujours visible en USB : voir [`mote.md`](mote.md)). `regime_1a.py`
 l'utilise tout seul quand la resynchronisation série ne suffit pas.
-Installation sur un nouveau Pi :
+`scripts/setup-pi.sh` installe `uhubctl` et la règle sur les nouveaux Pi.
+Pour un Pi déjà configuré :
 
 ```bash
 ssh -t pi@pi-mote-N 'sudo apt-get install -y uhubctl && echo "pi ALL=(root) NOPASSWD: /usr/sbin/uhubctl" > /tmp/020_uhubctl && sudo visudo -cf /tmp/020_uhubctl && sudo install -m 0440 -o root -g root /tmp/020_uhubctl /etc/sudoers.d/020_uhubctl && rm /tmp/020_uhubctl'
