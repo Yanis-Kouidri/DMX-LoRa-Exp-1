@@ -62,7 +62,7 @@ Défaut matériel : la mote a été remplacée sur `pi-mote-4` par
   sort : ni retour à la ligne seul, ni break suivi de `0x55`, ni port rouvert.
 - La mote reste visible en USB et le noyau ne signale aucune erreur.
 - Seule une coupure de l'alimentation USB la relance (voir
-  [`raspberry-pi.md`](raspberry-pi.md#coupure-usb-à-distance-sur-pi-mote-4)).
+  [`raspberry-pi.md`](raspberry-pi.md#coupure-usb-à-distance)).
 - Le blocage survient au bout de quelques dizaines à quelques centaines de
   commandes. Les commandes `mac tx` passent par la même liaison : la campagne
   y serait exposée.

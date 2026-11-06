@@ -17,18 +17,29 @@ liaison série USB).
 | `pi-mote-5` | Raspberry Pi 4 Model B | 1.5      | 4 Go |
 | `pi-mote-6` | Raspberry Pi 4 Model B | 1.1      | 4 Go |
 
-### Coupure USB à distance sur `pi-mote-4`
+### Coupure USB à distance
 
-`uhubctl` est installé sur `pi-mote-4` uniquement. Deux commandes y sont
-autorisées sans mot de passe par `/etc/sudoers.d/020_uhubctl` :
+`uhubctl` est installé sur `pi-mote-2`, `pi-mote-4` et `pi-mote-5`. Toute
+commande `uhubctl` y est autorisée sans mot de passe par
+`/etc/sudoers.d/020_uhubctl` (`pi ALL=(root) NOPASSWD: /usr/sbin/uhubctl`).
+`sudo reboot` et `sudo poweroff` le sont aussi (`030_poweroff`).
 
-- `sudo uhubctl -l 1-1 -a cycle -d 5` : coupe l'alimentation de tous les ports
-  USB pendant 5 s (ils sont alimentés ensemble sur un Pi 4) ;
-- `sudo reboot`.
+```bash
+sudo -n /usr/sbin/uhubctl -l 1-1 -a cycle -d 5   # coupe tous les ports USB 5 s
+```
 
-Ces commandes ont servi au diagnostic de la mote défectueuse
-`0004A30B0023F575`, remplacée depuis : voir
-[`mote.md`](mote.md#mote-défectueuse-0004a30b0023f575-retirée).
+Sur un Pi 4, les ports USB sont alimentés ensemble : la commande coupe tous
+les ports, pas seulement celui de la mote. Le réseau passant par le Wi-Fi, la
+session SSH n'est pas touchée.
+
+C'est le seul moyen connu de relancer un RN2483 bloqué (liaison série muette,
+mote toujours visible en USB : voir [`mote.md`](mote.md)). `regime_1a.py`
+l'utilise tout seul quand la resynchronisation série ne suffit pas.
+Installation sur un nouveau Pi :
+
+```bash
+ssh -t pi@pi-mote-N 'sudo apt-get install -y uhubctl && echo "pi ALL=(root) NOPASSWD: /usr/sbin/uhubctl" > /tmp/020_uhubctl && sudo visudo -cf /tmp/020_uhubctl && sudo install -m 0440 -o root -g root /tmp/020_uhubctl /etc/sudoers.d/020_uhubctl && rm /tmp/020_uhubctl'
+```
 
 ## Système d'exploitation
 

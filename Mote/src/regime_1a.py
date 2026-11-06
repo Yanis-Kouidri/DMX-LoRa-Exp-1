@@ -17,6 +17,14 @@ des fenêtres RX1 et RX2. Ce journal est
 le dénominateur du PDR : il se croise avec les réceptions de la base par
 DevEUI et FCnt, ou par le numéro de cycle contenu dans la charge utile.
 
+Reprise automatique : un module qui ne répond plus (réponse vide, comme le
+blocage décrit dans Mote/mote.md) déclenche une resynchronisation de la
+liaison série (break puis 0x55), puis, si elle échoue, une coupure de
+l'alimentation USB par `uhubctl` (règle sudo sans mot de passe, voir
+Mote/raspberry-pi.md), au plus une fois toutes les 10 minutes. Après une
+coupure, le module est reconfiguré et refait un join. Chaque étape est
+journalisée (`event=recover`).
+
 Charge utile (6 octets, comme le dimensionnement du plan) :
     [cycle, 4 octets big-endian] [DR, 1 octet] [0x1A, marqueur du régime]
 
@@ -30,6 +38,7 @@ import csv
 import random
 import signal
 import socket
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -56,6 +65,10 @@ TX_ASYNC_TIMEOUT_S = 15.0  # airtime SF12 + RX1 + RX2, avec marge
 JOIN_DR = 0              # join en SF12 : seul SF garanti à tous les emplacements
 JOIN_RETRY_S = (60, 120, 300, 600)
 SERIAL_RETRY_S = 30.0
+USB_CYCLE_CMD = ("sudo", "-n", "/usr/sbin/uhubctl", "-l", "1-1", "-a", "cycle", "-d", "5")
+USB_CYCLE_MIN_INTERVAL_S = 600.0  # pas de coupure en boucle si elle ne suffit pas
+PORT_RETURN_TIMEOUT_S = 60.0
+PORT_SETTLE_S = 3.0
 
 FIELDNAMES = [
     "utc", "host", "deveui", "event", "cycle", "slot", "dr", "sf", "upctr",
@@ -69,6 +82,10 @@ AIRTIME_S = {
 }
 CYCLE_PERIOD_S = sum(AIRTIME_S.values()) / DUTY_CYCLE * SAFETY_MARGIN
 SLOT_S = CYCLE_PERIOD_S / len(DR_TO_SF)
+
+
+class MoteSilent(RuntimeError):
+    """Le module ne répond plus sur la liaison série (réponse vide)."""
 
 
 def utc_now() -> str:
@@ -123,6 +140,8 @@ def configure(mote: RN2483Connection, journal: Journal) -> None:
         "adr off": mote.set_adr(False),
         f"pwridx {PWRIDX}": mote.send_command(f"mac set pwridx {PWRIDX}"),
     }
+    if not journal.deveui or any(r == "" for r in responses.values()):
+        raise MoteSilent(f"Pas de réponse à la configuration : {responses}")
     if any(r.lower() != "ok" for r in responses.values()):
         raise RuntimeError(f"Configuration refusée par le module : {responses}")
 
@@ -181,6 +200,8 @@ def send_slot(
     }
 
     response = mote.set_dr(dr)
+    if response == "":
+        raise MoteSilent(f"mac set dr {dr} sans réponse")
     if response.lower() != "ok":
         journal.write("error", **common, detail=f"mac set dr {dr} -> {response}")
         return
@@ -192,6 +213,9 @@ def send_slot(
         start = utc_now()
         immediate, async_resp = mote.send_mac_tx(payload, async_timeout=TX_ASYNC_TIMEOUT_S)
 
+        if immediate == "":
+            journal.write("error", **common, upctr=upctr, attempts=attempts, detail="mac tx sans réponse")
+            raise MoteSilent("mac tx sans réponse")
         if immediate.lower() == "ok":
             journal.write(
                 "tx", **common, upctr=upctr, attempts=attempts, immediate=immediate,
@@ -208,11 +232,43 @@ def send_slot(
         time.sleep(NO_FREE_CH_RETRY_S)
 
 
+def resync(mote: RN2483Connection, journal: Journal) -> bool:
+    """Relance l'auto-baud du module ; vrai s'il répond de nouveau."""
+
+    try:
+        mote.resync_baudrate()
+        time.sleep(0.2)
+        mote.read_available()
+        ver = mote.send_command("sys get ver")
+    except (SerialException, OSError) as exc:
+        journal.write("recover", detail={"step": "resync", "error": repr(exc)})
+        return False
+    journal.write("recover", detail={"step": "resync", "ver": ver})
+    return ver.startswith("RN2483")
+
+
+def usb_power_cycle(port: str, journal: Journal) -> None:
+    """Coupe l'alimentation USB (tous les ports du Pi 4) et attend le retour du port."""
+
+    result = subprocess.run(USB_CYCLE_CMD, capture_output=True, text=True, timeout=60)
+    start = time.monotonic()
+    time.sleep(1.0)
+    while not Path(port).exists() and time.monotonic() - start < PORT_RETURN_TIMEOUT_S:
+        time.sleep(1.0)
+    time.sleep(PORT_SETTLE_S)
+    journal.write("recover", detail={
+        "step": "usb_cycle", "returncode": result.returncode,
+        "stderr": result.stderr.strip()[-200:], "port_present": Path(port).exists(),
+        "port_wait_s": round(time.monotonic() - start, 1),
+    })
+
+
 def run(port: str, log_path: Path, max_cycles: int) -> None:
     journal = Journal(log_path, socket.gethostname())
     cycle = last_cycle(log_path) + 1
     done = 0
     mote: RN2483Connection | None = None
+    last_usb_cycle = float("-inf")
 
     try:
         while max_cycles == 0 or done < max_cycles:
@@ -233,10 +289,17 @@ def run(port: str, log_path: Path, max_cycles: int) -> None:
 
             except (SerialException, OSError, RuntimeError) as exc:
                 journal.write("error", cycle=cycle, detail=repr(exc))
+                silent = isinstance(exc, MoteSilent)
+                resynced = silent and mote is not None and resync(mote, journal)
                 if mote is not None:
+                    # rouvert et reconfiguré au tour suivant (sans join s'il est toujours joint)
                     mote.close()
                     mote = None
-                time.sleep(SERIAL_RETRY_S)
+                if silent and not resynced and time.monotonic() - last_usb_cycle >= USB_CYCLE_MIN_INTERVAL_S:
+                    last_usb_cycle = time.monotonic()
+                    usb_power_cycle(port, journal)
+                elif not resynced:
+                    time.sleep(SERIAL_RETRY_S)
 
             cycle += 1
             done += 1
