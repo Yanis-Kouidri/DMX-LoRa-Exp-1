@@ -25,6 +25,10 @@ Mote/raspberry-pi.md), au plus une fois toutes les 10 minutes. Après une
 coupure, le module est reconfiguré et refait un join. Chaque étape est
 journalisée (`event=recover`).
 
+Puissance d'émission : le serveur peut la modifier par un LinkADRReq. Elle est
+relue avant chaque émission et remise à PWRIDX si elle a changé, avec une
+ligne `event=pwridx` (valeur trouvée dans `detail`).
+
 Charge utile (6 octets, comme le dimensionnement du plan) :
     [cycle, 4 octets big-endian] [DR, 1 octet] [0x1A, marqueur du régime]
 
@@ -205,6 +209,13 @@ def send_slot(
     if response.lower() != "ok":
         journal.write("error", **common, detail=f"mac set dr {dr} -> {response}")
         return
+
+    pwridx = mote.send_command("mac get pwridx")
+    if pwridx == "":
+        raise MoteSilent("mac get pwridx sans réponse")
+    if pwridx != str(PWRIDX):
+        response = mote.send_command(f"mac set pwridx {PWRIDX}")
+        journal.write("pwridx", **common, immediate=response, detail=f"pwridx {pwridx} remis à {PWRIDX}")
 
     attempts = 0
     while True:
