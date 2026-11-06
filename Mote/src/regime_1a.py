@@ -25,9 +25,11 @@ Mote/raspberry-pi.md), au plus une fois toutes les 10 minutes. Après une
 coupure, le module est reconfiguré et refait un join. Chaque étape est
 journalisée (`event=recover`).
 
-Puissance d'émission : le serveur peut la modifier par un LinkADRReq. Elle est
-relue avant chaque émission et remise à PWRIDX si elle a changé, avec une
-ligne `event=pwridx` (valeur trouvée dans `detail`).
+Puissance d'émission et ADR : le serveur peut modifier la puissance par un
+LinkADRReq, et le RN2483 réactive son ADR quand il reçoit un downlink dont le
+bit ADR est levé. Les deux sont relus avant chaque émission et remis à PWRIDX
+et à `off` s'ils ont changé, avec une ligne `event=pwridx` ou `event=adr`
+(valeur trouvée dans `detail`).
 
 Charge utile (6 octets, comme le dimensionnement du plan) :
     [cycle, 4 octets big-endian] [DR, 1 octet] [0x1A, marqueur du régime]
@@ -216,6 +218,13 @@ def send_slot(
     if pwridx != str(PWRIDX):
         response = mote.send_command(f"mac set pwridx {PWRIDX}")
         journal.write("pwridx", **common, immediate=response, detail=f"pwridx {pwridx} remis à {PWRIDX}")
+
+    adr = mote.send_command("mac get adr")
+    if adr == "":
+        raise MoteSilent("mac get adr sans réponse")
+    if adr != "off":
+        response = mote.set_adr(False)
+        journal.write("adr", **common, immediate=response, detail=f"adr {adr} remis à off")
 
     attempts = 0
     while True:
