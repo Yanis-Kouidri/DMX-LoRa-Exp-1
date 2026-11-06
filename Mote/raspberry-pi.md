@@ -19,7 +19,7 @@ liaison série USB).
 
 ### Coupure USB à distance
 
-`uhubctl` est installé sur `pi-mote-2`, `pi-mote-4` et `pi-mote-5`. Toute
+`uhubctl` est installé sur les six Pi (`pi-mote-1` à `pi-mote-6`). Toute
 commande `uhubctl` y est autorisée sans mot de passe par
 `/etc/sudoers.d/020_uhubctl` (`pi ALL=(root) NOPASSWD: /usr/sbin/uhubctl`).
 `sudo reboot` et `sudo poweroff` le sont aussi (`030_poweroff`).
