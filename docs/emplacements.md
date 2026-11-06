@@ -144,6 +144,45 @@ journal `~/lora-logs/regime_1a_<hôte>.csv` sur chaque Pi.
 cinq essais ont été bloqués par la mote elle-même (`no_free_ch`) : le firmware
 du RN2483 limite aussi le temps d'émission des joins.
 
+**Incidents et interventions** (heure de Paris) :
+
+| Date, heure | Pi | Événement |
+|---|---|---|
+| 2026-11-05 10:43 → 2026-11-06 11:04 | `pi-mote-5` | **Mote muette** : le RN2483 ne répond plus sur la liaison série (dernière réponse coupée, `mac_t`), alors qu'il reste visible en USB. Aucune émission pendant cette période, le journal ne contient que des erreurs : rien à exclure, mais environ 24 h de mesures perdues sur ce site (voir [`Mote/mote.md`](../Mote/mote.md)) |
+| 2026-11-06 10:53 | `pi-mote-5` | Redémarrage du service, puis resynchronisation série : sans effet |
+| 2026-11-06 11:04:24 | `pi-mote-5` | Coupure USB de 5 s (`uhubctl`) : la mote répond à 11:04:36, service relancé à 11:04:44, join accepté à 11:04:53 |
+| 2026-11-06 11:16:48–52 | 2, 4, 5 | Redémarrage des services : reprise automatique d'une mote muette (commit `b0dc816`) |
+| 2026-11-06 11:25:30–31 | `pi-mote-2` | Service arrêté 1 s pour lire `mac get pwridx` (valeur 1) |
+| 2026-11-06 11:41:39–43 | 2, 4, 5 | Redémarrage des services : puissance relue et remise à `pwridx 1` avant chaque émission (`9734f59`) |
+| 2026-11-06 11:52:31 | serveur | Redémarrage de ChirpStack : ADR désactivé dans la région (`819a3ea`), voir ci-dessous |
+| 2026-11-06 11:52:52–57 | 2, 4, 5 | Redémarrage des services : ADR relu et remis à `off` avant chaque émission (`7a078bf`) |
+
+Les redémarrages de service n'ont pas provoqué de nouveau join : chacun coûte
+au plus le reste du cycle en cours, sans émission à exclure.
+
+**ADR réactivé par les motes.** Malgré `mac set adr off`, le RN2483 réactive
+son ADR dès qu'il reçoit un downlink dont le bit ADR est levé, ce que
+ChirpStack faisait tant que l'ADR n'était pas désactivé dans la région (voir
+le [plan](plan-experimental.md#14-constats-techniques-en-cours), section 14).
+Le bit ADR des uplinks reçus permet de dater ces périodes :
+
+| # | Début (premier uplink avec le bit ADR) | Fin |
+|---|---|---|
+| 4 | 2026-11-03 19:36 | 2026-11-06 11:52 |
+| 5 | 2026-11-04 15:33 | 2026-11-05 10:43 (mote muette) |
+| 2 | 2026-11-05 17:08 | 2026-11-06 11:16 |
+
+Pendant ces périodes, le SF de chaque émission est bien celui prévu (vérifié
+sur les 3 525 uplinks reçus du 3 au 6 novembre : le régime 1a fixe le DR
+avant chaque émission). La **puissance d'émission n'est pas garantie** : une
+mote en ADR peut l'augmenter d'elle-même faute de downlink, et la mote 2 a
+acquitté des `LinkADRReq` (`tx_power_index=0`) à partir du 5 novembre à
+17:43. Un essai au banc n'a pas permis de savoir comment le RN2483 applique
+cette commande. Ces périodes sont à signaler, voire à traiter à part, dans
+l'analyse. **Période de référence propre : depuis le 6 novembre 2026 à
+11:53** (ADR désactivé des deux côtés, puissance relue avant chaque
+émission, plus de downlinks en boucle).
+
 **Fenêtres d'exclusion** (gateway fixe hors service ou dégradée, voir [`gateway.md`](gateway.md)) :
 
 | Début | Fin | Cause |
@@ -154,6 +193,11 @@ du RN2483 limite aussi le temps d'émission des joins.
 | 2026-11-03 16:22:59 | 2026-11-03 16:23:25 | Relance de la LoRa à l'installation du nouveau netwatch |
 | 2026-11-04 08:53:06 | 2026-11-04, vers 08:53:32 | Relance de la LoRa par le netwatch après une micro-coupure du backhaul (9 s), sans intervention sur la gateway |
 | 2026-11-04 09:01:47 | 2026-11-04, vers 09:02:13 | Idem (micro-coupure de 9 s) |
+| 2026-11-04 13:23:40 | 2026-11-04 13:25:53 | Coupure du backhaul (79 s, plus de statistiques reçues de 13:24:29 à 13:25:53), puis relance de la LoRa |
+| 2026-11-04 17:43:53 | 2026-11-04 17:46:35 | Coupure du backhaul (2 min), puis relance de la LoRa |
+| 2026-11-04 18:41:46 | 2026-11-04, vers 18:42:21 | Micro-coupure de 9 s, puis relance de la LoRa |
+| 2026-11-06 11:28 | 2026-11-06 11:41 | Essai au banc avec la mote 1 à côté de la gateway : 80 paquets SF7 et SF8 reçus à −35 dBm environ, qui ont pu masquer des paquets faibles des motes installées |
+| 2026-11-06 11:52:31 | 2026-11-06, vers 11:52:40 | Redémarrage de ChirpStack (désactivation de l'ADR) |
 
 Les fins « vers » sont estimées avec la durée habituelle d'une relance
 (26 s), le journal de la gateway ne gardant pas toujours la ligne
@@ -210,6 +254,49 @@ depuis l'ancienne position.
   par heure depuis son déplacement, et un paquet SF12 dure environ 1,2 s.
   Autre piste : les émissions de la gateway, pendant lesquelles elle ne
   reçoit pas.
+- ⚠️ Constaté après coup : cette nuit tombe en partie dans les périodes où
+  l'ADR des motes 4 et 5 était réactivé (voir la section Régime 1a). La
+  gateway émettait aussi des downlinks de commandes MAC en boucle.
+
+## Bilan après 2,7 jours (3–6 novembre 2026)
+
+⚠️ Toujours préliminaire. Ces données incluent les périodes où l'ADR était
+réactivé (puissance non garantie) et 130 à 275 downlinks par jour de
+commandes MAC, pendant lesquels la gateway n'écoutait pas. Elles servent à
+dégrossir, pas à conclure : la période de référence commence le 6 novembre à
+11:53.
+
+- **Période** : 2026-11-03 17:05 → 2026-11-06 10:40 (heure de Paris), avec
+  les fenêtres d'exclusion du 4 novembre. Mote 5 : jusqu'au 5 novembre à
+  10:43 (mote muette ensuite). Données copiées le 6 novembre vers 10:46.
+- **Calcul** : `python Mote/src/bilan_regime_1a.py <dossier> --debut 2026-11-03T17:05 --fin 2026-11-06T10:40`,
+  avec une option `--exclure DÉBUT/FIN` par fenêtre du 4 novembre.
+
+| # | Nom | SF7 | SF8 | SF9 | SF10 | SF11 | SF12 | Émissions par SF |
+|---|---|---|---|---|---|---|---|---|
+| 2 | Forum Louis Lareng | 6 % | 18 % | 48 % | 75 % | 86 % | 87 % | environ 785 |
+| 4 | Centre de biologie intégrative | 0 % | 0 % | 0 % | 0,4 % | 12 % | 22 % | environ 772 |
+| 5 | Bâtiment 4R1 | 0,2 % | 1 % | 9 % | 31 % | 48 % | 59 % | environ 497 |
+
+Jour (8h–20h) et nuit (20h–8h), PDR en SF12 (SF11 entre parenthèses) :
+
+| # | Nom | Jour | Nuit |
+|---|---|---|---|
+| 2 | Forum Louis Lareng | 87 % (85 %) | 87 % (87 %) |
+| 4 | Centre de biologie intégrative | 27 % (15 %) | 18 % (10 %) |
+| 5 | Bâtiment 4R1 | 41 % (36 %) | 73 % (57 %) |
+
+**Lecture**
+
+- **Toujours aucune mote à 90 %.** Le Forum plafonne à 85–89 % en SF12 selon
+  les jours, malgré environ 8 dB de marge : les pertes ne viennent pas du
+  SNR. La période de référence (sans downlinks) dira quelle part venait des
+  émissions de la gateway et quelle part des collisions avec les autres
+  réseaux LoRa du campus.
+- **4R1 : l'effet de l'heure se confirme** sur plusieurs jours, avec un lien
+  nettement meilleur la nuit.
+- **CBI** : stable mais très bas (22 % en SF12). Son maintien dans
+  l'expérience est à discuter.
 
 ## Lecture attendue (hypothèse, à vérifier par la balade 0a)
 

@@ -103,6 +103,28 @@ alimentée par des piles AAA faibles (sélecteur d'alimentation, piles restées
 dans le boîtier), puis reflasher le firmware du PIC (programmateur PICkit sur
 le connecteur ICSP de la carte).
 
+### Même blocage sur la mote témoin `0004A30B00240C83` (5 novembre 2026)
+
+- La mote de `pi-mote-5`, **témoin saine** des essais ci-dessus, s'est
+  bloquée le 5 novembre 2026 à 10:43 pendant le régime 1a, avec les mêmes
+  symptômes : dernière réponse coupée (`mac_t`), puis plus rien, mote
+  toujours visible en USB, aucune erreur du noyau, alimentation correcte
+  (`vcgencmd get_throttled` : `0x0`).
+- Ni le redémarrage du service (port rouvert), ni le break suivi de `0x55`
+  ne l'ont relancée. Une coupure USB de 5 s par `uhubctl`, le 6 novembre à
+  11:04, l'a relancée : `sys get ver` répond, `sys get vdd` = 3273 mV (USB,
+  pas de piles), puis join accepté au premier essai.
+- Elle avait reçu environ 9 000 commandes en 42 h de régime 1a. Le blocage
+  n'est donc **pas propre à `…F575`** : il peut toucher n'importe quelle mote,
+  bien plus rarement (des milliers de commandes au lieu de quelques
+  dizaines à quelques centaines). La conclusion « défaut matériel » ci-dessus
+  reste plausible pour la fréquence anormale de `…F575`, mais le phénomène
+  lui-même vient sans doute du pont USB-série (PIC) ou du RN2483.
+- Depuis le 6 novembre 2026, `src/regime_1a.py` relance seul une mote muette
+  (resynchronisation, puis coupure USB) et le journalise (`event=recover`).
+  `uhubctl` est installé sur `pi-mote-2`, `-4` et `-5` (voir
+  [`raspberry-pi.md`](raspberry-pi.md#coupure-usb-à-distance)).
+
 ### Mote de remplacement `0004A30B0023EE8A`
 
 - Livrée en 1.0.1, avec la configuration d'un ancien usage (DevEUI

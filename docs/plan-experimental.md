@@ -255,6 +255,20 @@ La gateway de l'IRIT est **conservée comme référence** (stratégie B1) et com
   seuil de 90 % du SF minimal fiable pourra être adapté. Pertes probables
   par collision avec les autres réseaux LoRa du campus.
 
+**Avancement au 6 novembre 2026**
+
+- Bilan après 2,7 jours (détails dans
+  [`emplacements.md`](emplacements.md#bilan-après-27-jours-36-novembre-2026)) :
+  SF12 à 87 % au Forum, 59 % au 4R1 (41 % le jour, 73 % la nuit) et 22 % au
+  CBI. Toujours aucune mote à 90 %.
+- Mote 5 muette du 5 novembre à 10:43 au 6 novembre à 11:04 (RN2483 bloqué),
+  relancée par une coupure USB. Le régime 1a reprend désormais seul une mote
+  muette (resynchronisation série, puis coupure USB par `uhubctl`).
+- ADR réactivé par les motes, et commandes MAC en boucle depuis le
+  3 novembre : corrigé le 6 novembre à 11:52 (voir la
+  [section 14](#adr-réactivé-par-le-rn2483-et-commandes-mac-en-boucle-6-novembre-2026)).
+  **Période de référence propre à partir du 6 novembre à 11:53.**
+
 **0a. Balade de repérage de la couverture de l'IRIT**
 
 - **Objectif** : choisir des emplacements où le lien SF7 vers l'IRIT est **faible ou peu fiable**. Ce n'est pas une preuve, c'est un choix d'emplacements.
@@ -513,6 +527,41 @@ Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 
 - **Si `TOO_LATE`** : passer `rx1_delay` à 3, redémarrer ChirpStack, **refaire `mac join otaa`** (le délai est transmis dans l'acceptation du join), puis vérifier avec `mac get rxdelay1` (attendu : `3000`).
 - **Si `OK`** : la mote est peut-être trop près de la gateway, ce qui sature son récepteur. L'éloigner de quelques mètres.
 - Ce réglage sera de toute façon nécessaire pour la gateway mobile en 4G.
+
+### ADR réactivé par le RN2483 et commandes MAC en boucle (6 novembre 2026)
+
+- **Symptôme** : la gateway émettait de plus en plus de downlinks (133 le
+  4 novembre, 275 le 5), alors que le régime 1a n'en demande aucun.
+  ChirpStack renvoyait des `NewChannelReq` (canaux 3 à 7, déjà donnés au
+  join) aux motes 4 et 5 presque à chaque uplink reçu, et des `LinkADRReq`
+  (`dr=1`, `tx_power_index=0`) à la mote 2, qui les acquittait.
+- **Cause** : malgré `mac set adr off`, le **RN2483 réactive son ADR dès
+  qu'il reçoit un downlink dont le bit ADR est levé**. ChirpStack le levait
+  dans tous ses downlinks (`adr_disabled=false` dans `region_eu868.toml`).
+  Vérifié sur les trames brutes : pour chacune des trois motes, le premier
+  uplink portant le bit ADR suit immédiatement le premier downlink reçu
+  (`DevStatusReq` ou `NewChannelReq`). Ensuite :
+  - le moteur ADR de ChirpStack calcule DR et puissance : d'où les
+    `LinkADRReq` ;
+  - faute de downlink reçu, la mote lève le bit `ADRACKReq` environ toutes
+    les heures. Sur un `ADRACKReq`, ChirpStack 4.19 efface son état des canaux
+    de la mote (`reset_channels_on_activation_or_adr_ack_req` dans
+    `uplink/data.rs`) et les renvoie par `NewChannelReq`. Sur ces liens
+    faibles, le downlink part en RX1 au SF de l'uplink et se perd le plus
+    souvent : ChirpStack recommence au prochain uplink reçu.
+- **Conséquences** : le SF est resté celui prévu (le régime 1a fixe le DR
+  avant chaque émission), mais la **puissance d'émission n'est pas
+  garantie** pendant les périodes où l'ADR était actif (dates dans
+  [`emplacements.md`](emplacements.md#régime-1a)). Chaque downlink rendait
+  aussi la gateway sourde environ 1,5 s.
+- **Correctif du 6 novembre 2026** : `adr_disabled=true` dans la région
+  (ChirpStack redémarré à 11:52:31), conformément au dispositif (« ADR
+  désactivé », section 5). Le régime 1a relit aussi l'ADR et la puissance
+  avant chaque émission, les remet à `off` et à `pwridx 1`, et le journalise.
+  Résultat : plus aucun downlink, bit ADR à 0 dans les uplinks.
+- **Leçon** : `mac set adr off` côté mote ne suffit pas, l'ADR doit être
+  désactivé aussi côté serveur. À reprendre dans la description du
+  dispositif expérimental de l'article.
 
 ### Rappels sur les commandes RN2483
 
