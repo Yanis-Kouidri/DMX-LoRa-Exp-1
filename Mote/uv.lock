@@ -7,11 +7,27 @@ name = "mote"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "ppk2-api" },
     { name = "pyserial" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pyserial", specifier = ">=3.5" }]
+requires-dist = [
+    { name = "ppk2-api", specifier = ">=0.9.2" },
+    { name = "pyserial", specifier = ">=3.5" },
+]
+
+[[package]]
+name = "ppk2-api"
+version = "0.9.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyserial" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/43/a1/ac0c681abe0ce81d8bbfc098b507d3b2d178e51408865a4db884ad42ab40/ppk2-api-0.9.2.tar.gz", hash = "sha256:e8fb29f782ba6e5bd2e0286079163c495cfffce336f9b149430348c043b25300", size = 16609, upload-time = "2023-06-09T13:36:29.662Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/42/54/6f1a3a1b8d0b5eac8757bb587c87305ea3a3960b8298f351e29aa92c6a21/ppk2_api-0.9.2-py3-none-any.whl", hash = "sha256:b7fb02156f87d8430bbce0006876d38c8309ada671fbcd15848173b431198803", size = 15881, upload-time = "2023-06-09T13:36:27.767Z" },
+]
 
 [[package]]
 name = "pyserial"
