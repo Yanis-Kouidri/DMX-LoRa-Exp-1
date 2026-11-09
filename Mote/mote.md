@@ -122,6 +122,11 @@ le connecteur ICSP de la carte).
   lui-même vient sans doute du pont USB-série (PIC) ou du RN2483.
 - Depuis le 6 novembre 2026, `src/regime_1a.py` relance seul une mote muette
   (resynchronisation, puis coupure USB) et le journalise (`event=recover`).
+- La même mote s'est encore bloquée le 7 novembre à 22:11 et le 8 novembre à
+  10:55 (heure de Paris). Les deux fois, la resynchronisation a échoué et la
+  coupure USB l'a relancée, join compris, en 24 s. Soit 3 blocages en 5 jours
+  pour cette mote, contre aucun pour celles de `pi-mote-2` et `pi-mote-4` sur
+  la même période : la fréquence varie d'une mote à l'autre.
   `uhubctl` est installé sur les six Pi (voir
   [`raspberry-pi.md`](raspberry-pi.md#coupure-usb-à-distance)).
 

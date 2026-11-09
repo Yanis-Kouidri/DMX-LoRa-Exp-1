@@ -156,6 +156,8 @@ du RN2483 limite aussi le temps d'émission des joins.
 | 2026-11-06 11:41:39–43 | 2, 4, 5 | Redémarrage des services : puissance relue et remise à `pwridx 1` avant chaque émission (`9734f59`) |
 | 2026-11-06 11:52:31 | serveur | Redémarrage de ChirpStack : ADR désactivé dans la région (`819a3ea`), voir ci-dessous |
 | 2026-11-06 11:52:52–57 | 2, 4, 5 | Redémarrage des services : ADR relu et remis à `off` avant chaque émission (`7a078bf`) |
+| 2026-11-07 22:11:29 → 22:11:53 | `pi-mote-5` | Mote muette (`mac tx` sans réponse) : reprise automatique, resynchronisation sans effet, coupure USB, join accepté au premier essai (24 s) |
+| 2026-11-08 10:55:57 → 10:56:21 | `pi-mote-5` | Idem (`mac get adr` sans réponse) : reprise automatique en 24 s |
 
 Les redémarrages de service n'ont pas provoqué de nouveau join : chacun coûte
 au plus le reste du cycle en cours, sans émission à exclure.
@@ -196,6 +198,7 @@ l'analyse. **Période de référence propre : depuis le 6 novembre 2026 à
 | 2026-11-04 13:23:40 | 2026-11-04 13:25:53 | Coupure du backhaul (79 s, plus de statistiques reçues de 13:24:29 à 13:25:53), puis relance de la LoRa |
 | 2026-11-04 17:43:53 | 2026-11-04 17:46:35 | Coupure du backhaul (2 min), puis relance de la LoRa |
 | 2026-11-04 18:41:46 | 2026-11-04, vers 18:42:21 | Micro-coupure de 9 s, puis relance de la LoRa |
+| 2026-11-06 10:53:02 | 2026-11-06, vers 10:54:27 | Coupure du backhaul (1 min), puis relance de la LoRa. Avant la période de référence |
 | 2026-11-06 11:28 | 2026-11-06 11:41 | Essai au banc avec la mote 1 à côté de la gateway : 80 paquets SF7 et SF8 reçus à −35 dBm environ, qui ont pu masquer des paquets faibles des motes installées |
 | 2026-11-06 11:52:31 | 2026-11-06, vers 11:52:40 | Redémarrage de ChirpStack (désactivation de l'ADR) |
 
@@ -297,6 +300,68 @@ Jour (8h–20h) et nuit (20h–8h), PDR en SF12 (SF11 entre parenthèses) :
   nettement meilleur la nuit.
 - **CBI** : stable mais très bas (22 % en SF12). Son maintien dans
   l'expérience est à discuter.
+
+## Période de référence (6–9 novembre 2026)
+
+Premiers résultats sans biais connu : ADR désactivé côté serveur et côté
+mote, puissance relue avant chaque émission, plus de downlinks en boucle.
+
+- **Période** : 2026-11-06 11:53 → 2026-11-09 14:10 (heure de Paris), soit
+  environ 3,1 jours, dont un week-end complet. Aucune fenêtre d'exclusion :
+  pas de trou dans les statistiques de la gateway, aucune reconnexion,
+  aucune relance de la LoRa. Données copiées le 9 novembre vers 14:18.
+- **Calcul** : `python Mote/src/bilan_regime_1a.py <dossier> --debut 2026-11-06T11:53 --fin 2026-11-09T14:10`.
+- **Contrôles** : aucune ligne `adr` ni `pwridx` dans les journaux (ADR et
+  puissance jamais modifiés) ; 37, 75, 3 puis 1 downlinks par jour du 6 au
+  9 novembre (les derniers `NewChannelReq` en attente pour la mote 4, puis
+  quasiment plus rien) ; 15 001 trames étrangères reçues, RSSI médian
+  −103 dBm. La mote 5 s'est bloquée deux fois, relancée chaque fois en 24 s
+  par la reprise automatique (voir la section Régime 1a).
+
+| # | Nom | SF7 | SF8 | SF9 | SF10 | SF11 | SF12 | SNR médian SF12 (reçus) |
+|---|---|---|---|---|---|---|---|---|
+| 2 | Forum Louis Lareng | 2 % | 31 % | 62 % | 81 % | 87 % | 84 % | −10 dB |
+| 4 | Centre de biologie intégrative | 0 % | 0 % | 0 % | 0,2 % | 8 % | 19 % | −17 dB |
+| 5 | Bâtiment 4R1 | 0 % | 0,5 % | 18 % | 45 % | 61 % | 70 % | −14 dB |
+
+Environ 890 émissions par SF et par mote.
+
+PDR en SF12 selon le moment (SF11 entre parenthèses) :
+
+| # | Nom | Semaine, jour (8h–20h) | Semaine, nuit | Week-end, jour | Week-end, nuit |
+|---|---|---|---|---|---|
+| 2 | Forum Louis Lareng | 88 % (90 %) | 78 % (87 %) | 83 % (87 %) | 85 % (84 %) |
+| 4 | Centre de biologie intégrative | 19 % (7 %) | 12 % (8 %) | 24 % (11 %) | 18 % (6 %) |
+| 5 | Bâtiment 4R1 | **22 %** (9 %) | 73 % (51 %) | **84 %** (83 %) | 83 % (76 %) |
+
+Environ 145 à 290 émissions par case et par SF. « Semaine » : le vendredi
+6 novembre de 11:53 à minuit et le lundi 9 novembre de minuit à 14:10.
+« Week-end » : samedi et dimanche, de minuit à minuit.
+
+**Lecture**
+
+- **Toujours aucune mote à 90 %** : aucun SF minimal fiable au sens de la
+  définition actuelle. Le Forum plafonne à 84–88 % selon les jours.
+- **4R1 : effet des jours ouvrés.** En SF12, 22 % le jour en semaine contre
+  84 % le jour le week-end, et 73 à 83 % la nuit. Le lundi 9 novembre au
+  matin, de nouveau 42 %. Le lien s'effondre pendant les heures de travail :
+  activité humaine dans le bâtiment (équipements du service électronique,
+  brouillage, personnes, portes) plutôt que propagation. À confirmer sur
+  plusieurs semaines ; cela impose au moins une semaine complète par
+  configuration.
+- **Forum : SF12 passe moins bien que SF11** (84 % contre 87 %), chaque
+  jour, alors que SF12 a plus de marge de SNR. Un paquet SF12 dure deux fois
+  plus longtemps (environ 1,2 s contre 0,6 s) et s'expose donc davantage aux
+  collisions : cela renforce l'hypothèse des collisions avec les autres
+  réseaux LoRa du campus.
+- **Le correctif ADR n'a pas amélioré le SF12 du Forum** (87 % sur la
+  période précédente, 84 % ici) : les downlinks n'étaient pas la cause
+  principale de ses pertes. SF9 et SF10 progressent (48 → 62 %, 75 → 81 %),
+  sans qu'on puisse séparer l'effet du correctif de celui du week-end.
+- **CBI** : stable mais très bas, de 15 à 22 % en SF12 selon les jours.
+- **Mote 5** : 3 blocages en 5 jours (5, 7 et 8 novembre), contre aucun pour
+  les motes 2 et 4. Sans la reprise automatique, le week-end aurait été
+  perdu sur ce site.
 
 ## Lecture attendue (hypothèse, à vérifier par la balade 0a)
 

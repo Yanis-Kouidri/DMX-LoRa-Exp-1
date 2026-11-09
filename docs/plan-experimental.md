@@ -269,6 +269,23 @@ La gateway de l'IRIT est **conservée comme référence** (stratégie B1) et com
   [section 14](#adr-réactivé-par-le-rn2483-et-commandes-mac-en-boucle-6-novembre-2026)).
   **Période de référence propre à partir du 6 novembre à 11:53.**
 
+**Avancement au 9 novembre 2026**
+
+- Premier bilan sur la période de référence (6–9 novembre, 3,1 jours, aucune
+  coupure de la gateway ; détails dans
+  [`emplacements.md`](emplacements.md#période-de-référence-69-novembre-2026)) :
+  SF12 à 84 % au Forum, 70 % au 4R1 et 19 % au CBI. Toujours aucune mote à
+  90 %.
+- Le 4R1 s'effondre le jour en semaine (22 % en SF12, contre 84 % le jour le
+  week-end) : effet probable de l'activité dans le bâtiment.
+- Au Forum, SF12 passe moins bien que SF11 malgré plus de marge : argument
+  en faveur des collisions avec les autres réseaux du campus.
+- La reprise automatique a relancé deux fois la mote 5 (7 et 8 novembre),
+  en 24 s chaque fois.
+- À discuter avec les directeurs de thèse le 10 novembre : seuil de 90 % ou
+  définition par tranche horaire, durée minimale d'une configuration (au
+  moins une semaine), maintien du CBI, remplacement éventuel de la mote 5.
+
 **0a. Balade de repérage de la couverture de l'IRIT**
 
 - **Objectif** : choisir des emplacements où le lien SF7 vers l'IRIT est **faible ou peu fiable**. Ce n'est pas une preuve, c'est un choix d'emplacements.
