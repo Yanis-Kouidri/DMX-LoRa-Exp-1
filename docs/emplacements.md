@@ -139,6 +139,31 @@ journal `~/lora-logs/regime_1a_<hôte>.csv` sur chaque Pi.
 | 4 | `pi-mote-4` | 2026-11-03, 16:09 | Non joint : joins SF12 répétés (60 s, 120 s, 300 s, puis toutes les 10 min) |
 | 5 | `pi-mote-5` | 2026-11-03, 16:09 | Joint (session du pré-test), balayage SF7 → SF12 dès le cycle 0 |
 | 2 | `pi-mote-2` | 2026-11-03, 17:01 | Non joint ; join accepté à 17:05 (3ᵉ essai) |
+| 1 | `pi-mote-1` | 2026-11-10, 18:03 | **Mote témoin**, à quelques mètres de la gateway fixe (voir ci-dessous). Déjà jointe (session de l'essai au banc du 6 novembre) |
+
+**Mote témoin (`pi-mote-1`, depuis le 10 novembre 2026 à 18:03).** Décidée
+avec les directeurs de thèse le 10 novembre : la mote 1 (DevEUI
+`0004a30b0023f200`) tourne le régime 1a à l'identique (14 dBm, même cycle),
+à quelques mètres de l'antenne de la gateway, dans le bureau de la gateway.
+Avec un lien excellent, son PDR devrait être proche de 100 % à tous les SF :
+toute perte de la témoin est une perte de la chaîne (gateway, backhaul,
+ChirpStack, base), pas du canal. Elle sert de sentinelle des pannes
+silencieuses, valide la règle d'exclusion et sert de contrôle temporel (par
+exemple pendant l'effondrement de l'après-midi au 4R1).
+
+- **Premier cycle** : 8 émissions sur 8 reçues de 18:03 à 18:09, RSSI de
+  −39 à −32 dBm, SNR de +8,75 à +12 dB.
+- **Limites** : elle ne mesure pas les collisions, car un signal aussi fort
+  les gagne presque toujours (effet de capture). Surtout, à −35 dBm, elle
+  peut masquer un paquet faible d'une autre mote reçu au même moment sur le
+  même canal, quel que soit son SF, voire sur un canal voisin. Sa présence
+  modifie donc le dispositif à partir du 10 novembre à 18:03 : sa gêne sera
+  **mesurée** en comparant les paquets des autres motes qui chevauchent une
+  émission de la témoin à ceux qui ne la chevauchent pas (heures exactes
+  dans les journaux). Si elle est mesurable, l'éloigner ou réduire sa
+  puissance, et traiter les chevauchements à part.
+- La mote 1 était prévue pour l'emplacement ADM : celui-ci prendra un autre
+  Pi (`pi-mote-3` ou `pi-mote-6`) et une autre mote.
 
 `pi-mote-4` a joint le 3 novembre à 18:08, au 15ᵉ essai. De 17:18 à 17:58,
 cinq essais ont été bloqués par la mote elle-même (`no_free_ch`) : le firmware
@@ -159,6 +184,7 @@ du RN2483 limite aussi le temps d'émission des joins.
 | 2026-11-07 22:11:29 → 22:11:53 | `pi-mote-5` | Mote muette (`mac tx` sans réponse) : reprise automatique, resynchronisation sans effet, coupure USB, join accepté au premier essai (24 s) |
 | 2026-11-08 10:55:57 → 10:56:21 | `pi-mote-5` | Idem (`mac get adr` sans réponse) : reprise automatique en 24 s |
 | 2026-11-10 15:03:21 → 15:04:52 | `pi-mote-5` | Idem (`mac set dr` sans réponse) : coupure USB à 15:03:36, join refusé puis accepté au 2e essai (1 min 31 s) |
+| 2026-11-10 18:03:05 | `pi-mote-1` | Démarrage du régime 1a sur la mote témoin, près de la gateway (Pi mis à jour à `8dba4ef`) |
 
 Les redémarrages de service n'ont pas provoqué de nouveau join : chacun coûte
 au plus le reste du cycle en cours, sans émission à exclure.
