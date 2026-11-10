@@ -490,6 +490,25 @@ Bonus : une figure de courbe de courant annotée par type d'événement, pour le
 - L'**unité statistique est le passage** de la gateway devant une mote.
 - Les passages d'une même tournée sont corrélés (même jour, même météo). On regroupe donc par tournée, avec un **bootstrap par tournée** ou un **modèle à effets mixtes**, pour ne pas surestimer la précision.
 
+**Règle d'exclusion des mesures (fixée le 10 novembre 2026, avant l'analyse finale)**
+
+Le PDR mesure le lien radio, pas la disponibilité de l'infrastructure. Une panne de la gateway ou une intervention sur le dispositif n'est pas une propriété du canal : les émissions concernées sont exclues, selon les règles ci-dessous, appliquées à toutes les données et sans exception au cas par cas. Toute modification de cette règle est datée, justifiée ici et appliquée rétroactivement à l'ensemble des mesures.
+
+- **Unité** : une émission journalisée par la mote (`event=tx`, réponse immédiate `ok`, `mac_err` compris), datée par son `utc_tx_start`. Elle est exclue si cette heure tombe dans l'une des fenêtres suivantes.
+- **E1. Gateway sans statistiques** : écart de plus de 75 s entre deux statistiques reçues par le serveur (une toutes les 30 s en temps normal). Fenêtre : de la dernière statistique avant l'écart, ou de l'alerte `backhaul down` du netwatch moins 10 s si elle est antérieure, jusqu'à la première statistique après l'écart, ou jusqu'à la relance de la LoRa plus 30 s si elle est postérieure.
+- **E2. Relance de la LoRa** (netwatch ou manuelle) : de la relance jusqu'à 30 s après (26 s mesurées pour une relance).
+- **E3. Réception dégradée** : une heure est exclue si le RSSI médian des trames étrangères reçues y est inférieur de plus de 10 dB à sa médiane sur la période analysée, ou si leur nombre y est inférieur au tiers de la médiane horaire. C'est la signature de l'épisode du 3 novembre (−120 dBm au lieu de −107, trafic divisé par 3 à 4), invisible autrement.
+- **E4. Intervention documentée** : toute manipulation de la gateway, du serveur ou d'une mote installée, et tout essai émis à proximité de la gateway, consigné avec son heure dans [`emplacements.md`](emplacements.md#régime-1a) (redémarrage de ChirpStack, essai au banc, déplacement de la gateway).
+- **Période** : l'analyse principale commence le 6 novembre 2026 à 11:53 (ADR désactivé côté serveur et côté mote, puissance relue avant chaque émission). Les mesures antérieures sont analysées à part et ne sont pas fusionnées.
+
+**Ne sont pas exclus**, car ils font partie du canal ou n'introduisent pas de biais :
+
+- les **collisions** avec les autres réseaux LoRa et les variations liées à l'activité dans les bâtiments, qui sont précisément ce qu'on mesure ;
+- les **blocages d'une mote** : une mote figée n'émet rien, donc rien n'entre au dénominateur ; seul le volume de données baisse ;
+- les envois abandonnés (`skip`, par exemple `no_free_ch`), qui ne sont pas des émissions.
+
+**Publication** : durée exclue par règle et par mote, disponibilité de la gateway et des motes publiée séparément du PDR, et résultats donnés avec et sans E3, la seule règle qui repose sur un seuil. Vérification systématique que les fenêtres exclues ne se concentrent pas sur certaines heures, ce qui pourrait créer un faux effet de l'heure. `Mote/src/bilan_regime_1a.py` applique aujourd'hui les fenêtres données par `--exclure` ; la détection automatique d'E1 à E3 reste à y ajouter.
+
 ## 11. Dimensionnement : temps d'émission et duty cycle
 
 Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 6 octets de données plus 13 octets d'en-tête LoRaWAN (19 octets PHY), optimisation bas débit à partir de SF11.
