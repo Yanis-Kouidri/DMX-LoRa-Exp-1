@@ -158,6 +158,7 @@ du RN2483 limite aussi le temps d'émission des joins.
 | 2026-11-06 11:52:52–57 | 2, 4, 5 | Redémarrage des services : ADR relu et remis à `off` avant chaque émission (`7a078bf`) |
 | 2026-11-07 22:11:29 → 22:11:53 | `pi-mote-5` | Mote muette (`mac tx` sans réponse) : reprise automatique, resynchronisation sans effet, coupure USB, join accepté au premier essai (24 s) |
 | 2026-11-08 10:55:57 → 10:56:21 | `pi-mote-5` | Idem (`mac get adr` sans réponse) : reprise automatique en 24 s |
+| 2026-11-10 15:03:21 → 15:04:52 | `pi-mote-5` | Idem (`mac set dr` sans réponse) : coupure USB à 15:03:36, join refusé puis accepté au 2e essai (1 min 31 s) |
 
 Les redémarrages de service n'ont pas provoqué de nouveau join : chacun coûte
 au plus le reste du cycle en cours, sans émission à exclure.
@@ -359,7 +360,8 @@ Environ 145 à 290 émissions par case et par SF. « Semaine » : le vendredi
   principale de ses pertes. SF9 et SF10 progressent (48 → 62 %, 75 → 81 %),
   sans qu'on puisse séparer l'effet du correctif de celui du week-end.
 - **CBI** : stable mais très bas, de 15 à 22 % en SF12 selon les jours.
-- **Mote 5** : 3 blocages en 5 jours (5, 7 et 8 novembre), contre aucun pour
+- **Mote 5** : 3 blocages en 5 jours (5, 7 et 8 novembre ; un 4e le
+  10 novembre à 15:03, voir [`Mote/mote.md`](../Mote/mote.md)), contre aucun pour
   les motes 2 et 4. Sans la reprise automatique, le week-end aurait été
   perdu sur ce site.
 

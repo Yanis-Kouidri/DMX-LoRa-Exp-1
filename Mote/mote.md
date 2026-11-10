@@ -122,13 +122,32 @@ le connecteur ICSP de la carte).
   lui-même vient sans doute du pont USB-série (PIC) ou du RN2483.
 - Depuis le 6 novembre 2026, `src/regime_1a.py` relance seul une mote muette
   (resynchronisation, puis coupure USB) et le journalise (`event=recover`).
-- La même mote s'est encore bloquée le 7 novembre à 22:11 et le 8 novembre à
-  10:55 (heure de Paris). Les deux fois, la resynchronisation a échoué et la
-  coupure USB l'a relancée, join compris, en 24 s. Soit 3 blocages en 5 jours
-  pour cette mote, contre aucun pour celles de `pi-mote-2` et `pi-mote-4` sur
-  la même période : la fréquence varie d'une mote à l'autre.
   `uhubctl` est installé sur les six Pi (voir
   [`raspberry-pi.md`](raspberry-pi.md#coupure-usb-à-distance)).
+- La même mote s'est encore bloquée trois fois (heure de Paris). Chaque fois,
+  la resynchronisation a échoué et la coupure USB l'a relancée :
+
+  | Blocage | Fonctionnement depuis la relance précédente | Reprise automatique |
+  |---|---|---|
+  | 2026-11-05 10:43 | 42,6 h (depuis le lancement du 3 novembre) | aucune (24 h perdues, relance manuelle) |
+  | 2026-11-07 22:11 | 35,1 h | 24 s, join au premier essai |
+  | 2026-11-08 10:55 | 12,7 h | 24 s, join au premier essai |
+  | 2026-11-10 15:03 | 52,1 h | 1 min 31 s, join refusé puis accepté au 2e essai |
+
+- Soit un blocage toutes les 36 h environ (de 13 à 52 h), ou environ toutes
+  les 13 000 commandes série (environ 5 par émission, une émission toutes les
+  50 s). Les motes de `pi-mote-2` et `pi-mote-4` ne se sont jamais bloquées
+  sur la même période (environ 12 000 émissions chacune au 10 novembre, soit
+  60 000 commandes) : le défaut suit cette mote, comme pour `…F575`, mais en
+  bien moins fréquent. Pas de lien apparent avec l'heure ; l'alimentation
+  n'est pas en cause (3273 mV après la relance du 6 novembre, aucune
+  sous-tension signalée par le Pi).
+- Impact sur les mesures : 1 à 2 émissions perdues par blocage, puis un
+  nouveau join. Le FCnt repart de zéro, sans conséquence : l'analyse retrouve
+  chaque paquet par sa charge utile. Si la fréquence augmente, remplacer la
+  mote au prochain passage au 4R1 en notant l'heure de l'échange (la carte et
+  l'antenne changent : rupture de la série), après avoir testé un autre câble
+  USB.
 
 ### Mote de remplacement `0004A30B0023EE8A`
 
