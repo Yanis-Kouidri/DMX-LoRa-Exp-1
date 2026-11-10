@@ -1,0 +1,19 @@
+# Service système de `pi-ppk2` (banc PPK2, voir Mote/banc-ppk2.md).
+# Au démarrage, le pilote série remet GPIO14 en TXD0, donc au niveau haut : si
+# le PPK2 n'alimente pas la mote, le Pi l'alimenterait par sa ligne série.
+# Ce service repasse GPIO14 en entrée ; banc_pi.py le remet en TXD0 pendant
+# une mesure seulement.
+# Installation : sudo systemctl link ~/DMX-LoRa-Exp-1/Mote/systemd/ppk2-tx-input.service
+#                sudo systemctl enable --now ppk2-tx-input.service
+
+[Unit]
+Description=Banc PPK2 : GPIO14 (TX du Pi) en entrée au démarrage
+After=dev-ttyAMA0.device
+Wants=dev-ttyAMA0.device
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/pinctrl set 14 ip pn
+
+[Install]
+WantedBy=multi-user.target
