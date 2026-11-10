@@ -1,0 +1,4 @@
+attempt,rep,sf,mode,payload_bytes,upctr,immediate,final,reset_seen,rise,fall,marker_ms,marker_samples_error,i_sleep_ma,i_idle_ma,tx_start_ms,duration_ms,charge_mc,tx_ms,energy_mj,rx_windows_ms,gap_samples_error,valid
+1,0,7,uncnf,6,0,ok,mac_tx_ok,False,662064,895449,2332.03,182,1.4582,4.3541,45.62,2283.88,14.987,51.45,38.467,19.2 264.1,0,True
+2,1,7,uncnf,6,1,ok,mac_tx_ok,False,1362859,1625705,2626.58,188,1.4243,4.3545,45.4,2578.65,19.5619,51.46,52.434,20.0 558.3,-1,True
+3,2,7,uncnf,6,2,ok,mac_tx_ok,False,2092455,2325970,2333.25,190,1.4027,4.301,46.57,2284.08,14.8964,51.46,38.585,19.3 263.6,-1,True

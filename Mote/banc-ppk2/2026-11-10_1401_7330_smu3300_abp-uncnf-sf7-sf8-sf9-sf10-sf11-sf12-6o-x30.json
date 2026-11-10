@@ -1,0 +1,48 @@
+{
+  "name": "2026-11-10_1401_7330_smu3300_abp-uncnf-sf7-sf8-sf9-sf10-sf11-sf12-6o-x30",
+  "args": {
+    "sf": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "reps": 30,
+    "mode": "uncnf",
+    "payload": 6,
+    "sleep_ms": 4000,
+    "rxdelay1": 1000,
+    "mv": 3300,
+    "label": "",
+    "reanalyse": "2026-11-10_1401_7330_smu3300_abp-uncnf-sf7-sf8-sf9-sf10-sf11-sf12-6o-x30"
+  },
+  "git": "181d90e",
+  "sha256": {
+    "banc_pi.py": "89470225f7ed8ef4",
+    "ppk2_record.py": "fbce0c0bdcf04306",
+    "banc_ppk2.py": "672ecbd2960c3441"
+  },
+  "pi_times": false,
+  "setup": null,
+  "end": {
+    "event": "tx",
+    "attempt": 180,
+    "rep": 29,
+    "sf": 12,
+    "mode": "uncnf",
+    "payload_bytes": 6,
+    "upctr": null,
+    "immediate": "ok",
+    "final": "",
+    "reset_seen": false,
+    "sleep_ms": 133211
+  },
+  "recorder": null,
+  "thresholds_ua": {
+    "tx": 30000,
+    "active": 8000
+  },
+  "tolerance_samples": 500
+}

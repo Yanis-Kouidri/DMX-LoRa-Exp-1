@@ -454,8 +454,8 @@ La fiche technique de la RN2483 ne suffit pas : elle donne quelques courants, ma
 
 ### Montage
 - Mote mesurée : la **mote de test** `0004A30B00FD7330` (device `mote-test` dans ChirpStack), hors campagne, avec le même firmware et la même configuration LoRaWAN que les 6 motes du terrain. Voir [`Mote/mote.md`](../Mote/mote.md#mote-de-test-0004a30b00fd7330).
-- PPK2 **en série** sur le rail 3,3 V de la carte, à la place de la résistance de 0 Ω R4 (mode ampèremètre). Le 5 V USB est écarté, car il passe par un convertisseur boost dont le rendement varie avec la charge. Détails et procédure : [`Mote/banc-ppk2.md`](../Mote/banc-ppk2.md).
-- Échantillonnage d'au moins **10 kHz**, pour voir les fenêtres de réception de quelques millisecondes.
+- PPK2 en **source de tension** (3,3 V) sur le rail 3,3 V de la carte, isolé du régulateur et du boost par le retrait de la résistance de 0 Ω R4. Le 5 V USB est écarté, car il passe par un convertisseur boost dont le rendement varie avec la charge. La mote est pilotée par l'UART d'un Raspberry Pi, qui pose un repère sur le port logique du PPK2 autour de chaque message. Détails et procédure : [`Mote/banc-ppk2.md`](../Mote/banc-ppk2.md).
+- Échantillonnage à **100 kHz**, sur le PC (le Raspberry Pi perd environ 16 % des échantillons), pour voir les fenêtres de réception de quelques millisecondes.
 - Le rail alimente aussi le PIC, l'écran et les capteurs : leur consommation (le fond) est mesurée module en sleep, puis soustraite. Le sleep du module (1,6 µA) est noyé dans ce fond : on retient la valeur de la fiche technique. Mesurer le module seul demanderait de couper ses pistes d'alimentation (solution de repli).
 - **Même puissance d'émission** que sur le terrain. Une seule valeur suffit, sauf si on décide de la baisser.
 - Le **Raspberry Pi est exclu** du bilan énergétique. Il faudra le dire explicitement dans le papier.
@@ -475,6 +475,19 @@ Comme la sonde transporte les données, les sondes et les envois au SF de repli 
 Hors contact, la plupart des sondes échouent. En EU868, la fenêtre RX2 est par défaut en **SF12** (`rx2_dr=0` dans `region_eu868.toml`). Une sonde ratée pourrait donc coûter plus cher que l'émission SF7 elle-même. Si c'est le cas, P peut perdre contre B1. Le banc répond à cette question **pendant la phase 0, d'ici le 13 novembre**. Si nécessaire, on réglera le débit de RX2 de façon cohérente entre ChirpStack et la mote (`mac set rx2`) et on espacera les sondes.
 
 Bonus : une figure de courbe de courant annotée par type d'événement, pour le papier.
+
+### Premiers résultats (10 novembre 2026)
+
+Uplink non confirmé de 6 octets, séquence complète (émission, RX1, RX2), `pwridx` 1, `rx1_delay` 1 s, RX2 en SF12, session ABP locale (aucun downlink). Énergie au-dessus du fond de la carte (module en sommeil), n = 30 par SF ; détail dans [`Mote/banc-ppk2/`](../Mote/banc-ppk2/README.md).
+
+| SF | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|
+| Énergie (mJ) | 38,8 | 46,0 | 58,0 | 80,2 | 137,9 | 220,4 |
+
+- Écart-type inférieur à 0,3 % à chaque SF ; durées d'émission égales au calcul théorique.
+- Un message coûte environ **32 mJ quel que soit le SF** : attentes au repos entre l'émission, RX1 et RX2 (environ 2 s), et fenêtre RX2 en SF12 (264 ms). En SF7, l'émission ne représente qu'environ 20 % du coût du message. L'écart entre SF7 et le SF de repli est donc plus faible que le rapport des temps d'émission : 2 fois moins cher qu'en SF10, 5,7 fois moins cher qu'en SF12.
+- Une fenêtre RX2 peut rester ouverte plus longtemps quand le module détecte un préambule (558 ms au lieu de 264 ms, +36 % d'énergie) : observé une fois sur 183 messages.
+- **Reste à mesurer** : la sonde ratée (`mac tx cnf`, `retx` 0), qui devrait coûter autant qu'un uplink non confirmé au même SF puisque ses fenêtres sont les mêmes ; les tailles de 20 et 51 octets ; la sonde réussie (OTAA, à portée de la gateway de l'IRIT).
 
 ## 10. Indicateurs et statistiques
 
