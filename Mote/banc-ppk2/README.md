@@ -6,8 +6,11 @@ un JSON de métadonnées, écrits par `src/banc_ppk2.py`.
 
 Les échantillons bruts (`.cur.f32`, courant en µA ; `.dig.u8`, voies logiques ;
 100 kS/s) ne sont pas versionnés : plusieurs gigaoctets par série. Ils sont sur
-le PC du banc, dans `C:\Users\<utilisateur>\banc-ppk2\data\`, sous le même nom,
-et doivent être copiés dans le dossier partagé de l'équipe (Google Drive).
+le PC du banc, dans `C:\Users\<utilisateur>\banc-ppk2\data\`, et copiés sous le
+même nom dans le dossier partagé de l'équipe (Google Drive), sous-dossier
+`banc-automatique`. La série `2026-11-10_1005_…-validation` n'y a que ses
+échantillons bruts : son analyse s'était arrêtée sur une erreur, la série a été
+refaite à 10:06.
 
 ## Séries
 
