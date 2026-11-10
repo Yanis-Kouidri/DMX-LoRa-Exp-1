@@ -223,6 +223,9 @@ sudo tailscale up --ssh
 Si la connexion aboutit, le Pi sort bien par eduroam.
 
 La règle SSH par défaut de Tailscale redemande une authentification dans le
-navigateur environ toutes les 12 heures. Elle bloquera les scripts qui se
-connectent sans intervention : il faudra alors l'assouplir dans la politique
-d'accès Tailscale.
+navigateur environ toutes les 12 heures. Cette réauthentification est
+désactivée dans la politique d'accès du tailnet : les scripts se connectent
+aux Pi sans intervention.
+
+État au 10 novembre 2026 : l'expiration de clé est désactivée pour les 8 Pi du
+projet (`pi-mote-1` à `pi-mote-6`, `pi-gateway` et `pi-ppk2`).

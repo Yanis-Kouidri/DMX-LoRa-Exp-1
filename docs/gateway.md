@@ -104,9 +104,9 @@ echo "dhcp-host=C4:AD:34:B2:0E:3A,10.42.0.33" | \
   sudo tee /etc/NetworkManager/dnsmasq-shared.d/wap-gateway.conf
 ```
 
-Point ouvert : le Pi se connecte à eduroam avec un compte personnel. Pour
-l'expérience, un accès dédié aux objets connectés est à demander à la DSI (voir
-[Wi-Fi du campus](#wi-fi-du-campus--ne-fonctionne-pas-problème-ouvert)).
+Le Pi se connecte à eduroam avec un compte personnel, ce qui suffit pour
+l'expérience : aucun accès dédié n'est demandé à la DSI (décision du
+10 novembre 2026).
 
 ## Historique de la liaison Internet
 
