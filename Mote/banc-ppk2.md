@@ -12,7 +12,8 @@ pour mesurer le coût énergétique de chaque événement LoRaWAN (principe et
 > des fils sur ses pastilles 0603 s'est révélé impossible. Les étapes 4 à 7
 > ci-dessous (fils sur R4, PPK2 en mode AMP) sont abandonnées au profit du
 > [montage sans USB](#montage-retenu-sans-usb-2-novembre-2026). Cette page
-> sera réécrite une fois ce montage validé par un premier essai.
+> sera réécrite (procédure de montage complète) maintenant que ce montage est
+> validé par le banc automatique du 10 novembre 2026.
 
 ## Montage retenu : sans USB (2 novembre 2026)
 
@@ -20,13 +21,16 @@ R4 retirée, le rail 3,3 V est isolé du régulateur, du boost et de l'entrée
 piles. Sans USB ni piles, ce côté n'est pas alimenté, et on alimente le rail
 directement (vérifié sur les figures A-1 et A-2 du guide) :
 
-| De | Vers (mote) |
+| De | Vers |
 |---|---|
-| PPK2 VOUT, mode **SMU** à 3,31 V | J4 `+3.3V` |
-| PPK2 GND | J4 `GND` |
+| PPK2 VOUT, mode **SMU** à 3300 mV | J4 `+3.3V` |
+| PPK2 GND | J4 `GND` (masse commune sur une breadboard) |
 | Raspberry Pi broche 8 (GPIO14, TX) | J4 `UARTRX` (entrée du module, broche 7) |
 | Raspberry Pi broche 10 (GPIO15, RX) | J4 `UARTTX` (sortie du module, broche 6) |
-| Raspberry Pi broche 6 (GND) | J4 `GND` |
+| Raspberry Pi broche 6 (GND) | masse commune |
+| Raspberry Pi broche 11 (GPIO17, repère) | PPK2 port logique D0 |
+| Raspberry Pi broche 1 (3,3 V) | PPK2 port logique VCC (référence de niveau) |
+| Raspberry Pi broche 9 (GND) | PPK2 port logique GND |
 | J2 broche 1 (`MCLR` du PIC) | J2 broche 3 (`GND`) |
 
 - **PIC en reset par J2** : sans USB, son firmware passerait en mode piles
@@ -36,20 +40,67 @@ directement (vérifié sur les figures A-1 et A-2 du guide) :
   bloquerait le module.
 - **Effets sur le fond** : écran et capteurs éteints (Q2 coupé par R17), LED
   D2 non alimentée. Résidu connu : R14, environ 330 µA (3,3 V / 10 kΩ).
+  Fond mesuré, module en sommeil : environ 1,4 mA.
 - **Mode SMU sans risque** : le boost n'est plus alimenté.
-- **Port logique** : D0 sur `UARTRX`, D1 sur `UARTTX`, VCC sur le 3,3 V du
-  Pi (broche 1), pas sur le rail mesuré.
+- **Acquisition sur le PC Windows** : le PPK2 est branché en USB sur le PC.
+  Lu par le Raspberry Pi, il perd environ 16 % des échantillons (voir le
+  journal, 9 novembre 2026).
+- **Pilotage** : Raspberry Pi 5 `pi-ppk2` (Tailscale), UART0 activé sur
+  GPIO14/15 (`dtparam=uart0=on`, `/dev/ttyAMA0`), dépôt cloné dans
+  `~/DMX-LoRa-Exp-1`.
+- **Repère sur D0** : le Pi bascule GPIO17 autour de chaque commande `mac tx`.
+  Le repère est enregistré dans le flux du PPK2 : il sert au découpage des
+  messages et au contrôle d'intégrité, sans dépendre d'aucune horloge
+  d'ordinateur.
 - **Risque identifié** : la grille de Q4 (`MODRST`) n'est reliée qu'au PIC et
   flotte quand il est en reset ; R20 maintient normalement le module actif.
   Un reset du module se détecte par l'envoi spontané de sa chaîne de version :
   la mesure en cours est alors rejetée.
-- **Précautions** : PPK2 alimenté avant de brancher le TX du Pi (sinon le Pi
-  alimente le module par la ligne série) ; rétroéclairage débranché ; antenne
-  vissée sur J3.
+- **Liaison série** : après une mise sous tension ou un sommeil, le RN2483
+  attend une resynchronisation (break puis `0x55`) avant de répondre.
+- **Précautions** : le TX du Pi ne doit être en sortie que lorsque le PPK2
+  alimente la mote, sinon le Pi alimente le module par la ligne série. Le PPK2
+  coupe sa sortie dès que le programme qui le pilote se ferme, et le Pi remet
+  GPIO14 en TXD0 (niveau haut) à chaque démarrage : TX débranché, ou GPIO14 en
+  entrée (`pinctrl set 14 ip pn`), hors des mesures. Rétroéclairage débranché ;
+  antenne vissée sur J3.
 - **Sonde réussie** : nécessite un banc à portée de la gateway de l'IRIT et
   un join OTAA.
-- **Pilotage** : Raspberry Pi 4 ou 5, modèle à confirmer (le nom du port
-  série en dépend).
+
+## Banc automatique (10 novembre 2026)
+
+Trois scripts de `Mote/src/`, chacun sur sa machine :
+
+| Script | Machine | Rôle |
+|---|---|---|
+| `ppk2_record.py` | PC Windows, Python natif | Alimente la mote (source de tension), enregistre courant et voies logiques à 100 kS/s sur disque |
+| `banc_pi.py` | `pi-ppk2` | Session ABP factice, puis pour chaque tentative : sommeil, réveil, repère haut, `mac tx`, réponse, repère bas |
+| `banc_ppk2.py` | WSL | Lance les deux autres, découpe chaque message grâce aux repères, contrôle l'intégrité, calcule l'énergie |
+
+Depuis WSL, dans le dossier `Mote/` :
+
+```bash
+uv run python src/banc_ppk2.py --sf 7 8 9 10 11 12 --reps 30 --mode uncnf --payload 6
+```
+
+- **Sommeil avant chaque tentative** : au moins le repos imposé par le duty
+  cycle de 1 % au SF concerné (environ 101 fois le temps d'émission), et au
+  moins `--sleep-ms`. Le duty cycle du module reste actif ; une tentative
+  refusée (`no_free_ch`) est retentée.
+- **Énergie d'un message** : du début de l'émission (premier échantillon
+  au-dessus de 30 mA) à la fin de RX2 (dernier au-dessus de 8 mA),
+  E = (∫ I dt − I_fond × durée) × 3,3 V, avec I_fond le courant moyen pendant
+  le sommeil qui précède (sans sa première seconde ni sa dernière
+  demi-seconde).
+- **Intégrité** : entre deux repères hauts successifs, le nombre d'échantillons
+  doit valoir 100 000 par seconde de l'horloge du Pi, à 500 échantillons près.
+  Une tentative hors tolérance, sans émission ou avec redémarrage du module
+  reste dans le CSV mais est exclue du résumé.
+- **Sorties** dans `C:\Users\<utilisateur>\banc-ppk2\data\` : échantillons
+  bruts (`.cur.f32`, courant en µA ; `.dig.u8`, voies logiques), CSV par
+  tentative, JSON de métadonnées (arguments, commit du dépôt, empreintes des
+  scripts, réglages relus sur le module). Noms au format
+  `AAAA-MM-JJ_HHMM_7330_smu3300_abp-<mode>-sf<…>-<octets>o-x<répétitions>`.
 
 ## Référence : schéma de la mote
 
@@ -215,15 +266,11 @@ alors `rxdelay1` comme sur le terrain.
 
 ## Port logique (synchronisation)
 
-Le port logique du PPK2 enregistre la liaison série sur la même échelle de
-temps que le courant, ce qui permet de découper les traces par événement :
-
-| PPK2 (port logique) | Mote (J4) |
-|---|---|
-| D0 | `UARTRX` (commandes vers le RN2483) |
-| D1 | `UARTTX` (réponses du RN2483) |
-| VCC | `+3.3V` (référence de niveau) |
-| GND | `GND` |
+Prévu à l'origine pour enregistrer la liaison série (D0 sur `UARTRX`, D1 sur
+`UARTTX`, VCC sur le rail de la mote), le port logique sert finalement au
+repère posé par le Pi (GPIO17 sur D0, VCC sur le 3,3 V du Pi) : voir le
+[montage retenu](#montage-retenu-sans-usb-2-novembre-2026). Alimenter VCC par
+le rail mesuré ajouterait la consommation du port logique à la mesure.
 
 ## Journal des modifications
 
@@ -267,3 +314,4 @@ Les enregistrements bruts de Power Profiler (`.ppk2`, environ 2 Go par heure à 
 | 9 novembre 2026 | Même test de repères après changement de port USB du Pi, puis après redémarrage du Pi | Inchangé : 82 600 à 83 600 échantillons par seconde de repère (premier intervalle vers 91 000‒92 800). Les écarts vont par pas d'environ 500 échantillons (2 Ko) : des blocs USB entiers sont perdus. Décision : PPK2 rebranché sur le PC Windows, acquisition par `ppk2-api` en Python natif à valider avec ce même test ; le Pi garde le pilotage de la mote et les repères sur D0. Au démarrage du Pi, GPIO14 repasse en TXD0 (niveau haut) : TX à débrancher ou à remettre en entrée si la mote n'est pas alimentée |
 | 9 novembre 2026 | PPK2 rebranché sur le PC Windows (ports COM7 pour les commandes, COM10) ; acquisition par `ppk2-api` 0.9.2 et pyserial 3.5 en Python 3.14 natif (`uv run --no-project`), repères du Pi sur D0 toutes les secondes (12 fronts), 18 s | **100 039 éch./s en moyenne ; 99 983 à 100 009 échantillons entre deux repères** (écart ≤ 0,02 %, de l'ordre de la gigue de `pinctrl`), 12 fronts sur 12 vus. Aucune perte : acquisition retenue sur le PC Windows, pilotage de la mote et repères par le Pi |
 | 9 novembre 2026 | Fin de journée : PPK2 débranché du PC (sortie déjà coupée), fils de la broche 8 (TX) et de la broche 1 (3,3 V, VCC logique) du Pi débranchés ; reste du câblage en place (D0 ← GPIO17, GND, RX ← `UARTTX`, PPK2 VOUT/GND → J4) | Banc laissé monté au bureau |
+| 10 novembre 2026 | Câblage rebranché (PPK2 sur le PC, Pi broches 1 et 8) ; GPIO14 resté en entrée. Premiers scripts du banc automatique : `ppk2_record.py` (Windows), `banc_pi.py` (Pi), `banc_ppk2.py` (WSL). Série de validation : 3 × `mac tx uncnf` SF7, 6 octets, ABP local, sommeil de 4 s avant chaque message. Fichiers `2026-11-10_1006_7330_smu3300_abp-uncnf-sf7-6o-x3-validation.*` | Intégrité : 99 985 éch./s d'horloge ; écart entre repères successifs 0 ou −1 échantillon ; durée entre repère haut et bas supérieure de 1,8 à 1,9 ms à l'horloge du Pi (latence de `pinctrl`, systématique). Tentatives 1 et 3 : 38,47 et 38,59 mJ, 2 284 ms, émission 51,5 ms, RX1 19,2 ms, RX2 264 ms, fond sleep 1,40 à 1,46 mA, repos 4,35 mA ; cohérent avec Power Profiler (39,3 mJ sur une sélection manuelle de 2 304 ms). **Tentative 2 : RX2 de 558 ms et 52,43 mJ** : la fenêtre RX2 est restée ouverte deux fois plus longtemps, probablement sur la détection d'un préambule (autre réseau émettant sur 869,525 MHz). Effet réel à garder et à quantifier sur les séries répétées |
