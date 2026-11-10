@@ -53,6 +53,7 @@ ACTIVE_THRESHOLD_UA = 8_000
 RX_MIN_SAMPLES = 200  # 2 ms
 RX_MERGE_GAP = 50  # 0,5 ms
 TOLERANCE_SAMPLES = 500  # 5 ms
+WAKE_TO_RISE_S = 0.45  # resynchronisation + SETTLE_S de banc_pi.py, avec marge
 PI_HOST = "pi@pi-ppk2"
 MOTE_ID = "7330"
 
@@ -87,9 +88,12 @@ def find_edges(dig_path: Path, chunk: int = 1 << 24) -> tuple[list[int], list[in
     table = bytes(b & 1 for b in range(256))
     rises: list[int] = []
     falls: list[int] = []
-    previous = b"\x00"
     offset = 0
     with open(dig_path, "rb") as f:
+        # Niveau initial pris tel quel : D0 peut être lu haut avant que le Pi ne
+        # pilote GPIO17, ce qui n'est pas un repère.
+        previous = f.read(1).translate(table)
+        f.seek(0)
         while block := f.read(chunk):
             bits = previous + block.translate(table)
             for pattern, out in ((b"\x00\x01", rises), (b"\x01\x00", falls)):
@@ -99,6 +103,9 @@ def find_edges(dig_path: Path, chunk: int = 1 << 24) -> tuple[list[int], list[in
                     i = bits.find(pattern, i + 1)
             previous = bits[-1:]
             offset += len(block)
+    # Un repère va d'un front montant au front descendant suivant
+    if rises:
+        falls = [i for i in falls if i > rises[0]]
     return rises, falls
 
 
@@ -140,21 +147,29 @@ def runs(values: array, low: float, high: float) -> list[tuple[int, int]]:
 
 
 def analyse(record: dict, rise: int, fall: int, cur_path: Path, mv: int) -> dict:
-    row = {k: record[k] for k in (
+    row = {k: record.get(k) for k in (
         "attempt", "rep", "sf", "mode", "payload_bytes", "upctr", "immediate", "final",
         "reset_seen")}
     row.update(rise=rise, fall=fall)
-    marker_s = record["t_fall"] - record["t_rise"]
-    row["marker_ms"] = round(marker_s * 1000, 2)
-    row["marker_samples_error"] = (fall - rise) - round(marker_s * RATE)
+    if record.get("t_rise") is not None:
+        marker_s = record["t_fall"] - record["t_rise"]
+        row["marker_ms"] = round(marker_s * 1000, 2)
+        row["marker_samples_error"] = (fall - rise) - round(marker_s * RATE)
 
-    def at(t: float) -> int:
-        return rise + round((t - record["t_rise"]) * RATE)
+        def at(t: float) -> int:
+            return rise + round((t - record["t_rise"]) * RATE)
 
-    row["i_sleep_ma"] = round(mean_ma(cur_path, at(record["t_sleep"] + 1.0),
-                                      at(record["t_wake"] - 0.5)), 4)
-    row["i_idle_ma"] = round(mean_ma(cur_path, at(record["t_wake"] + 0.15),
-                                     rise - RATE // 100), 4)
+        sleep_window = (at(record["t_sleep"] + 1.0), at(record["t_wake"] - 0.5))
+        idle_start = at(record["t_wake"] + 0.15)
+    else:
+        # Instants du Pi perdus : fenêtres placées d'après la séquence de banc_pi.py
+        # (fin du sommeil environ WAKE_TO_RISE_S avant le repère haut).
+        sleep_s = record["sleep_ms"] / 1000
+        wake = rise - round(WAKE_TO_RISE_S * RATE)
+        sleep_window = (wake - round((sleep_s - 1.0) * RATE), wake - RATE // 2)
+        idle_start = rise - round(0.25 * RATE)
+    row["i_sleep_ma"] = round(mean_ma(cur_path, *sleep_window), 4)
+    row["i_idle_ma"] = round(mean_ma(cur_path, idle_start, rise - RATE // 100), 4)
     if record["immediate"] != "ok":
         return row
 
@@ -192,7 +207,12 @@ def main() -> None:
     parser.add_argument("--rxdelay1", type=int, default=1000)
     parser.add_argument("--mv", type=int, default=3300)
     parser.add_argument("--label", default="")
+    parser.add_argument("--reanalyse", metavar="NOM",
+                        help="ré-analyser une série déjà enregistrée (fichiers dans data/)")
     args = parser.parse_args()
+    if args.reanalyse:
+        reanalyse(args)
+        return
 
     sfs = "-".join(f"sf{sf}" for sf in args.sf)
     name = (f"{datetime.now():%Y-%m-%d_%H%M}_{MOTE_ID}_smu{args.mv}_"
@@ -218,7 +238,8 @@ def main() -> None:
                f"--payload {args.payload} --sleep-ms {args.sleep_ms} "
                f"--rxdelay1 {args.rxdelay1}")
     records: list[dict] = []
-    with open(SRC / "banc_pi.py", "rb") as script:
+    pi_log = open(data_dir / f"{name}.pi.jsonl", "w")  # sauvegardé avant toute analyse
+    with open(SRC / "banc_pi.py", "rb") as script, pi_log:
         pi = subprocess.Popen(
             ["ssh", "-o", "BatchMode=yes", PI_HOST,
              f"cd ~/DMX-LoRa-Exp-1/Mote && ~/.local/bin/uv run python - {pi_args}"],
@@ -227,6 +248,8 @@ def main() -> None:
         for line in pi.stdout:
             record = json.loads(line)
             records.append(record)
+            pi_log.write(line)
+            pi_log.flush()
             if record["event"] == "tx":
                 print(f"  tentative {record['attempt']:3d}  SF{record['sf']}  "
                       f"{record['immediate']:>11s}  {record['final']}"
@@ -241,29 +264,46 @@ def main() -> None:
     summary = json.loads(recorder.stdout.read().strip().splitlines()[-1])
     recorder.wait()
 
+    (data_dir / f"{name}.recorder.json").write_text(json.dumps(summary, indent=2))
+    analyse_series(name, records, summary, args)
+
+
+def analyse_series(name: str, records: list[dict], summary: dict | None,
+                   args: argparse.Namespace) -> None:
+    data_dir = WIN_USER_DIR / "data"
     cur_path = data_dir / f"{name}.cur.f32"
     dig_path = data_dir / f"{name}.dig.u8"
     rises, falls = find_edges(dig_path)
     tx = [r for r in records if r["event"] == "tx"]
-    print(f"{summary['samples']} échantillons ({summary['samples'] / summary['host_seconds']:,.0f}"
-          f" éch./s d'horloge) ; {len(rises)} repères pour {len(tx)} tentatives", flush=True)
+    if summary:
+        print(f"{summary['samples']} échantillons "
+              f"({summary['samples'] / summary['host_seconds']:,.0f} éch./s d'horloge)")
+    print(f"{len(rises)} repères pour {len(tx)} tentatives", flush=True)
     if len(rises) != len(tx) or len(falls) != len(tx):
         sys.exit(f"repères incohérents : {len(rises)} montants, {len(falls)} descendants")
 
+    gaps = {k: rises[k] - rises[k - 1] for k in range(1, len(rises))}
     rows = []
     for k, (record, rise, fall) in enumerate(zip(tx, rises, falls)):
         row = analyse(record, rise, fall, cur_path, args.mv)
-        if k:
-            expected = round((record["t_rise"] - tx[k - 1]["t_rise"]) * RATE)
-            row["gap_samples_error"] = (rise - rises[k - 1]) - expected
-        else:
+        if k == 0:
             row["gap_samples_error"] = 0
+        elif record.get("t_rise") is not None:
+            expected = round((record["t_rise"] - tx[k - 1]["t_rise"]) * RATE)
+            row["gap_samples_error"] = gaps[k] - expected
+        else:
+            # Repli sans les instants du Pi : écart comparé à la médiane des écarts
+            # entre tentatives consécutives du même SF (une perte le raccourcirait).
+            same = [gaps[j] for j in gaps if tx[j]["sf"] == tx[j - 1]["sf"] == record["sf"]]
+            row["gap_samples_error"] = (
+                gaps[k] - round(statistics.median(same))
+                if same and tx[k - 1]["sf"] == record["sf"] else 0)
         row["valid"] = (
             record["immediate"] == "ok"
             and not record["reset_seen"]
             and "energy_mj" in row
             and abs(row["gap_samples_error"]) <= TOLERANCE_SAMPLES
-            and abs(row["marker_samples_error"]) <= TOLERANCE_SAMPLES
+            and abs(row.get("marker_samples_error", 0)) <= TOLERANCE_SAMPLES
         )
         rows.append(row)
 
@@ -278,6 +318,7 @@ def main() -> None:
         "args": vars(args),
         "git": git_state(),
         "sha256": {p: sha256(SRC / p) for p in ("banc_pi.py", "ppk2_record.py", "banc_ppk2.py")},
+        "pi_times": all(r.get("t_rise") is not None for r in tx),
         "setup": next((r for r in records if r["event"] == "setup"), None),
         "end": records[-1] if records else None,
         "recorder": summary,
@@ -300,6 +341,30 @@ def main() -> None:
               f"{statistics.fmean(r['i_sleep_ma'] for r in ok):>11.3f}")
     rejected = [r for r in rows if not r["valid"]]
     print(f"{len(rejected)} tentative(s) écartée(s) ; fichiers : {WIN_USER_DIR_WIN}\\data\\{name}.*")
+
+
+def reanalyse(args: argparse.Namespace) -> None:
+    """Analyse une série existante ; sans journal du Pi, reconstruit les tentatives."""
+
+    data_dir = WIN_USER_DIR / "data"
+    name = args.reanalyse
+    pi_path = data_dir / f"{name}.pi.jsonl"
+    rec_path = data_dir / f"{name}.recorder.json"
+    summary = json.loads(rec_path.read_text()) if rec_path.exists() else None
+    if pi_path.exists():
+        records = [json.loads(line) for line in pi_path.read_text().splitlines()]
+    else:
+        # Série du 10 novembre 2026 : journal du Pi perdu, toutes les tentatives
+        # ont réussi du premier coup (sortie console), dans l'ordre des SF.
+        print("journal du Pi absent : tentatives reconstruites d'après les arguments")
+        from banc_pi import sleep_ms_for  # même calcul du sommeil que pendant la série
+
+        records = [{"event": "tx", "attempt": i + 1, "rep": i % args.reps, "sf": sf,
+                    "mode": args.mode, "payload_bytes": args.payload, "upctr": None,
+                    "immediate": "ok", "final": "", "reset_seen": False,
+                    "sleep_ms": sleep_ms_for(sf, args)}
+                   for i, sf in enumerate(sf for sf in args.sf for _ in range(args.reps))]
+    analyse_series(name, records, summary, args)
 
 
 if __name__ == "__main__":
