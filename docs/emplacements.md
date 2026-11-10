@@ -202,6 +202,8 @@ l'analyse. **Période de référence propre : depuis le 6 novembre 2026 à
 | 2026-11-06 10:53:02 | 2026-11-06, vers 10:54:27 | Coupure du backhaul (1 min), puis relance de la LoRa. Avant la période de référence |
 | 2026-11-06 11:28 | 2026-11-06 11:41 | Essai au banc avec la mote 1 à côté de la gateway : 80 paquets SF7 et SF8 reçus à −35 dBm environ, qui ont pu masquer des paquets faibles des motes installées |
 | 2026-11-06 11:52:31 | 2026-11-06, vers 11:52:40 | Redémarrage de ChirpStack (désactivation de l'ADR) |
+| 2026-11-09 22:29:45 | 2026-11-09 22:33:27 | Coupure du backhaul (3 min, plus de statistiques reçues de 22:30:44 à 22:33:27), puis relance de la LoRa à 22:32:45 |
+| 2026-11-10 11:35:34 | 2026-11-10, vers 11:36:09 | Micro-coupure du backhaul (9 s), puis relance de la LoRa à 11:35:43 |
 
 Les fins « vers » sont estimées avec la durée habituelle d'une relance
 (26 s), le journal de la gateway ne gardant pas toujours la ligne
