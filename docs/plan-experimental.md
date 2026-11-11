@@ -107,10 +107,28 @@ Première passe de veille : recherches web et arXiv, et suivi des citations de F
 
 - Moysiadis et al. (CAMAD 2024) : simulation FLoRa, gateways sur drones qui suivent un groupe de nœuds eux-mêmes mobiles par trilatération RSSI. Autre problème, énergie non traitée. Seul point utile : l'ADR par défaut s'effondre en mobilité dans leur simulation.
 
-**À lire en entier (résumé ou extraits seulement)**
+**Sobhi et al. (Sensors 2023), lu en entier : le plus proche de notre cadrage, mais presque tout y est modélisé**
 
-- **FSMA**, Vennam et al. (arXiv 2510.02800 ; le papier annonce MobiHoc 2026) : **le plus proche parmi les travaux réels récents**. Gateway sur drone, 25 nœuds du commerce, campus de plus d'1 km. La gateway émet un chirp en SF9 ; les nœuds l'écoutent par détection d'activité (CAD) avant d'émettre en SF10. MAC propriétaire, un seul SF, gain d'énergie issu d'un simulateur. Objection à prévoir : pourquoi une sonde plutôt qu'une écoute ? Réponse : FSMA demande un firmware modifié et une gateway spécifique, la sonde fonctionne en Class A sans rien changer.
-- Sobhi et al. (Sensors 2023) : gateway sur le toit d'une voiture, essais réels et simulation, tous les SF, jusqu'à 150 km/h, émission synchronisée ou non. Hors période, mais proche : mécanisme de synchronisation et mesure d'énergie à vérifier dans le texte.
+- **Système** : gateway LoRaWAN sur une voiture, capteurs le long d'une route en zone sans infrastructure, portées de 7 à 12 km en vue directe, contacts de 4 à 12 minutes. Pas de gateway fixe : la gateway stocke les données et les décharge plus tard.
+- **Trois scénarios selon ce que le nœud sait du passage** : synchronisé (heure d'arrivée connue), semi-synchronisé (arrivée attendue dans une fenêtre d'une heure) et non synchronisé (arrivée aléatoire sur plusieurs heures, plusieurs gateways). Dans les deux derniers, le nœud ouvre R_on fenêtres d'écoute par heure pour chercher une balise de la gateway. C'est notre axe « gain selon la fréquence de passage », traité par l'écoute et non par la sonde.
+- **Résultats (analytiques et MATLAB)** : à nombre de paquets égal, le semi-synchronisé consomme environ deux fois plus que le synchronisé ; le non synchronisé avec une seule gateway consomme 15 à 17 fois plus que le semi-synchronisé ; avec 10 gateways, il rejoint le débit du synchronisé pour 8 fois son énergie.
+- **Partie réelle minimale** : **un seul nœud** (SX1278) au sol, gateway (SX1301 et Raspberry Pi) sur une voiture de 60 à 120 km/h, 25 paquets par SF, route dégagée. Elle valide seulement le nombre de paquets reçus par SF à 90 km/h. La recherche de la gateway par balise n'est pas mise en œuvre sur matériel.
+- **Énergie non mesurée** : courants repris de Casals et al. 2017. La fenêtre d'écoute y est comptée à 10 µA pendant 160 ms, valeur très inférieure à un courant de réception : le coût de la recherche est probablement sous-estimé.
+- **LoRaWAN standard revendiqué** (« sans modification de firmware »), mais le mécanisme de recherche par balise n'est ni standard en Class A ni décrit.
+- **Indicateur** : nombre de paquets reçus pendant le contact, sous duty cycle de 1 %. La fraîcheur des données est discutée sans être mesurée ; pas de latence par donnée, pas de repli.
+- **Ce qu'on en tire** : leur condition « intervalle entre deux écoutes inférieur à la durée de visibilité » est notre condition T_p inférieure à la durée du contact (H2). Leur conclusion (chercher la gateway sans connaître son heure coûte très cher) motive notre budget de sondes et notre seuil de rentabilité. À citer comme le travail le plus proche, avec les écarts : un nœud, énergie et détection modélisées, pas de gateway fixe ni de comparaison appariée.
+- Piste : leur travail précédent (Sobhi et al., PIMRC 2022), essais réels jusqu'à 160 km/h en SF7 à SF10.
+
+**FSMA, Vennam et al. (arXiv 2510.02800v2 ; en-tête ACM MobiHoc 2026), lu en entier**
+
+- **C'est d'abord un protocole d'accès au canal** : la gateway émet un chirp unique (FreeChirp) dès que le canal est libre. Un nœud qui a un paquet à émettre écoute par CAD pendant environ 6 symboles ; s'il détecte le chirp (un CAD positif suivi d'un CAD négatif), il émet, sinon il recule (backoff exponentiel) et réessaie. Objectif : éviter les collisions sous une gateway qui couvre des milliers de nœuds (satellite, drone).
+- **Mais le chirp sert aussi de sonde de lien, côté gateway** (« link-aware access ») : il est émis en SF9 alors que les nœuds émettent en SF10. Par réciprocité du canal, un nœud qui entend le chirp a un lien suffisant pour son uplink ; les nœuds hors portée ou masqués n'émettent pas. **C'est la même fonction que notre sonde (savoir si la gateway mobile est joignable avant de dépenser une émission), réalisée par une écoute au lieu d'une émission.**
+- **Réel** : 16 nœuds en statique avec atténuateurs, puis 25 nœuds (SX1272 et SX1276) sur un campus de plus d'1 km avec une gateway sur drone (boucle de 4 minutes à 10 m/s), 920 MHz, 600 s par essai, charge utile de 20 octets. Seule référence sur matériel : ALOHA. Débit multiplié par 2 en statique et 2,5 en mobilité.
+- **Écarts** : MAC propriétaire (firmware modifié, gateway à deux radios qui émet un chirp isolé), un seul SF, aucun ACK, aucune gateway fixe ni repli, pas de duty cycle réglementaire (920 MHz). Indicateurs : débit et taux de réception sous forte charge (jusqu'à 500 % de charge offerte), pas la latence ni l'énergie par donnée d'un capteur peu actif.
+- **Énergie non mesurée** : le gain « jusqu'à 5× » par paquet reçu figure dans la section de simulation (figure 17a, simulateur NTNLoRa), alors que le résumé et la conclusion l'attribuent aux expériences sur matériel. Les nœuds remontent des « métriques d'énergie », sans méthode décrite. Le coût d'une écoute CAD n'est pas chiffré.
+- **Attente** : en simulation, 1 à 2,5 minutes en moyenne entre l'arrivée d'un paquet et son émission, écoutes et reculs compris.
+- **Ce qu'on en tire** : l'objection « pourquoi une sonde plutôt qu'une écoute ? » est sérieuse. Une écoute ratée de FSMA dure environ 50 ms en réception, soit quelques millijoules (notre estimation), contre environ 39 mJ pour un message SF7 complet sur notre banc. Réponses : (1) FSMA sort du standard à la mote et à la gateway, la sonde fonctionne en Class A avec du matériel et un serveur inchangés ; (2) la sonde transporte les données et reçoit un ACK, donc une sonde réussie vaut livraison ; (3) le coût réel de l'écoute n'est mesuré nulle part, le nôtre l'est. **À discuter explicitement dans l'article**, et à envisager comme comparaison chiffrée (coût d'un CAD mesuré au banc PPK2, si le RN2483 le permet).
+- Leur état de l'art ne cite ni Florita ni aucune gateway mobile au sol. Code et simulateur publiés : github.com/ucsdwcsng/fsma-lora.
 
 **Connexes (résumé seulement)**
 
@@ -137,11 +155,11 @@ Première passe de veille : recherches web et arXiv, et suivi des citations de F
 | Tang et al. 2025 | Réelle (drone immobile) | Oui | Non (1 SF) | Non |
 | Giambene et al. 2025 | Modèle et simulation | Non (Class B modifiée) | Dans le modèle (un SF pour tous) | Non (fiche technique) |
 | Saifullah et al. 2026 | Réelle (7 nœuds) et ns-3 | Non (TDMA propriétaire) | Oui, pour paralléliser | Méthode non décrite |
-| FSMA 2025 (résumé et extraits) | Réelle (25 nœuds, gateway sur drone) | Non | Non (SF10) | Non (simulateur) |
-| Sobhi et al. 2023 (résumé) | Réelle (gateway sur voiture) et simulation | À vérifier | Oui | À vérifier |
+| Sobhi et al. 2023 | Réelle minimale (1 nœud, gateway sur voiture), MATLAB et ns-3 | Revendiqué (recherche par balise seulement modélisée) | Oui (SF7 → SF12) | Non (modèle de Casals 2017) |
+| FSMA 2025 | Réelle (25 nœuds, gateway sur drone) et simulation | Non (MAC propriétaire) | Non (SF10) | Non (simulateur) |
 | **Notre travail** | **Réelle (6 motes, 2 gateways)** | **Oui** | **Oui (SF7 → SF12)** | **Oui (PPK2)** |
 
-> Fait le 11 novembre 2026 : première passe de veille (voir ci-dessus). Restent à lire en entier FSMA et Sobhi 2023, et à vérifier les pistes relevées dans les bibliographies.
+> Fait le 11 novembre 2026 : première passe de veille (voir ci-dessus). Restent à vérifier les pistes relevées dans les bibliographies.
 >
 > À faire : compléter l'état de l'art sur Google Scholar et IEEE Xplore (*mobile gateway LoRaWAN*, *data mule LoRa*, *gateway discovery LPWAN*, *opportunistic uplink LoRa*), et regarder qui cite Florita 2020. Chercher aussi les comparaisons entre simulation et mesures réelles en LoRa (*LoRa simulation validation measurements*, *ns-3 LoRaWAN real deployment*), pour la simulation sur modèle optionnelle (voir la phase intermédiaire).
 
@@ -694,8 +712,8 @@ Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 
 
 **Repérées (résumés seulement)**
 
-- R. R. Vennam, M. Zhang, R. Subbaraman, D. Vasisht, D. Bharadia, « FSMA: Gateway-Controlled Access for Scalable LoRa Non-Terrestrial Networks », arXiv 2510.02800. https://arxiv.org/abs/2510.02800
-- Sobhi, Elzanaty, Selim, Ghuniem, Abdelkader, « Mobility of LoRaWAN Gateways for Efficient Environmental Monitoring in Pristine Sites », *Sensors*, vol. 23, 1698, 2023. DOI : 10.3390/s23031698
+- R. R. Vennam, M. Zhang, R. Subbaraman, D. Vasisht, D. Bharadia, « FSMA: Gateway-Controlled Access for Scalable LoRa Non-Terrestrial Networks », arXiv 2510.02800v2, ACM MobiHoc 2026. https://arxiv.org/abs/2510.02800 (lu en entier)
+- S. Sobhi, A. Elzanaty, M. Y. Selim, A. M. Ghuniem, M. F. Abdelkader, « Mobility of LoRaWAN Gateways for Efficient Environmental Monitoring in Pristine Sites », *Sensors*, vol. 23, 1698, 2023. DOI : 10.3390/s23031698 (lu en entier)
 - C. Dickinson, S. Nagaraja, C. M. Ahmed, « Energy-Aware LoRaWAN Design for Long-Lived Agricultural Sensing », LS-NoT 2026 (DCOSS-IoT). https://arxiv.org/abs/2609.14732
 - S. Vargas Villar, S. Singh, Ö. Özdemir, M. L. Sichitiu, İ. Güvenç, « Real-World LoRaWAN Performance and Propagation Modeling Using UAV, Helikite, and Vehicle-Based Measurements », IEEE Aerospace Conference 2026. https://arxiv.org/abs/2604.06444
 - W. A. S. Wijesuriya, « Optimizing Spreading Factor Selection for Mobile LoRa Gateways Using Single-Channel Hardware », arXiv 2507.19938. https://arxiv.org/abs/2507.19938
