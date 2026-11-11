@@ -76,6 +76,58 @@ La plus-value principale est l'**expérimentation réelle** : la grande majorit�
 - ADR et mobilité (traces d'Anvers, WCNC 2023) : l'ADR se dégrade quand la mobilité augmente, mais ces études portent sur des **motes** mobiles, pas sur une gateway mobile.
 - Peu de travaux avec une **gateway au sol mobile** qui collecte des motes fixes en intérieur : la littérature est dominée par les drones.
 
+### Veille du 11 novembre 2026 (publications 2024–2026)
+
+Première passe de veille : recherches web et arXiv, et suivi des citations de Florita 2020, MLoRaDrone 2023 et Tang 2025 par Semantic Scholar (couverture partielle). Google Scholar et IEEE Xplore n'ont pas été interrogés directement. **Aucun travail trouvé ne combine expérimentation réelle, LoRaWAN Class A standard, plusieurs SF et énergie mesurée.**
+
+**Lus en entier** (dossier `papers/`, sauf Saifullah, en accès libre)
+
+| | Giambene et al. 2025 | Saifullah et al. 2026 | Amador et al. 2026 |
+|---|---|---|---|
+| Revue ou conférence | IEEE TAES 61(2) | RTAS 2026 (d'après le nom du fichier, à confirmer) | Computer Networks 282 |
+| Réel ou simulé | **Modèle analytique et simulation Monte Carlo** (MATLAB), aucune mesure | Réel à petite échelle (**7 nœuds**, campus de 400 m × 400 m, gateway USRP) et ns-3 (1 000 nœuds) | Réel, en laboratoire : 4 cartes STM32 (SX1276), gateway avec GPS, ChirpStack |
+| Gateway mobile | Oui, drone à voilure fixe (70 à 120 km/h), liaison satellite | Oui, « puits mobile » passant une fois par heure (nature non précisée dans l'expérience) | **Non** |
+| Protocole | **Class B modifiée** (balise toutes les 4 s au lieu de 128 s), serveur et firmware spécifiques | **MAC propriétaire** : TDMA par groupes canal–SF, 915 MHz sans duty cycle | LoRaWAN Class B standard |
+| SF | Un seul SF pour tous les capteurs, optimisé dans le modèle (SF10) | SF9 et SF10 en réel, SF7 à SF10 en simulation, **pour paralléliser** et non selon le lien | SF10 |
+| Détection de la gateway | Balises de la gateway ; le capteur **écoute 6 s toutes les 400 s** | **Période de passage connue** des nœuds, écoute du canal à l'approche de l'heure prévue, balise à préambule allongé | Sans objet |
+| Énergie | **Non mesurée** : courants de la fiche technique du SX1261 | Donnée par paquet, méthode de mesure non décrite | Courant de la carte entière mesuré (INA3221, un point toutes les 10 ms) |
+| Livraison | Sans ACK, sans repli : les données émises hors passage sont perdues | Avec ACK et retransmissions planifiées | Sans objet |
+
+**Ce qu'on en tire**
+
+- **Giambene** : c'est le travail récent le plus proche, mais tout y est modélisé.
+  - Sa référence est notre stratégie B2 (capteurs Class A émettant à l'aveugle). Son modèle d'énergie de la Class A **ne compte aucune phase de réception**, alors que notre banc PPK2 montre que les attentes et les fenêtres RX1 et RX2 font environ 80 % du coût d'un message SF7 (voir la [section 9](#premiers-résultats-10-novembre-2026)).
+  - L'écoute périodique a un coût permanent, qu'un drone passe ou non : 4,6 mA pendant 6 s sur 406 s, soit environ 68 µA en moyenne (notre calcul).
+  - L'indicateur est le délai de détection d'une zone d'alarme grâce à la redondance de 2 500 capteurs, pas la livraison de chaque donnée.
+  - Son introduction classe les techniques existantes en quatre familles (émissions planifiées, têtes de grappe, balises LoRa, wake-up radio) : la sonde par uplink confirmé en Class A n'y figure pas. Il écarte l'ADR pour la même raison que nous.
+- **Saifullah** : autre problème (vider vite des nœuds chargés pendant le contact). Le papier suppose que tous les nœuds joignent le puits à n'importe quel SF : le lien entre proximité et SF bas n'est pas étudié, et il n'y a pas de gateway fixe. Précédent de méthode utile : une expérience réelle à 7 nœuds complétée par une simulation. Il observe aussi que les ACK descendants perturbent les uplinks en cours, ce qui rejoint notre constat (gateway sourde pendant un downlink, [section 14](#adr-réactivé-par-le-rn2483-et-commandes-mac-en-boucle-6-novembre-2026)).
+- **Amador** : argument contre l'alternative « balises Class B » à notre sonde. Sur matériel réel, la dérive d'horloge (environ 190 ppm) consomme jusqu'à 23,6 ms d'une fenêtre de 30 ms, et la balise standard n'arrive que toutes les 128 s. Son tableau des travaux connexes confirme que le domaine est dominé par la simulation, et il note que Giambene n'a pas de validation expérimentale. Sa durée d'émission mesurée dépasse le calcul théorique (390 ms contre 288,8 ms), alors que notre banc retrouve les durées théoriques.
+
+**Lu en entier et écarté**
+
+- Moysiadis et al. (CAMAD 2024) : simulation FLoRa, gateways sur drones qui suivent un groupe de nœuds eux-mêmes mobiles par trilatération RSSI. Autre problème, énergie non traitée. Seul point utile : l'ADR par défaut s'effondre en mobilité dans leur simulation.
+
+**À lire en entier (résumé ou extraits seulement)**
+
+- **FSMA**, Vennam et al. (arXiv 2510.02800 ; le papier annonce MobiHoc 2026) : **le plus proche parmi les travaux réels récents**. Gateway sur drone, 25 nœuds du commerce, campus de plus d'1 km. La gateway émet un chirp en SF9 ; les nœuds l'écoutent par détection d'activité (CAD) avant d'émettre en SF10. MAC propriétaire, un seul SF, gain d'énergie issu d'un simulateur. Objection à prévoir : pourquoi une sonde plutôt qu'une écoute ? Réponse : FSMA demande un firmware modifié et une gateway spécifique, la sonde fonctionne en Class A sans rien changer.
+- Sobhi et al. (Sensors 2023) : gateway sur le toit d'une voiture, essais réels et simulation, tous les SF, jusqu'à 150 km/h, émission synchronisée ou non. Hors période, mais proche : mécanisme de synchronisation et mesure d'énergie à vérifier dans le texte.
+
+**Connexes (résumé seulement)**
+
+- Dickinson et al. (LS-NoT 2026) : énergie par cycle d'uplink confirmé mesurée sur traces de courant, ADR désactivé, deux plateformes. Point de comparaison pour le banc PPK2.
+- Vargas Villar et al. (IEEE Aerospace 2026) : mesures AERPAW par SF avec des émetteurs mobiles (voiture, drone, helikite) et des gateways apparemment fixes.
+- Wijesuriya (arXiv 2507.19938) : choix statique du SF pour une gateway mobile mono-canal, essais en vue directe et ns-3.
+- Alghamdi et al. (Frontiers 2025) : gateway sur drone et nœuds mobiles, simulation FLoRa.
+- Écartés, optimisation de trajectoire de drone ou analyse théorique sans terrain : Perinello et al. (MSWiM 2025, CCNC 2026), Mohtajollah et al. (IoT-J 2026), Ahmed et al. (arXiv 2502.03377, 2509.17676).
+
+**Pistes relevées dans les bibliographies (non vérifiées)**
+
+- Rolland, Zhou, Accettura, Berthou (WFCS 2025) : réveil « listen-first » sur balise Class B pour LoRaWAN direct-to-satellite, en simulation.
+- Loh et al. (NOMS 2022) et Maudet et al. (Sensors 2021) : modèles d'énergie LoRaWAN, à comparer à nos mesures.
+- Capuzzo et al. (Med-Hoc-Net 2018) : pièges du trafic confirmé en LoRaWAN, à lire pour les sondes confirmées.
+- Scalambrin et al. (IoT-J 2025) : synchronisation Class B validée sur matériel.
+- Travaux récents sur l'ADR en mobilité (PF-ADR, LoRa-LQE, de O. Soares et al. 2025) : apparus dans les recherches, non vérifiés.
+
 ### Positionnement
 
 | | Expérimentation | LoRaWAN standard | Plusieurs SF | Énergie mesurée |
@@ -83,8 +135,14 @@ La plus-value principale est l'**expérimentation réelle** : la grande majorit�
 | Florita et al. 2020 | Réelle (2 motes) | Non | Non (SF7) | Non |
 | MLoRaDrone 2023 | Simulation | Non | Oui | Non (modèle) |
 | Tang et al. 2025 | Réelle (drone immobile) | Oui | Non (1 SF) | Non |
+| Giambene et al. 2025 | Modèle et simulation | Non (Class B modifiée) | Dans le modèle (un SF pour tous) | Non (fiche technique) |
+| Saifullah et al. 2026 | Réelle (7 nœuds) et ns-3 | Non (TDMA propriétaire) | Oui, pour paralléliser | Méthode non décrite |
+| FSMA 2025 (résumé et extraits) | Réelle (25 nœuds, gateway sur drone) | Non | Non (SF10) | Non (simulateur) |
+| Sobhi et al. 2023 (résumé) | Réelle (gateway sur voiture) et simulation | À vérifier | Oui | À vérifier |
 | **Notre travail** | **Réelle (6 motes, 2 gateways)** | **Oui** | **Oui (SF7 → SF12)** | **Oui (PPK2)** |
 
+> Fait le 11 novembre 2026 : première passe de veille (voir ci-dessus). Restent à lire en entier FSMA et Sobhi 2023, et à vérifier les pistes relevées dans les bibliographies.
+>
 > À faire : compléter l'état de l'art sur Google Scholar et IEEE Xplore (*mobile gateway LoRaWAN*, *data mule LoRa*, *gateway discovery LPWAN*, *opportunistic uplink LoRa*), et regarder qui cite Florita 2020. Chercher aussi les comparaisons entre simulation et mesures réelles en LoRa (*LoRa simulation validation measurements*, *ns-3 LoRaWAN real deployment*), pour la simulation sur modèle optionnelle (voir la phase intermédiaire).
 
 ## 4. Hypothèses
@@ -629,8 +687,20 @@ Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 
 - N. J. B. Florita, A. N. M. Senatin, A. M. A. Zabala, W. M. Tan, « Opportunistic LoRa-based gateways for delay-tolerant sensor data collection in urban settings », *Computer Communications*, vol. 154, pp. 410–432, 2020. DOI : 10.1016/j.comcom.2020.02.066
 - C. Chen, J. Luo, Z. Xu, R. Xiong, D. Shen, Z. Yin, « Enabling large-scale low-power LoRa data transmission via multiple mobile LoRa gateways », *Computer Networks*, vol. 237, 110083, 2023. DOI : 10.1016/j.comnet.2023.110083
 - W. Tang, H. Zhao et al., « Measurement of LoRa signal propagation in urban areas utilizing aerial gateway and ground gateway », *Scientific Data*, vol. 12, 1464, 2025. DOI : 10.1038/s41597-025-05802-2. Jeu de données : 10.6084/m9.figshare.28681874
+- G. Giambene, E. O. Addo, Q. Chen, S. Kota, « Design and Analysis of Low-Power IoT in Remote Areas With NTN Opportunistic Connectivity », *IEEE Transactions on Aerospace and Electronic Systems*, vol. 61, n° 2, pp. 2309–2328, 2025. DOI : 10.1109/TAES.2024.3471991
+- M. Á. Amador, C. Garrido-Hidalgo, L. Roda-Sanchez, E. Garrido-Martínez, T. Olivares, « Experimental analysis of LoRaWAN class B synchronization: Towards NTN-integrated IoT networks », *Computer Networks*, vol. 282, 112268, 2026. DOI : 10.1016/j.comnet.2026.112268
+- A. Saifullah, N. Ahmed, A. Jain, M. Y. S. Uddin, M. A. Rahman, « Latency-Optimized Data Harvesting in LoRa Networks Using a Mobile Sink », RTAS 2026 (conférence à confirmer). https://personal.utdallas.edu/~dal012580/papers/rtas2026.pdf
+- V. Moysiadis, D. N. Skoutas, C. Skianis, T. Lagkas, V. Argyriou, P. Sarigiannidis, « Mobile Gateways for LoRa End-Devices: Support Connectivity on the Move », IEEE CAMAD 2024. DOI : 10.1109/CAMAD62243.2024.10942982
 
 **Repérées (résumés seulement)**
+
+- R. R. Vennam, M. Zhang, R. Subbaraman, D. Vasisht, D. Bharadia, « FSMA: Gateway-Controlled Access for Scalable LoRa Non-Terrestrial Networks », arXiv 2510.02800. https://arxiv.org/abs/2510.02800
+- Sobhi, Elzanaty, Selim, Ghuniem, Abdelkader, « Mobility of LoRaWAN Gateways for Efficient Environmental Monitoring in Pristine Sites », *Sensors*, vol. 23, 1698, 2023. DOI : 10.3390/s23031698
+- C. Dickinson, S. Nagaraja, C. M. Ahmed, « Energy-Aware LoRaWAN Design for Long-Lived Agricultural Sensing », LS-NoT 2026 (DCOSS-IoT). https://arxiv.org/abs/2609.14732
+- S. Vargas Villar, S. Singh, Ö. Özdemir, M. L. Sichitiu, İ. Güvenç, « Real-World LoRaWAN Performance and Propagation Modeling Using UAV, Helikite, and Vehicle-Based Measurements », IEEE Aerospace Conference 2026. https://arxiv.org/abs/2604.06444
+- W. A. S. Wijesuriya, « Optimizing Spreading Factor Selection for Mobile LoRa Gateways Using Single-Channel Hardware », arXiv 2507.19938. https://arxiv.org/abs/2507.19938
+- A. Alghamdi, R. Alotaibi, S. Tahir, « Simultaneous mobility of gateways and nodes in LoRaWAN », *Frontiers in Communications and Networks*, vol. 6, 2025. DOI : 10.3389/frcmn.2025.1621431
+- F. Rolland, Z. Zhou, N. Accettura, P. Berthou, « Achieving reduced latency and energy efficiency in direct-to-satellite LoRaWAN communications », IEEE WFCS 2025. DOI : 10.1109/WFCS63373.2025.11077617
 
 - S. M. S. Panga, S. S. Borkotoky, « Leveraging Wake-Up Radios in UAV-Aided LoRa Networks: Some Preliminary Results on a Random-Access Scheme », ConTEL 2023. https://arxiv.org/abs/2305.13810
 - « Beacon based uplink transmission for LoRaWAN direct to satellite IoT », arXiv 2409.20408. https://arxiv.org/abs/2409.20408
