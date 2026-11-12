@@ -185,6 +185,8 @@ du RN2483 limite aussi le temps d'émission des joins.
 | 2026-11-08 10:55:57 → 10:56:21 | `pi-mote-5` | Idem (`mac get adr` sans réponse) : reprise automatique en 24 s |
 | 2026-11-10 15:03:21 → 15:04:52 | `pi-mote-5` | Idem (`mac set dr` sans réponse) : coupure USB à 15:03:36, join refusé puis accepté au 2e essai (1 min 31 s) |
 | 2026-11-10 18:03:05 | `pi-mote-1` | Démarrage du régime 1a sur la mote témoin, près de la gateway (Pi mis à jour à `8dba4ef`) |
+| 2026-11-11, vers 16:08:44 | serveur | Redémarrage de tous les conteneurs de la pile LoRaWAN (ChirpStack, base, broker) par le propriétaire, après des mises à jour du serveur. Aucun trou de plus de 75 s dans les statistiques de la gateway, mais des uplinks ont pu être perdus pendant le redémarrage : exclu (E4) de 16:07:30 à 16:09:30, l'heure d'arrêt n'étant pas connue |
+| 2026-11-12 | serveur | Tailscale installé sur l'instance EC2 (`tag:server`), pour la collecte automatique des journaux (voir [`LoRaWAN-Infra/README.md`](../LoRaWAN-Infra/README.md#accès-tailscale-du-serveur)). Sans effet sur la chaîne de mesure |
 
 Les redémarrages de service n'ont pas provoqué de nouveau join : chacun coûte
 au plus le reste du cycle en cours, sans émission à exclure.
@@ -230,6 +232,7 @@ l'analyse. **Période de référence propre : depuis le 6 novembre 2026 à
 | 2026-11-06 11:52:31 | 2026-11-06, vers 11:52:40 | Redémarrage de ChirpStack (désactivation de l'ADR) |
 | 2026-11-09 22:29:45 | 2026-11-09 22:33:27 | Coupure du backhaul (3 min, plus de statistiques reçues de 22:30:44 à 22:33:27), puis relance de la LoRa à 22:32:45 |
 | 2026-11-10 11:35:34 | 2026-11-10, vers 11:36:09 | Micro-coupure du backhaul (9 s), puis relance de la LoRa à 11:35:43 |
+| 2026-11-11 16:07:30 | 2026-11-11 16:09:30 | Redémarrage des conteneurs de la pile LoRaWAN par le propriétaire (démarrage à 16:08:44, heure d'arrêt inconnue : ± 1 min) |
 
 Les fins « vers » sont estimées avec la durée habituelle d'une relance
 (26 s), le journal de la gateway ne gardant pas toujours la ligne

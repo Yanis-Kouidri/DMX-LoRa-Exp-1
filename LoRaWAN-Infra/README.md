@@ -56,6 +56,68 @@ L'API gRPC de ChirpStack est à préférer à l'API REST.
 - `configuration/grafana/` : source de données et tableaux de bord provisionnés.
 - `configuration/certs/` : CA et certificats TLS (générés, non versionnés).
 - `uplink-collector/` : collecteur MQTT vers PostgreSQL (Python).
+- `tailscale-policy.hujson` : copie versionnée de la politique d'accès du
+  réseau Tailscale (voir [Accès Tailscale du serveur](#accès-tailscale-du-serveur)).
+
+## Accès Tailscale du serveur
+
+Depuis le 12 novembre 2026, l'instance EC2 fait partie du réseau Tailscale
+des Pi. Objectif : que le serveur aille chercher lui-même les journaux du
+régime 1a sur les Pi des motes (collecte par `rsync`, en lecture seule),
+pour calculer le PDR en continu et l'afficher dans Grafana. Les Pi n'ont
+aucun accès au serveur.
+
+**Ce qui a été fait (12 novembre 2026)**
+
+1. Politique d'accès réécrite dans la console Tailscale (Access controls),
+   copie versionnée dans [`tailscale-policy.hujson`](tailscale-policy.hujson).
+   Avant : une seule règle « tout autoriser » (`"src": ["*"], "dst": ["*"]`).
+   Après :
+   - les appareils du propriétaire entre eux : accès complet, comme avant ;
+   - `tag:server` → **port 22 des six Pi des motes uniquement** (désignés par
+     leur adresse Tailscale dans la section `hosts`) ;
+   - règle Tailscale SSH inchangée ;
+   - des `tests` qui empêchent d'enregistrer une politique qui ouvrirait au
+     serveur autre chose que le SSH des Pi des motes.
+2. Tailscale 1.104.6 installé sur l'instance (script officiel
+   `https://tailscale.com/install.sh`), puis :
+
+   ```bash
+   sudo tailscale up --advertise-tags=tag:server --accept-dns=false --hostname=chirpstack
+   ```
+
+   Connexion validée par le propriétaire du réseau via le lien affiché (pas
+   de clé d'authentification, donc aucun secret échangé). `--accept-dns=false` :
+   Tailscale ne touche pas à la résolution de noms du serveur, pour ne pas
+   perturber les conteneurs (`/etc/resolv.conf` toujours sur `127.0.0.53`).
+3. Résultat : appareil `chirpstack`, adresse **100.113.26.94**, tag
+   `tag:server`, expiration de clé désactivée (défaut pour un appareil
+   tagué). Tailscale SSH n'est pas activé sur le serveur : volontaire, on y
+   entre par `ssh chirpstack-aws` comme avant.
+
+**Vérifications (12 novembre 2026)**
+
+| Depuis | Vers | Attendu | Résultat |
+|---|---|---|---|
+| serveur | port 22 de `pi-mote-1` à `pi-mote-6` | autorisé | 6 sur 6 joignables |
+| serveur | port 80 de `pi-mote-1` | refusé | refusé |
+| serveur | port 22 de `pi-gateway`, du PC et de `pi-ppk2` | refusé | refusé |
+| `pi-mote-1` | port 22 du serveur | refusé | refusé |
+| PC du propriétaire | `ssh pi@pi-mote-1` | inchangé | fonctionne |
+
+Les 9 conteneurs n'ont pas été redémarrés.
+
+**À savoir**
+
+- Si un Pi est réenregistré dans Tailscale (réinstallation), son adresse peut
+  changer : mettre à jour `hosts` dans `tailscale-policy.hujson`, puis
+  recopier le fichier dans la console.
+- Retour en arrière : historique des versions de la page Access controls, et
+  `sudo tailscale down` sur le serveur.
+- Un nouveau noyau Linux est installé sur l'instance depuis la mise à jour du
+  11 novembre, mais pas encore actif : redémarrer le serveur à un moment
+  choisi, puis consigner la coupure dans les interventions (E4) de
+  [`docs/emplacements.md`](../docs/emplacements.md).
 
 ## Installation
 

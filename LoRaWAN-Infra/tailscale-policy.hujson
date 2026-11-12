@@ -1,0 +1,51 @@
+// Politique d'accès du réseau Tailscale (console Tailscale > Access controls).
+// Copie versionnée de la politique enregistrée le 12 novembre 2026 : toute
+// modification se fait d'abord ici, puis est recopiée dans la console.
+// Voir README.md, section « Accès Tailscale du serveur ».
+{
+	// Seul un admin (le propriétaire du réseau) peut attribuer ce tag
+	"tagOwners": {
+		"tag:server": ["autogroup:admin"],
+	},
+
+	// Adresses Tailscale des Pi des motes (à mettre à jour si un Pi est réenregistré)
+	"hosts": {
+		"pi-mote-1": "100.127.110.123",
+		"pi-mote-2": "100.80.184.64",
+		"pi-mote-3": "100.67.255.81",
+		"pi-mote-4": "100.65.18.17",
+		"pi-mote-5": "100.124.32.102",
+		"pi-mote-6": "100.98.208.53",
+	},
+
+	"grants": [
+		// Appareils du propriétaire entre eux : accès complet, comme avant
+		{"src": ["autogroup:member"], "dst": ["autogroup:member"], "ip": ["*"]},
+
+		// Serveur EC2 (collecte des journaux du régime 1a) : uniquement SSH vers les six Pi des motes
+		{
+			"src": ["tag:server"],
+			"dst": ["pi-mote-1", "pi-mote-2", "pi-mote-3", "pi-mote-4", "pi-mote-5", "pi-mote-6"],
+			"ip":  ["tcp:22"],
+		},
+	],
+
+	// Tailscale SSH vers ses propres appareils, sans nouvelle authentification (inchangé)
+	"ssh": [
+		{
+			"action": "accept",
+			"src":    ["autogroup:member"],
+			"dst":    ["autogroup:self"],
+			"users":  ["autogroup:nonroot", "root"],
+		},
+	],
+
+	// Vérifiés à chaque enregistrement : Tailscale refuse de sauvegarder si un test échoue
+	"tests": [
+		{
+			"src":    "tag:server",
+			"accept": ["pi-mote-1:22", "pi-mote-6:22"],
+			"deny":   ["pi-mote-1:80", "100.81.128.70:22", "100.78.232.123:22", "100.126.54.98:22"],
+		},
+	],
+}
