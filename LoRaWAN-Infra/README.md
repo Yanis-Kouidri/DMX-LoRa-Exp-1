@@ -287,6 +287,31 @@ Le collecteur `uplink-collector` s'abonne aux topics MQTT des devices
 L'événement brut est conservé dans la colonne `raw_event` (JSONB) de chaque
 table.
 
+Le suivi automatique du régime 1a (migration `004`, 12 novembre 2026) ajoute
+cinq tables, remplies par le traitement de `regime1a/` (étape 4, à venir) :
+
+| Table | Contenu |
+|---|---|
+| `regime_1a_tx` | Une ligne par émission journalisée par une mote (`event=tx`), unique sur `(dev_eui, payload_hex)` : la charge utile (cycle, DR, marqueur `0x1A`) relie l'émission à sa réception dans `uplinks` |
+| `regime_1a_events` | Les autres lignes des journaux (`config`, `join`, `skip`, `error`, `recover`, `pwridx`, `adr`, `stop`…), pour la traçabilité |
+| `regime_1a_exclusions` | Fenêtres d'exclusion E1 à E4 de la règle du plan (section 10), avec leur motif |
+| `regime_1a_hourly` | Par heure, par mote et par SF : émis, reçus, exclus, avec et sans E3. PDR d'une période = somme des reçus / somme des émis |
+| `regime_1a_collection` | Une ligne par Pi et par collecte des journaux (copie de `/srv/regime1a/etat-collecte.csv`) |
+
+Comptes : `grafana_reader` lit ces tables (privilèges par défaut de la
+migration `003`). `regime1a_writer`, créé par la migration `004` sans mot de
+passe, écrit uniquement dans ces cinq tables et lit `uplinks` et
+`gateway_events`. Les interventions E4 et les déplacements de la gateway
+viennent de fichiers versionnés : [`docs/exclusions-e4.csv`](../docs/exclusions-e4.csv)
+et [`docs/deplacements-gateway.csv`](../docs/deplacements-gateway.csv) (heures
+avec leur fuseau, par exemple `+01:00`).
+
+Migration `004` appliquée le 12 novembre 2026 sur l'instance, en ne créant
+que de nouveaux objets (aucune table existante modifiée). Vérifié :
+`grafana_reader` lit les cinq tables et ne peut pas y écrire ;
+`regime1a_writer` a `SELECT, INSERT, UPDATE, DELETE` sur ces tables et
+seulement `SELECT` sur `uplinks` et `gateway_events`.
+
 ### Migrations
 
 `configuration/postgresql/initdb/` ne s'exécute qu'à la création du volume

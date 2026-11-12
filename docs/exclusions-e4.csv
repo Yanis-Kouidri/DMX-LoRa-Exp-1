@@ -1,0 +1,5 @@
+debut,fin,motif
+2026-11-03T17:00:00+01:00,2026-11-03T17:05:00+01:00,"Déplacement de la gateway fixe (surélevée de 30 cm, rapprochée de 10 cm de la fenêtre) ; heure exacte non relevée, première trame d'une mote à 17:04:59"
+2026-11-06T11:28:00+01:00,2026-11-06T11:41:00+01:00,"Essai au banc avec la mote 1 à côté de la gateway : 80 paquets SF7 et SF8 à environ -35 dBm"
+2026-11-06T11:52:31+01:00,2026-11-06T11:52:40+01:00,"Redémarrage de ChirpStack (désactivation de l'ADR dans la région)"
+2026-11-11T16:07:30+01:00,2026-11-11T16:09:30+01:00,"Redémarrage des conteneurs de la pile LoRaWAN par le propriétaire après des mises à jour (démarrage à 16:08:44, arrêt inconnu : ± 1 min)"
