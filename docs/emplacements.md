@@ -188,6 +188,8 @@ du RN2483 limite aussi le temps d'émission des joins.
 | 2026-11-11, vers 16:08:44 | serveur | Redémarrage de tous les conteneurs de la pile LoRaWAN (ChirpStack, base, broker) par le propriétaire, après des mises à jour du serveur. Aucun trou de plus de 75 s dans les statistiques de la gateway, mais des uplinks ont pu être perdus pendant le redémarrage : exclu (E4) de 16:07:30 à 16:09:30, l'heure d'arrêt n'étant pas connue |
 | 2026-11-11 14:23:22 → 14:24:54 | `pi-mote-1` | **Mote témoin muette** (`mac set dr` sans réponse) : reprise automatique, coupure USB à 14:23:38, join refusé puis accepté au 2e essai (1 min 32 s) |
 | 2026-11-12 06:50:22 → 06:51:54 | `pi-mote-5` | Mote muette (`mac set dr` sans réponse) : reprise automatique, coupure USB à 06:50:38, join refusé puis accepté au 2e essai (1 min 32 s) |
+| 2026-11-12 11:13:42–49 | 1, 2, 4, 5 | Redémarrage des services : cycles calés sur l'heure NTP avec un décalage par mote (commit `7140ad4`), contre les chevauchements entre motes (voir le plan, section 14) |
+| 2026-11-12 11:13:45 → 11:25:25 | 2, 4, 5 | **Services bloqués au démarrage** : la nouvelle dépendance `ppk2-api` du dépôt n'était pas installée et `uv run --offline` refusait de la télécharger. Corrigé par `uv sync --frozen` à 11:25, redémarrage automatique à 11:25:25. Aucune émission pendant 12 min : rien à exclure, données perdues |
 | 2026-11-12 | serveur | Tailscale installé sur l'instance EC2 (`tag:server`), pour la collecte automatique des journaux (voir [`LoRaWAN-Infra/README.md`](../LoRaWAN-Infra/README.md#accès-tailscale-du-serveur)). Sans effet sur la chaîne de mesure |
 
 Les redémarrages de service n'ont pas provoqué de nouveau join : chacun coûte
@@ -397,6 +399,18 @@ Environ 145 à 290 émissions par case et par SF. « Semaine » : le vendredi
   10 novembre à 15:03, voir [`Mote/mote.md`](../Mote/mote.md)), contre aucun pour
   les motes 2 et 4. Sans la reprise automatique, le week-end aurait été
   perdu sur ce site.
+
+## Chevauchements entre motes (12 novembre 2026)
+
+Jusqu'au 12 novembre, les motes 2 et 5 se chevauchaient : la mote 5 émettait
+environ 1,1 s avant la mote 2 à chaque créneau, et ses paquets SF12
+chevauchant la mote 2 n'étaient reçus qu'à 37,0 %, contre 64,7 % sans
+chevauchement. **Le PDR SF12 du 4R1 publié jusqu'ici est donc sous-estimé
+d'environ 7 points**. Ces émissions sont désormais exclues (motif E5 de la
+règle), et les cycles sont calés sur l'heure NTP avec un décalage par mote
+(0 ; 8,34 ; 25,02 ; 33,36 s pour les motes 1, 2, 4, 5). Détails, chiffres et
+justification : [plan](plan-experimental.md#chevauchements-entre-motes-de-lexpérience-12-novembre-2026),
+section 14.
 
 ## Lecture attendue (hypothèse, à vérifier par la balade 0a)
 

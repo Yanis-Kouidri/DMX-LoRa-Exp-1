@@ -136,6 +136,23 @@ Suivi : `systemctl --user status regime-1a.service`, et pour les messages
 rien : le journal des utilisateurs n'est pas conservé sur disque). Le journal de
 mesure reste `~/lora-logs/regime_1a_<hôte>.csv`.
 
+⚠️ **Après chaque `git pull`, lancer `uv sync --frozen` avant de redémarrer le
+service.** Le service lance le régime avec `uv run --frozen --offline`, qui ne
+télécharge rien : si le dépôt a gagné une dépendance, le service échoue et
+redémarre en boucle sans émettre. C'est arrivé le 12 novembre 2026 sur
+`pi-mote-2`, `-4` et `-5` (dépendance `ppk2-api`), 12 min sans émission.
+
+```bash
+cd ~/DMX-LoRa-Exp-1 && git pull --ff-only && cd Mote && ~/.local/bin/uv sync --frozen
+systemctl --user restart regime-1a.service
+```
+
+Depuis le 12 novembre 2026, les cycles sont calés sur l'heure NTP avec un
+décalage propre à chaque mote, (N − 1) × 50,045 / 6 s pour `pi-mote-N` : deux
+motes ne se chevauchent jamais, même après un redémarrage ou une reprise
+automatique. Option `--decalage` pour imposer un autre décalage. Le premier
+cycle après un démarrage attend son instant (jusqu'à 5 min).
+
 ⚠️ N'activer le service qu'une fois la mote installée à son emplacement : tout
 ce qui est émis est journalisé comme mesure du régime 1a.
 

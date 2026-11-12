@@ -7,7 +7,7 @@
   ],
   "timezone": "Europe/Paris",
   "schemaVersion": 41,
-  "version": 1,
+  "version": 2,
   "editable": true,
   "time": {
     "from": "now-7d",
@@ -27,7 +27,7 @@
       "id": 1,
       "options": {
         "mode": "markdown",
-        "content": "**Régime 1a : taux de réception (PDR) vers la gateway fixe.** Calculé toutes les 10 min par le traitement du serveur (`LoRaWAN-Infra/regime1a/`), avec le même code que `Mote/src/bilan_regime_1a.py`. Période comptée à l'heure près, depuis le 6 novembre 2026 à 11:53. Fenêtres d'exclusion E1 à E4 retirées (règle du plan, section 10) ; le sélecteur « Heures E3 » permet de les garder. Heures en heure de Paris."
+        "content": "**Régime 1a : taux de réception (PDR) vers la gateway fixe.** Calculé toutes les 10 min par le traitement du serveur (`LoRaWAN-Infra/regime1a/`), avec le même code que `Mote/src/bilan_regime_1a.py`. Période comptée à l'heure près, depuis le 6 novembre 2026 à 11:53. Exclusions E1 à E5 retirées (E5 : chevauchement entre deux motes de l'expérience) (règle du plan, section 10) ; le sélecteur « Heures E3 » permet de les garder. Heures en heure de Paris."
       }
     },
     {

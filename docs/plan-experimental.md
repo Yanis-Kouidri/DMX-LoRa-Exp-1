@@ -378,6 +378,10 @@ La gateway de l'IRIT est **conservée comme référence** (stratégie B1) et com
   [`exclusions-e4.csv`](exclusions-e4.csv).
 - Blocage série du RN2483 observé sur une troisième mote (la témoin, le
   11 novembre) : la reprise automatique relance chaque mote en 1 min 30 environ.
+- **Chevauchements entre motes de l'expérience** découverts et corrigés le
+  12 novembre (section 14) : exclusion E5 ajoutée à la règle, cycles calés sur
+  l'heure NTP avec un décalage par mote. Le PDR SF12 du 4R1 était sous-estimé
+  d'environ 7 points.
 
 **0a. Balade de repérage de la couverture de l'IRIT**
 
@@ -617,11 +621,12 @@ Le PDR mesure le lien radio, pas la disponibilité de l'infrastructure. Une pann
 - **E2. Relance de la LoRa** (netwatch ou manuelle) : de la relance jusqu'à 30 s après (26 s mesurées pour une relance).
 - **E3. Réception dégradée** : une heure est exclue si le RSSI médian des trames étrangères reçues y est inférieur de plus de 10 dB à sa médiane sur la période analysée, ou si leur nombre y est inférieur au tiers de la médiane horaire. C'est la signature de l'épisode du 3 novembre (−120 dBm au lieu de −107, trafic divisé par 3 à 4), invisible autrement. *Précision du 10 novembre 2026* : les deux références (RSSI médian et nombre horaire médian) sont calculées **séparément pour chaque position de la gateway**, et l'heure d'un déplacement n'est pas jugée (le déplacement relève d'E4). Raison : une période qui couvre un déplacement mélange deux niveaux de réception. Sur la journée du 3 novembre, une référence commune signalait à tort les heures de 12h et de 15h, plus calmes parce qu'antérieures au déplacement de 17h ; avec une référence par position, seuls les deux épisodes connus (heures de 13h et de 16h) sont retenus. Sans effet sur l'analyse principale : la gateway n'a pas bougé depuis le 6 novembre.
 - **E4. Intervention documentée** : toute manipulation de la gateway, du serveur ou d'une mote installée, et tout essai émis à proximité de la gateway, consigné avec son heure dans [`emplacements.md`](emplacements.md#régime-1a) (redémarrage de ChirpStack, essai au banc, déplacement de la gateway). Depuis le 12 novembre 2026, ces fenêtres sont aussi inscrites dans [`exclusions-e4.csv`](exclusions-e4.csv), lu par le traitement automatique ; les déplacements de la gateway (référence d'E3) dans [`deplacements-gateway.csv`](deplacements-gateway.csv). Chaque ajout passe par un commit.
+- **E5. Chevauchement entre deux motes de l'expérience** (*amendement du 12 novembre 2026*) : toute émission dont l'intervalle d'émission (de `utc_tx_start` à `utc_tx_start` + temps d'émission, élargi de 0,1 s de chaque côté) chevauche une émission d'une autre mote de l'expérience, mote témoin comprise. Les fenêtres E1 à E4 priment. Raison : les motes de l'expérience sont nos instruments de mesure ; leurs chevauchements ne sont pas une propriété du canal. Jusqu'au 12 novembre, leurs cycles restaient en phase (même créneau de 50,045 s, décalages fixés par l'heure de démarrage des services) : la mote 5 chevauchait la mote 2 dans 27 % de ses paquets SF12, avec un PDR de 37,0 % contre 64,7 % sans chevauchement (p = 7·10⁻²⁵, voir la [section 14](#chevauchements-entre-motes-de-lexpérience-12-novembre-2026)). Appliqué rétroactivement à toutes les données. Depuis le 12 novembre à 11:13, les cycles sont calés sur l'heure NTP avec un décalage par mote : E5 ne devrait plus rien exclure, sauf après des essais répétés sur `no_free_ch`.
 - **Période** : l'analyse principale commence le 6 novembre 2026 à 11:53 (ADR désactivé côté serveur et côté mote, puissance relue avant chaque émission). Les mesures antérieures sont analysées à part et ne sont pas fusionnées.
 
 **Ne sont pas exclus**, car ils font partie du canal ou n'introduisent pas de biais :
 
-- les **collisions** avec les autres réseaux LoRa et les variations liées à l'activité dans les bâtiments, qui sont précisément ce qu'on mesure ;
+- les **collisions** avec les autres réseaux LoRa et les variations liées à l'activité dans les bâtiments, qui sont précisément ce qu'on mesure (seules les collisions entre motes de l'expérience relèvent d'E5) ;
 - les **blocages d'une mote** : une mote figée n'émet rien, donc rien n'entre au dénominateur ; seul le volume de données baisse ;
 - les envois abandonnés (`skip`, par exemple `no_free_ch`), qui ne sont pas des émissions.
 
@@ -716,6 +721,48 @@ Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 
 - **Leçon** : `mac set adr off` côté mote ne suffit pas, l'ADR doit être
   désactivé aussi côté serveur. À reprendre dans la description du
   dispositif expérimental de l'article.
+
+### Chevauchements entre motes de l'expérience (12 novembre 2026)
+
+- **Constat** : aucune émission de la mote témoin n'a chevauché une autre mote
+  depuis son démarrage, mais les motes 2 et 5 se chevauchaient. Toutes les
+  motes ont le même créneau (50,045 s, mesuré) : leurs décalages restaient
+  fixes et ne changeaient qu'au redémarrage d'un service ou après une reprise
+  automatique. Les services des motes 2, 4 et 5 avaient été redémarrés à
+  quelques secondes d'intervalle le 6 novembre : la mote 5 émettait environ
+  1,1 s avant la mote 2, si bien que ses paquets SF12 (1,32 s) chevauchaient
+  le début de ceux de la mote 2.
+- **Effet** (période de référence, émissions hors fenêtres d'exclusion) :
+
+  | | Chevauchés | Sans chevauchement | Test de Fisher |
+  |---|---|---|---|
+  | Mote 5, SF12 | 37,0 % reçus (173 / 468) | 64,7 % (806 / 1 246) | p = 7·10⁻²⁵ |
+  | Mote 2, SF9 à SF12 | 47 à 79 % | 55 à 84 % | p ≥ 0,23 |
+
+  La perte de la mote 5 se produit quel que soit le SF de la mote 2, même en
+  SF7, alors que les deux paquets ne partagent le canal qu'une fois sur huit
+  environ : probablement une limite de la gateway, qui perd le paquet en
+  cours quand un autre arrive, même sur un autre canal (hypothèse non
+  vérifiée). La mote 2, plus forte et arrivée en second, n'est pas touchée
+  (effet de capture). Chevauchements répartis sur toute la journée : pas un
+  effet de l'heure.
+- **Conséquence** : le PDR SF12 de la mote 5 était sous-estimé d'environ
+  7 points (environ 57 % mesurés, environ 65 % sans chevauchement), y compris
+  le chiffre de 64 % présenté le 10 novembre. Le plafond du Forum vers 85 %
+  ne s'explique pas par ce phénomène.
+- **Contrôle des horloges** : paquets reçus par le serveur 0,31 s après la fin
+  d'émission prévue, avec une dispersion de ± 0,03 s pour toutes les motes :
+  les heures des journaux sont fiables à quelques dizaines de millisecondes.
+- **Correctifs du 12 novembre 2026** : exclusion E5 (section 10), appliquée
+  rétroactivement ; cycles du régime 1a calés sur l'heure NTP avec un
+  décalage de (N − 1) × 50,045 / 6 s pour `pi-mote-N`, soit environ 8,3 s
+  entre deux motes. Après le redémarrage de 11:13, émissions mesurées à
+  25 ms près de leur instant prévu.
+- **Pour l'article** : la planification est décrite comme une mesure
+  contrôlée qui évite que les motes de l'expérience ne se gênent entre elles ;
+  le réseau reste exposé au trafic LoRa extérieur, mesuré et publié. L'effet
+  de la densité de capteurs, s'il doit être étudié, se traite à part
+  (simulation sur traces ou expérience dédiée à instants aléatoires).
 
 ### Rappels sur les commandes RN2483
 

@@ -201,6 +201,8 @@ de la pile (profil `jobs` : jamais lancé par `docker compose up`) :
    référence, variable `REGIME1A_DEBUT`) jusqu'à l'heure en cours, les
    fenêtres d'exclusion E1 à E4 et les comptes horaires par mote et par SF,
    remplacés d'un bloc dans `regime_1a_exclusions` et `regime_1a_hourly`.
+   Les émissions qui chevauchent une autre mote de l'expérience (E5, depuis le
+   12 novembre 2026) sont comptées dans les exclues, sans fenêtre propre.
 
 **Même code que le bilan.** Le traitement importe les fonctions de
 `Mote/src/bilan_regime_1a.py` (règle d'exclusion, classement des émissions,
