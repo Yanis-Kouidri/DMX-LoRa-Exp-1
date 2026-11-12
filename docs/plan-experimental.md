@@ -588,15 +588,17 @@ Uplink non confirmé de 6 octets, séquence complète (émission, RX1, RX2), `pw
 - **Débit de RX2** : avec RX2 en SF9 au lieu de SF12, une sonde SF7 ratée coûte 28,99 mJ (−25 %). Le levier est standard (`RXParamSetupReq`, réglage cohérent avec ChirpStack) ; le repli étant non confirmé, il n'a pas besoin d'une fenêtre RX2 robuste.
 - **Seuil de rentabilité de la sonde.** Si chaque sonde réussit indépendamment avec la probabilité p (contact avec la gateway mobile), la stratégie P bat B1 dès que p > p* = E_ratée / (E_repli − E_réussie + E_ratée), quel que soit le budget k de sondes par période. En prenant prudemment E_réussie = E_ratée (une sonde réussie n'ouvre pas RX2 et devrait coûter moins), p* = E_ratée / E_repli :
 
-| Repli vers la gateway fixe | RX2 en SF12 : p* | RX2 en SF12 : gain si p = 1 | RX2 en SF9 : p* (estimé) | RX2 en SF9 : gain si p = 1 (estimé) |
+| Repli vers la gateway fixe | RX2 en SF12 : p* | RX2 en SF12 : gain si p = 1 | RX2 en SF9 : p* | RX2 en SF9 : gain si p = 1 |
 |---|---|---|---|---|
 | SF10 | 0,48 | 52 % | 0,41 | 59 % |
-| SF11 | 0,28 | 72 % | 0,23 | 77 % |
+| SF11 | 0,28 | 72 % | 0,22 | 77 % |
 | SF12 | 0,18 | 82 % | 0,14 | 86 % |
 
-  Les valeurs « RX2 en SF9 » retranchent au repli l'économie mesurée en SF7 (9,8 mJ, la fenêtre RX2 ne dépend pas du SF de l'uplink) : estimation à confirmer par une mesure au SF de repli.
+  Avec RX2 en SF9, sonde SF7 ratée et repli sont mesurés (28,99 mJ ; repli SF10 70,51, SF11 128,83, SF12 211,46 mJ, 12 novembre 2026).
 - **Conséquence pour la phase 0** : p est la probabilité qu'une sonde tombe pendant un contact SF7 avec la gateway mobile. Des sondes réparties au hasard dans la période réussiraient trop rarement si la gateway ne passe que quelques heures par semaine. Le gain dépend donc de la **planification des sondes** (sonder quand la gateway a des chances de passer), et la tournée pilote doit mesurer, en plus de la part de la boucle à portée SF7, la probabilité qu'une sonde envoyée pendant une tournée soit reçue.
-- **Reste à mesurer** : la sonde réussie (OTAA, à portée de la gateway de l'IRIT) ; les tailles de 20 et 51 octets ; le repli en SF10 à SF12 avec RX2 en SF9.
+- **`rx1_delay`** : à 3 s au lieu de 1 s, une sonde SF7 ratée coûte 57,90 mJ (+49 %). Le délai de 1 s est donc à tenir pour la gateway mobile en 4G.
+- **Taille de la charge utile** : une sonde SF7 ratée coûte 41,6 mJ en 20 octets et 47,9 mJ en 51 octets (38,8 mJ en 6 octets) ; détail dans [`Mote/banc-ppk2/`](../Mote/banc-ppk2/README.md).
+- **Reste à mesurer** : la sonde réussie (OTAA, à portée de la gateway de l'IRIT) ; le repli en SF10 à SF12 en 20 et 51 octets.
 
 ## 10. Indicateurs et statistiques
 

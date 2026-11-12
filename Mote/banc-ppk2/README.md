@@ -23,6 +23,7 @@ refaite à 10:06.
 | `2026-11-12_1049_…-cnf-sf7-6o-x30-rxd3000` | 30 sondes ratées SF7, `rx1_delay` 3 s | commit `a3ed546` (champ `acquisition`) | même exécution |
 | `2026-11-12_1054_…-cnf-sf7-sf8-sf9-20o-x30` | 30 sondes ratées par SF, SF7 à SF9, 20 octets | commit `a3ed546` | même exécution |
 | `2026-11-12_1122_…-cnf-sf7-sf8-sf9-51o-x30` | 30 sondes ratées par SF, SF7 à SF9, 51 octets | commit `a3ed546` | même exécution |
+| `2026-11-12_1240_…-uncnf-sf10-sf11-sf12-6o-x30-rx2dr3` | 30 × `mac tx uncnf` par SF, SF10 à SF12, 6 octets, RX2 en SF9 | commit `7d1cb9e` | même exécution |
 
 Pour la série `2026-11-12_1007`, les champs `git` et `sha256` du JSON sont
 faux : ils ont été relevés à la fin de la série, alors que les scripts avaient
@@ -72,7 +73,10 @@ réponse est `mac_err` après RX2. Mêmes réglages que ci-dessus, n = 30.
 
 Une sonde ratée coûte autant qu'un uplink non confirmé au même SF (écart de
 0,0 à 0,3 %). Passer RX2 de SF12 à SF9 économise 9,8 mJ par message (−25 % en
-SF7). Avec `rx1_delay` à 3 s (RX2 à 4 s), une sonde SF7 ratée coûte
+SF7). Au SF de repli, avec RX2 en SF9 (uplink non confirmé, 6 octets) :
+SF10 70,51 ± 0,11 mJ, SF11 128,83 ± 0,32 mJ, SF12 211,46 ± 0,41 mJ, soit
+−9,6 / −9,0 / −8,9 mJ par rapport à RX2 en SF12 (RX2 de 46 à 47 ms). Avec
+`rx1_delay` à 3 s (RX2 à 4 s), une sonde SF7 ratée coûte
 57,90 ± 0,13 mJ (+19,1 mJ, +49 %), pour une durée de 4 284 ms.
 
 ## Sonde ratée selon la taille de la charge utile
