@@ -56,6 +56,9 @@ L'API gRPC de ChirpStack est à préférer à l'API REST.
 - `configuration/grafana/` : source de données et tableaux de bord provisionnés.
 - `configuration/certs/` : CA et certificats TLS (générés, non versionnés).
 - `uplink-collector/` : collecteur MQTT vers PostgreSQL (Python).
+- `regime1a/` : collecte automatique des journaux du régime 1a (script, liste
+  des Pi, clé publique, unités systemd ; voir
+  [Collecte automatique des journaux du régime 1a](#collecte-automatique-des-journaux-du-régime-1a)).
 - `tailscale-policy.hujson` : copie versionnée de la politique d'accès du
   réseau Tailscale (voir [Accès Tailscale du serveur](#accès-tailscale-du-serveur)).
 
@@ -74,8 +77,9 @@ aucun accès au serveur.
    Avant : une seule règle « tout autoriser » (`"src": ["*"], "dst": ["*"]`).
    Après :
    - les appareils du propriétaire entre eux : accès complet, comme avant ;
-   - `tag:server` → **port 22 des six Pi des motes uniquement** (désignés par
-     leur adresse Tailscale dans la section `hosts`) ;
+   - `tag:server` → **port 2222 des six Pi des motes uniquement** (désignés
+     par leur adresse Tailscale dans la section `hosts`). D'abord le port 22,
+     remplacé le jour même : voir la collecte ci-dessous ;
    - règle Tailscale SSH inchangée ;
    - des `tests` qui empêchent d'enregistrer une politique qui ouvrirait au
      serveur autre chose que le SSH des Pi des motes.
@@ -99,7 +103,7 @@ aucun accès au serveur.
 
 | Depuis | Vers | Attendu | Résultat |
 |---|---|---|---|
-| serveur | port 22 de `pi-mote-1` à `pi-mote-6` | autorisé | 6 sur 6 joignables |
+| serveur | port 22 de `pi-mote-1` à `pi-mote-6` (première version de la règle) | autorisé | 6 sur 6 joignables |
 | serveur | port 80 de `pi-mote-1` | refusé | refusé |
 | serveur | port 22 de `pi-gateway`, du PC et de `pi-ppk2` | refusé | refusé |
 | `pi-mote-1` | port 22 du serveur | refusé | refusé |
@@ -118,6 +122,71 @@ Les 9 conteneurs n'ont pas été redémarrés.
   11 novembre, mais pas encore actif : redémarrer le serveur à un moment
   choisi, puis consigner la coupure dans les interventions (E4) de
   [`docs/emplacements.md`](../docs/emplacements.md).
+
+## Collecte automatique des journaux du régime 1a
+
+Depuis le 12 novembre 2026, le serveur copie toutes les 10 minutes les
+journaux du régime 1a (`~/lora-logs` de chaque Pi des motes) dans
+`/srv/regime1a/journaux/<pi>/`. C'est l'étape 2 du suivi automatique du
+régime 1a (calcul du PDR en continu et tableau de bord Grafana, étapes
+suivantes à venir).
+
+**Fonctionnement**
+
+- `regime1a/collecte-journaux.sh` lit `regime1a/pis.conf` (nom et adresse
+  Tailscale de chaque Pi) et lance un `rsync` par Pi. Les journaux ne font
+  que grossir : seuls les ajouts sont transférés. Un Pi injoignable n'arrête
+  pas les autres.
+- Chaque passage est noté dans `/srv/regime1a/etat-collecte.csv`
+  (`utc,host,ip,statut,code_rsync,octets`) : on sait quand chaque Pi a été
+  collecté pour la dernière fois.
+- `regime1a/systemd/regime1a-collecte.timer` lance le service toutes les
+  10 minutes (`OnCalendar=*:0/10`, `Persistent=true`), sous l'utilisateur
+  `ubuntu`. Suivi : `systemctl list-timers regime1a-collecte.timer` et
+  `journalctl -u regime1a-collecte.service`.
+
+**Sécurité : une clé en lecture seule**
+
+- Clé dédiée sur le serveur : `~/.ssh/regime1a_collecte` (ed25519, sans
+  phrase de passe, non versionnée). Clé publique versionnée :
+  `regime1a/collecte.pub`.
+- Sur chaque Pi, dans `~/.ssh/authorized_keys` :
+  `command="/usr/bin/rrsync -ro /home/pi/lora-logs/",restrict <clé publique>`.
+  La clé ne peut que **lire** `~/lora-logs` : ni shell, ni commande, ni
+  écriture, ni redirection de port.
+- **Port 2222.** Les Pi ont Tailscale SSH activé : sur leur adresse
+  Tailscale, Tailscale intercepte le port 22 et applique sa propre politique,
+  sans tenir compte de `authorized_keys`, donc sans la restriction ci-dessus.
+  Autoriser `tag:server` dans Tailscale SSH lui aurait donné un shell complet
+  sur les Pi. Le serveur SSH des Pi écoute donc aussi sur le port 2222
+  (`/etc/ssh/sshd_config.d/60-regime1a-collecte.conf` : `Port 22` et
+  `Port 2222`), seul port ouvert au serveur par la politique Tailscale.
+  L'accès habituel (Tailscale SSH sur le port 22) est inchangé.
+- Clés d'hôte des Pi : `/srv/regime1a/known_hosts`, enregistrées au premier
+  passage.
+
+**Mise en place (12 novembre 2026)**
+
+1. Serveur : dossiers `/srv/regime1a` et `/srv/regime1a/journaux`
+   (`ubuntu:ubuntu`, `0750`) et clé `~/.ssh/regime1a_collecte`.
+2. Les six Pi : ligne ci-dessus ajoutée à `~/.ssh/authorized_keys` (copie de
+   sauvegarde `authorized_keys.bak-2026-11-12`) et `~/lora-logs` créé s'il
+   manquait. Le service `regime-1a` n'a pas été touché.
+3. Premier essai sur le port 22 : refusé par Tailscale SSH
+   (« tailnet policy does not permit you to SSH to this node »), rien copié.
+4. Par le propriétaire : port 2222 ajouté au serveur SSH des six Pi, puis
+   règle Tailscale du serveur passée de `tcp:22` à `tcp:2222`, avec un test
+   qui interdit le port 22 au serveur.
+5. Collecte réussie sur les six Pi (journaux des Pi 1, 2, 4 et 5 ; aucun
+   encore sur les Pi 3 et 6).
+6. Tentatives de détournement de la clé, toutes refusées : commande
+   arbitraire, shell, écriture d'un fichier, lecture de `../.ssh/` et de
+   `/etc/`, redirection de port (« administratively prohibited »), port 22.
+7. Timer installé et activé sur le serveur.
+
+`Mote/scripts/setup-pi.sh` configure le port 2222 et la clé de collecte sur
+les nouveaux Pi. Ajouter un Pi : une ligne dans `pis.conf` et son adresse
+dans `tailscale-policy.hujson`.
 
 ## Installation
 

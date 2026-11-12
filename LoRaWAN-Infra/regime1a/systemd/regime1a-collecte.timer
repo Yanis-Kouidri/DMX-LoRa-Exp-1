@@ -1,0 +1,12 @@
+# Lance regime1a-collecte.service toutes les 10 minutes (voir ../../README.md).
+# Installation : sudo systemctl link …/regime1a-collecte.timer && sudo systemctl enable --now regime1a-collecte.timer
+
+[Unit]
+Description=Collecte des journaux du régime 1a toutes les 10 minutes
+
+[Timer]
+OnCalendar=*:0/10
+Persistent=true
+
+[Install]
+WantedBy=timers.target

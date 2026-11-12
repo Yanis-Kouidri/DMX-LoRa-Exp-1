@@ -183,6 +183,30 @@ else
     echo "Règle installée : ${sudoers_file}."
 fi
 
+step "Collecte des journaux par le serveur (SSH port 2222, lecture seule)"
+# Le serveur EC2 copie ~/lora-logs par rsync sur Tailscale : voir
+# LoRaWAN-Infra/README.md. Port 2222 car Tailscale SSH intercepte le port 22 et
+# ignorerait la restriction de la clé.
+sshd_dropin="/etc/ssh/sshd_config.d/60-regime1a-collecte.conf"
+if [[ -f $sshd_dropin ]]; then
+    echo "Port 2222 déjà configuré : ${sshd_dropin}."
+else
+    printf 'Port 22\nPort 2222\n' > "$sshd_dropin"
+    sshd -t || { rm -f "$sshd_dropin"; die "configuration sshd invalide"; }
+    systemctl restart ssh
+    echo "Port 2222 ajouté : ${sshd_dropin}."
+fi
+collect_pub="${user_home}/${REPO_DIR}/LoRaWAN-Infra/regime1a/collecte.pub"
+collect_line="command=\"/usr/bin/rrsync -ro ${user_home}/lora-logs/\",restrict $(cat "$collect_pub")"
+sudo -u "$SUDO_USER" mkdir -p "${user_home}/.ssh" "${user_home}/lora-logs"
+if grep -qF "regime1a-collecte@chirpstack" "${user_home}/.ssh/authorized_keys" 2>/dev/null; then
+    echo "Clé de collecte déjà autorisée."
+else
+    echo "$collect_line" | sudo -u "$SUDO_USER" tee -a "${user_home}/.ssh/authorized_keys" >/dev/null
+    chmod 600 "${user_home}/.ssh/authorized_keys"
+    echo "Clé de collecte autorisée (rrsync -ro ${user_home}/lora-logs/)."
+fi
+
 step "Tailscale"
 if ! command -v tailscale >/dev/null; then
     curl -fsSL https://tailscale.com/install.sh | sh

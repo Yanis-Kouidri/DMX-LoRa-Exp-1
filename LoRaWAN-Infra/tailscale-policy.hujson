@@ -1,5 +1,6 @@
 // Politique d'accès du réseau Tailscale (console Tailscale > Access controls).
-// Copie versionnée de la politique enregistrée le 12 novembre 2026 : toute
+// Copie versionnée de la politique enregistrée le 12 novembre 2026 (port 2222
+// pour le serveur depuis le même jour, voir README.md) : toute
 // modification se fait d'abord ici, puis est recopiée dans la console.
 // Voir README.md, section « Accès Tailscale du serveur ».
 {
@@ -22,11 +23,13 @@
 		// Appareils du propriétaire entre eux : accès complet, comme avant
 		{"src": ["autogroup:member"], "dst": ["autogroup:member"], "ip": ["*"]},
 
-		// Serveur EC2 (collecte des journaux du régime 1a) : uniquement SSH vers les six Pi des motes
+		// Serveur EC2 (collecte des journaux du régime 1a) : uniquement le serveur SSH des
+		// six Pi des motes, sur le port 2222 (le port 22 est intercepté par Tailscale SSH,
+		// qui ignorerait la restriction en lecture seule de la clé de collecte)
 		{
 			"src": ["tag:server"],
 			"dst": ["pi-mote-1", "pi-mote-2", "pi-mote-3", "pi-mote-4", "pi-mote-5", "pi-mote-6"],
-			"ip":  ["tcp:22"],
+			"ip":  ["tcp:2222"],
 		},
 	],
 
@@ -44,8 +47,14 @@
 	"tests": [
 		{
 			"src":    "tag:server",
-			"accept": ["pi-mote-1:22", "pi-mote-6:22"],
-			"deny":   ["pi-mote-1:80", "100.81.128.70:22", "100.78.232.123:22", "100.126.54.98:22"],
+			"accept": ["pi-mote-1:2222", "pi-mote-6:2222"],
+			"deny": [
+				"pi-mote-1:22",
+				"pi-mote-1:80",
+				"100.81.128.70:2222",
+				"100.78.232.123:22",
+				"100.126.54.98:2222",
+			],
 		},
 	],
 }
