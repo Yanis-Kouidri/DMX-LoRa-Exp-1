@@ -188,6 +188,66 @@ suivantes à venir).
 les nouveaux Pi. Ajouter un Pi : une ligne dans `pis.conf` et son adresse
 dans `tailscale-policy.hujson`.
 
+## Traitement automatique du régime 1a
+
+Depuis le 12 novembre 2026, `regime1a-collecte.service` enchaîne la collecte
+des journaux et leur traitement, toutes les 10 minutes. Le traitement
+(`regime1a/traitement.py`) tourne dans le conteneur `regime1a-traitement`
+de la pile (profil `jobs` : jamais lancé par `docker compose up`) :
+
+1. il charge les nouvelles lignes des journaux dans `regime_1a_tx` et
+   `regime_1a_events`, et l'état des collectes dans `regime_1a_collection` ;
+2. il recalcule, du 6 novembre 2026 à 11:53 (début de la période de
+   référence, variable `REGIME1A_DEBUT`) jusqu'à l'heure en cours, les
+   fenêtres d'exclusion E1 à E4 et les comptes horaires par mote et par SF,
+   remplacés d'un bloc dans `regime_1a_exclusions` et `regime_1a_hourly`.
+
+**Même code que le bilan.** Le traitement importe les fonctions de
+`Mote/src/bilan_regime_1a.py` (règle d'exclusion, classement des émissions,
+comptes horaires) : le tableau de bord et les chiffres publiés sortent du même
+code. Le code est lu dans le dépôt monté en lecture seule (`..:/repo:ro`) :
+après un `git pull` sur le serveur, le passage suivant utilise la nouvelle
+version, sans reconstruire l'image. L'image ne contient que Python 3.12 et
+`psycopg`.
+
+**Différence connue avec le bilan.** Le journal du netwatch de la gateway
+n'est pas accessible depuis le serveur : E1 n'est pas élargie à l'alerte
+« down » et E2 vient des connexions de la gateway au serveur. Le bilan lancé
+avec `netwatch.log` peut exclure quelques secondes de plus.
+
+**Accès à la base.** Le conteneur se connecte avec `regime1a_writer`, dont le
+mot de passe est dans `.env` (`REGIME1A_DB_PASSWORD`, généré par
+`openssl rand -hex 32`, non versionné).
+
+**Mise en service (12 novembre 2026)**
+
+1. Migration `005` : `regime_1a_events` identifiée par `(host, line_no)`, car
+   deux lignes d'un journal peuvent partager l'heure et le type (deux `error`
+   de `pi-mote-5` à la même milliseconde le 7 novembre). Appliquée table vide.
+2. Mot de passe de `regime1a_writer` créé et ajouté à `.env` (copie de
+   l'ancien : `.env.bak-2026-11-12`), image construite
+   (`docker compose --profile jobs build regime1a-traitement`). Les conteneurs
+   de production n'ont pas été redémarrés.
+3. Premier passage manuel en 7 s : 46 270 émissions et 1 853 événements
+   chargés, 8 fenêtres d'exclusion, 2 837 lignes horaires.
+4. **Test de cohérence** : du 6 novembre 11:53 au 12 novembre 10:00 (heure de
+   Paris), émis et reçus de `regime_1a_hourly` identiques à ceux du bilan en
+   ligne de commande, pour les 4 motes et les 6 SF (24 lignes sur 24).
+5. `systemctl daemon-reload` : premier passage automatique à 10:30, réussi.
+
+Refaire le test de cohérence : copier les journaux de
+`/srv/regime1a/journaux/` et les exports de la base dans un dossier, lancer le
+bilan sur une période qui finit à une heure pile, puis comparer à :
+
+```sql
+SELECT host, sf, sum(sent), sum(received) FROM regime_1a_hourly
+WHERE hour >= '<début>' AND hour < '<fin>' GROUP BY 1, 2 ORDER BY 1, 2;
+```
+
+Suivi : `journalctl -u regime1a-collecte.service` (une ligne de bilan par
+passage). Lancer à la main :
+`docker compose --profile jobs run --rm regime1a-traitement`.
+
 ## Installation
 
 Prérequis : Docker avec le plugin Compose, `make`, les enregistrements DNS
@@ -288,12 +348,13 @@ L'événement brut est conservé dans la colonne `raw_event` (JSONB) de chaque
 table.
 
 Le suivi automatique du régime 1a (migration `004`, 12 novembre 2026) ajoute
-cinq tables, remplies par le traitement de `regime1a/` (étape 4, à venir) :
+cinq tables, remplies par le traitement de `regime1a/` (voir
+[Traitement automatique du régime 1a](#traitement-automatique-du-régime-1a)) :
 
 | Table | Contenu |
 |---|---|
 | `regime_1a_tx` | Une ligne par émission journalisée par une mote (`event=tx`), unique sur `(dev_eui, payload_hex)` : la charge utile (cycle, DR, marqueur `0x1A`) relie l'émission à sa réception dans `uplinks` |
-| `regime_1a_events` | Les autres lignes des journaux (`config`, `join`, `skip`, `error`, `recover`, `pwridx`, `adr`, `stop`…), pour la traçabilité |
+| `regime_1a_events` | Les autres lignes des journaux (`config`, `join`, `skip`, `error`, `recover`, `pwridx`, `adr`, `stop`…), pour la traçabilité, unique sur `(host, line_no)` (migration `005`) |
 | `regime_1a_exclusions` | Fenêtres d'exclusion E1 à E4 de la règle du plan (section 10), avec leur motif |
 | `regime_1a_hourly` | Par heure, par mote et par SF : émis, reçus, exclus, avec et sans E3. PDR d'une période = somme des reçus / somme des émis |
 | `regime_1a_collection` | Une ligne par Pi et par collecte des journaux (copie de `/srv/regime1a/etat-collecte.csv`) |
