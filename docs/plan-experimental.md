@@ -362,6 +362,23 @@ La gateway de l'IRIT est **conservée comme référence** (stratégie B1) et com
   définition par tranche horaire, durée minimale d'une configuration (au
   moins une semaine), maintien du CBI, remplacement éventuel de la mote 5.
 
+**Avancement au 12 novembre 2026**
+
+- Réunion du 10 novembre avec les directeurs de thèse : ajout d'une **mote
+  témoin** (`pi-mote-1`) à quelques mètres de la gateway fixe, en régime 1a
+  depuis le 10 novembre à 18:03. Elle mesure les pertes de la chaîne hors
+  canal : 99,2 % en SF7 et 97,5 % en SF12 du 10 au 12 novembre. Le plan peut
+  être adapté aux résultats ; l'objectif reste une publication.
+- **Suivi automatique du régime 1a** mis en service : collecte des journaux
+  par le serveur (Tailscale, clé en lecture seule), tables `regime_1a_*`,
+  traitement toutes les 10 minutes avec le même code que le bilan (chiffres
+  identiques, vérifié sur 4 motes × 6 SF), tableau de bord Grafana
+  « LoRaWAN — Régime 1a ». Règle d'exclusion fixée le 10 novembre (section 10),
+  détection automatique d'E1 à E3, interventions E4 dans
+  [`exclusions-e4.csv`](exclusions-e4.csv).
+- Blocage série du RN2483 observé sur une troisième mote (la témoin, le
+  11 novembre) : la reprise automatique relance chaque mote en 1 min 30 environ.
+
 **0a. Balade de repérage de la couverture de l'IRIT**
 
 - **Objectif** : choisir des emplacements où le lien SF7 vers l'IRIT est **faible ou peu fiable**. Ce n'est pas une preuve, c'est un choix d'emplacements.
@@ -417,7 +434,7 @@ Les deux gateways sont actives, l'ADR est désactivé et la puissance d'émissio
 - **Tournées** : 2 à 3 par semaine, soit environ 10 tournées de 2 h et environ 15 boucles chacune.
 - **SF10 à SF12 ne sont pas utilisés en 1b** : tout l'intérêt de la gateway mobile est de permettre un SF bas, et ils épuiseraient le duty cycle.
 - **SF7 à SF9 sont confirmés en 1b** pour mesurer la fiabilité réelle des accusés, qui serviront de réponse aux sondes. SF10 à SF12 restent non confirmés pour ne pas épuiser le duty cycle des gateways.
-- **Pourquoi entrelacer** : avec des blocs (une heure par SF), chaque SF voit des conditions différentes (heure, trafic, météo). Avec l'entrelacement, tous les SF voient les mêmes conditions. Le régime 1a est implémenté par `Mote/src/regime_1a.py` (ordre des SF tiré au hasard à chaque cycle, un cycle toutes les 300 s, duty cycle respecté, journal CSV de chaque émission avec son FCnt). Aucun script ne couvre encore le régime 1b.
+- **Pourquoi entrelacer** : avec des blocs (une heure par SF), chaque SF voit des conditions différentes (heure, trafic, météo). Avec l'entrelacement, tous les SF voient les mêmes conditions. Le régime 1a est implémenté par `Mote/src/regime_1a.py` (ordre des SF tiré au hasard à chaque cycle, un cycle toutes les 300 s, duty cycle respecté, journal CSV de chaque émission avec son FCnt). Depuis le 12 novembre 2026, le suivi est automatique : le serveur collecte les journaux des Pi toutes les 10 minutes, calcule le PDR par heure, par mote et par SF avec le code de `Mote/src/bilan_regime_1a.py` et la règle d'exclusion de la section 10, et l'affiche dans le tableau de bord Grafana « LoRaWAN — Régime 1a » (voir [`LoRaWAN-Infra/README.md`](../LoRaWAN-Infra/README.md#traitement-automatique-du-régime-1a)). Les chiffres à publier restent ceux du bilan, identiques à ceux du tableau de bord (vérifié le 12 novembre 2026). Aucun script ne couvre encore le régime 1b.
 - **Pourquoi sans ADR** : l'ADR de ChirpStack décide à partir du meilleur SNR sur une vingtaine d'uplinks, toutes gateways confondues. Avec une gateway mobile, le canal change plus vite que cette fenêtre : l'ADR serait une variable parasite.
 - **Atout majeur** : le balayage permet de **rejouer hors ligne** n'importe quelle stratégie (SF fixe, oracle, ADR simulé, sonde). Des données collectées avec l'ADR ou un SF fixe ne pourraient pas être réanalysées.
 
