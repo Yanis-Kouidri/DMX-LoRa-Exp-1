@@ -220,7 +220,8 @@ def main() -> None:
     sfs = "-".join(f"sf{sf}" for sf in args.sf)
     name = (f"{datetime.now():%Y-%m-%d_%H%M}_{MOTE_ID}_smu{args.mv}_"
             f"abp-{args.mode}-{sfs}-{args.payload}o-x{args.reps}"
-            f"{f'-rx2dr{args.rx2_dr}' if args.rx2_dr else ''}{args.label}")
+            f"{f'-rx2dr{args.rx2_dr}' if args.rx2_dr else ''}"
+            f"{f'-rxd{args.rxdelay1}' if args.rxdelay1 != 1000 else ''}{args.label}")
     data_dir = WIN_USER_DIR / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy(SRC / "ppk2_record.py", WIN_USER_DIR / "ppk2_record.py")
