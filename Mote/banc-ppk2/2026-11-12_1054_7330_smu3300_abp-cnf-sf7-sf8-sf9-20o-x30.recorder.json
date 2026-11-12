@@ -1,0 +1,11 @@
+{
+  "port": "COM7",
+  "mv": 3300,
+  "calibrated": "0",
+  "hw": "56484",
+  "bytes": 661825536,
+  "samples": 165456384,
+  "host_seconds": 1654.7878197,
+  "cur": "C:\\Users\\yanis\\banc-ppk2\\data\\2026-11-12_1054_7330_smu3300_abp-cnf-sf7-sf8-sf9-20o-x30.cur.f32",
+  "dig": "C:\\Users\\yanis\\banc-ppk2\\data\\2026-11-12_1054_7330_smu3300_abp-cnf-sf7-sf8-sf9-20o-x30.dig.u8"
+}

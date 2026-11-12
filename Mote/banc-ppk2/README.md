@@ -20,6 +20,9 @@ refaite à 10:06.
 | `2026-11-10_1401_…-x30` | 30 × `mac tx uncnf` par SF, SF7 à SF12, 6 octets | dépôt au commit `71a2f38` | `--reanalyse` au commit `181d90e` |
 | `2026-11-12_1007_…-cnf-sf7-sf8-sf9-6o-x30` | 30 sondes ratées par SF (`mac tx cnf`, `retx` 0, aucun ACK), SF7 à SF9, 6 octets | code du commit `181d90e` (`banc_pi.py` : empreinte `89470225f7ed8ef4`) | même exécution, code du commit `181d90e` |
 | `2026-11-12_1030_…-cnf-sf7-6o-x30-rx2dr3` | 30 sondes ratées SF7, RX2 en SF9 (DR3) | commit `c4e3b98` | même exécution |
+| `2026-11-12_1049_…-cnf-sf7-6o-x30-rxd3000` | 30 sondes ratées SF7, `rx1_delay` 3 s | commit `a3ed546` (champ `acquisition`) | même exécution |
+| `2026-11-12_1054_…-cnf-sf7-sf8-sf9-20o-x30` | 30 sondes ratées par SF, SF7 à SF9, 20 octets | commit `a3ed546` | même exécution |
+| `2026-11-12_1122_…-cnf-sf7-sf8-sf9-51o-x30` | 30 sondes ratées par SF, SF7 à SF9, 51 octets | commit `a3ed546` | même exécution |
 
 Pour la série `2026-11-12_1007`, les champs `git` et `sha256` du JSON sont
 faux : ils ont été relevés à la fin de la série, alors que les scripts avaient
@@ -69,7 +72,28 @@ réponse est `mac_err` après RX2. Mêmes réglages que ci-dessus, n = 30.
 
 Une sonde ratée coûte autant qu'un uplink non confirmé au même SF (écart de
 0,0 à 0,3 %). Passer RX2 de SF12 à SF9 économise 9,8 mJ par message (−25 % en
-SF7).
+SF7). Avec `rx1_delay` à 3 s (RX2 à 4 s), une sonde SF7 ratée coûte
+57,90 ± 0,13 mJ (+19,1 mJ, +49 %), pour une durée de 4 284 ms.
+
+## Sonde ratée selon la taille de la charge utile
+
+RX2 en SF12, `rx1_delay` 1 s, n = 30 par case. Médiane (moyenne ± écart-type
+quand une fenêtre RX2 allongée la décale).
+
+| SF | 6 octets | 20 octets | 51 octets |
+|---|---|---|---|
+| 7 | 38,76 | 41,59 (41,57 ± 0,06) | 47,85 (47,85 ± 0,03) |
+| 8 | 46,12 | 50,33 (50,49 ± 0,90) | 61,47 (61,46 ± 0,04) |
+| 9 | 58,12 | 66,46 (66,48 ± 0,10) | 86,02 (87,60 ± 8,64) |
+
+Temps d'émission en 20 octets : 71,9 / 133,6 / 246,8 ms ; en 51 octets :
+118,0 / 215,6 / 390,1 ms (SF7 / SF8 / SF9).
+
+**Fenêtres RX2 allongées** (le module détecte un préambule et reste en
+réception) : 3 messages sur 543 mesurés du 10 au 12 novembre (validation SF7 :
+558 ms, 52,4 mJ ; SF8 20 octets : 371 ms, 55,3 mJ ; SF9 51 octets : 1 282 ms,
+133,3 mJ). Elles sont gardées dans les statistiques : la moyenne est la valeur
+à retenir pour le modèle d'énergie.
 
 ## Colonnes du CSV
 
