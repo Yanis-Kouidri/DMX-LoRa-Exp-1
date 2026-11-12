@@ -31,6 +31,16 @@ bit ADR est levé. Les deux sont relus avant chaque émission et remis à PWRIDX
 et à `off` s'ils ont changé, avec une ligne `event=pwridx` ou `event=adr`
 (valeur trouvée dans `detail`).
 
+Planification sur l'heure NTP (depuis le 12 novembre 2026) : les cycles
+commencent aux instants t tels que (t - décalage) soit un multiple de la
+période du cycle, en temps Unix. Le décalage dépend de la mote :
+(N - 1) × créneau / 6 pour pi-mote-N, soit environ 8,3 s entre deux motes.
+Deux motes de l'expérience n'émettent donc jamais en même temps, et cette
+séparation résiste aux redémarrages et aux reprises automatiques. Avant, les
+cycles partaient de l'instant de démarrage du service : deux motes démarrées
+à quelques secondes d'intervalle restaient en phase et se chevauchaient
+(constat du 12 novembre 2026, docs/plan-experimental.md, section 14).
+
 Charge utile (6 octets, comme le dimensionnement du plan) :
     [cycle, 4 octets big-endian] [DR, 1 octet] [0x1A, marqueur du régime]
 
@@ -41,7 +51,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import random
+import re
 import signal
 import socket
 import subprocess
@@ -88,6 +100,7 @@ AIRTIME_S = {
 }
 CYCLE_PERIOD_S = sum(AIRTIME_S.values()) / DUTY_CYCLE * SAFETY_MARGIN
 SLOT_S = CYCLE_PERIOD_S / len(DR_TO_SF)
+MOTE_COUNT = 6           # pi-mote-1 à pi-mote-6 se partagent le créneau
 
 
 class MoteSilent(RuntimeError):
@@ -105,11 +118,12 @@ def build_payload(cycle: int, dr: int) -> str:
 class Journal:
     """Journal CSV en ajout, vidé après chaque ligne pour survivre à une coupure."""
 
-    def __init__(self, path: Path, host: str) -> None:
+    def __init__(self, path: Path, host: str, phase: float = 0.0) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         new_file = not path.exists() or path.stat().st_size == 0
         self.path = path
         self.host = host
+        self.phase = phase
         self.deveui = ""
         self._file = path.open("a", newline="", encoding="utf-8")
         self._writer = csv.DictWriter(self._file, fieldnames=FIELDNAMES)
@@ -158,6 +172,7 @@ def configure(mote: RN2483Connection, journal: Journal) -> None:
         "rx2": mote.send_command("mac get rx2 868"),
         "dcycleps": mote.send_command("mac get dcycleps"),
         "cycle_period_s": round(CYCLE_PERIOD_S, 1),
+        "phase_s": round(journal.phase, 2),
         "slot_s": round(SLOT_S, 1),
     }
     journal.write("config", detail=state)
@@ -283,8 +298,26 @@ def usb_power_cycle(port: str, journal: Journal) -> None:
     })
 
 
-def run(port: str, log_path: Path, max_cycles: int) -> None:
-    journal = Journal(log_path, socket.gethostname())
+def default_phase(host: str) -> float:
+    """Décalage de la mote dans le créneau : (N - 1) × créneau / 6 pour pi-mote-N."""
+
+    match = re.fullmatch(r"pi-mote-(\d+)", host)
+    n = int(match.group(1)) if match else 1
+    return ((n - 1) % MOTE_COUNT) * SLOT_S / MOTE_COUNT
+
+
+def next_cycle_start(now: float, phase: float) -> float:
+    """Prochain début de cycle (temps Unix) : (t - phase) multiple de CYCLE_PERIOD_S."""
+
+    return phase + math.ceil((now - phase) / CYCLE_PERIOD_S) * CYCLE_PERIOD_S
+
+
+def sleep_until(wall_time: float) -> None:
+    time.sleep(max(0.0, wall_time - time.time()))
+
+
+def run(port: str, log_path: Path, max_cycles: int, phase: float) -> None:
+    journal = Journal(log_path, socket.gethostname(), phase)
     cycle = last_cycle(log_path) + 1
     done = 0
     mote: RN2483Connection | None = None
@@ -300,12 +333,13 @@ def run(port: str, log_path: Path, max_cycles: int) -> None:
                         join(mote, journal)
 
                 order = random.sample(sorted(DR_TO_SF), k=len(DR_TO_SF))
-                cycle_start = time.monotonic()
+                cycle_start = next_cycle_start(time.time(), phase)
                 for slot, dr in enumerate(order):
                     slot_start = cycle_start + slot * SLOT_S
-                    time.sleep(max(0.0, slot_start - time.monotonic()))
-                    send_slot(mote, journal, cycle, slot, dr, slot_start + SLOT_S - SLOT_GUARD_S)
-                time.sleep(max(0.0, cycle_start + CYCLE_PERIOD_S - time.monotonic()))
+                    sleep_until(slot_start)
+                    # échéance des nouveaux essais sur no_free_ch, en temps monotone
+                    deadline = time.monotonic() + (slot_start + SLOT_S - SLOT_GUARD_S - time.time())
+                    send_slot(mote, journal, cycle, slot, dr, deadline)
 
             except (SerialException, OSError, RuntimeError) as exc:
                 journal.write("error", cycle=cycle, detail=repr(exc))
@@ -337,17 +371,22 @@ def main() -> None:
     parser.add_argument(
         "--cycles", type=int, default=0, help="nombre de cycles (0 : sans fin, par défaut)",
     )
+    parser.add_argument(
+        "--decalage", type=float, default=None,
+        help="décalage dans le créneau, en s (défaut : (N - 1) × créneau / 6 pour pi-mote-N)",
+    )
     args = parser.parse_args()
+    phase = default_phase(socket.gethostname()) if args.decalage is None else args.decalage
 
     # systemd arrête le service par SIGTERM : on passe par le bloc finally
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
 
     log_path = args.log_dir / f"regime_1a_{socket.gethostname()}.csv"
     print(
-        f"Cycle de {CYCLE_PERIOD_S:.0f} s, créneaux de {SLOT_S:.0f} s, journal {log_path}",
+        f"Cycle de {CYCLE_PERIOD_S:.0f} s, créneaux de {SLOT_S:.0f} s, décalage {phase:.2f} s, journal {log_path}",
         flush=True,
     )
-    run(args.port, log_path, args.cycles)
+    run(args.port, log_path, args.cycles, phase)
 
 
 if __name__ == "__main__":
