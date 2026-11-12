@@ -18,6 +18,18 @@ refaite à 10:06.
 |---|---|---|---|
 | `2026-11-10_1006_…-x3-validation` | 3 × `mac tx uncnf` SF7, 6 octets | dépôt au commit `082bf32` (scripts non encore commités) | même exécution |
 | `2026-11-10_1401_…-x30` | 30 × `mac tx uncnf` par SF, SF7 à SF12, 6 octets | dépôt au commit `71a2f38` | `--reanalyse` au commit `181d90e` |
+| `2026-11-12_1007_…-cnf-sf7-sf8-sf9-6o-x30` | 30 sondes ratées par SF (`mac tx cnf`, `retx` 0, aucun ACK), SF7 à SF9, 6 octets | code du commit `181d90e` (`banc_pi.py` : empreinte `89470225f7ed8ef4`) | même exécution, code du commit `181d90e` |
+| `2026-11-12_1030_…-cnf-sf7-6o-x30-rx2dr3` | 30 sondes ratées SF7, RX2 en SF9 (DR3) | commit `c4e3b98` | même exécution |
+
+Pour la série `2026-11-12_1007`, les champs `git` et `sha256` du JSON sont
+faux : ils ont été relevés à la fin de la série, alors que les scripts avaient
+été modifiés pendant qu'elle tournait (ajout de `--rx2-dr`). Le code exécuté
+est celui du commit `181d90e`, seul à donner l'empreinte de `banc_pi.py`
+ci-dessus. Depuis le commit suivant, le JSON distingue le code de
+l'acquisition (`acquisition`, relevé au lancement) de celui de l'analyse
+(`analysis`). Pour la série `1030`, `git` affiche `e262f09` (commit d'une autre
+session, survenu pendant la série, sans modification de `Mote/src`) ; ses
+empreintes sont celles du commit `c4e3b98`.
 
 Pour la série `1401`, le journal détaillé du Pi a été perdu (voir le journal
 du banc, 10 novembre 2026) : la fenêtre de fond est placée d'après la séquence
@@ -42,6 +54,22 @@ sommeil, à 3,3 V. n = 30 par SF, aucune tentative écartée.
 
 Moyenne ± écart-type. Fond de la carte (module en sommeil) : 1,38 mA ; repos
 du module : 4,29 mA au total.
+
+## Sonde ratée et débit de RX2 (12 novembre 2026)
+
+Message confirmé sans ACK ni retransmission (`mac tx cnf`, `retx` 0) : la
+réponse est `mac_err` après RX2. Mêmes réglages que ci-dessus, n = 30.
+
+| SF | RX2 | Énergie (mJ) | RX1 (ms) | RX2 (ms) | Durée (ms) |
+|---|---|---|---|---|---|
+| 7 | SF12 | 38,76 ± 0,06 | 20 | 264 | 2 284 |
+| 8 | SF12 | 46,12 ± 0,02 | 28 | 264 | 2 335 |
+| 9 | SF12 | 58,12 ± 0,03 | 47 | 264 | 2 418 |
+| 7 | **SF9** | **28,99 ± 0,04** | 20 | 46 | 2 094 |
+
+Une sonde ratée coûte autant qu'un uplink non confirmé au même SF (écart de
+0,0 à 0,3 %). Passer RX2 de SF12 à SF9 économise 9,8 mJ par message (−25 % en
+SF7).
 
 ## Colonnes du CSV
 

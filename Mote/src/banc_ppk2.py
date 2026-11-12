@@ -28,8 +28,9 @@ ses 0,5 dernière seconde) et V la tension de la source.
 
 Sorties dans `C:\\Users\\<user>\\banc-ppk2\\data\\` : échantillons bruts
 (`.cur.f32`, `.dig.u8`), un CSV par tentative et un JSON de métadonnées
-(arguments, commit du dépôt, empreintes des scripts, réglages relus sur le
-module, résumé de l'enregistreur).
+(arguments, commit du dépôt et empreintes des scripts relevés au lancement de
+l'acquisition puis à l'analyse, réglages relus sur le module, résumé de
+l'enregistreur).
 """
 
 from __future__ import annotations
@@ -215,6 +216,7 @@ def main() -> None:
         reanalyse(args)
         return
 
+    acquisition = provenance()
     sfs = "-".join(f"sf{sf}" for sf in args.sf)
     name = (f"{datetime.now():%Y-%m-%d_%H%M}_{MOTE_ID}_smu{args.mv}_"
             f"abp-{args.mode}-{sfs}-{args.payload}o-x{args.reps}"
@@ -267,11 +269,20 @@ def main() -> None:
     recorder.wait()
 
     (data_dir / f"{name}.recorder.json").write_text(json.dumps(summary, indent=2))
-    analyse_series(name, records, summary, args)
+    analyse_series(name, records, summary, args, acquisition)
+
+
+def provenance() -> dict:
+    """Commit du dépôt et empreintes des scripts, relevés au lancement."""
+
+    return {
+        "git": git_state(),
+        "sha256": {p: sha256(SRC / p) for p in ("banc_pi.py", "ppk2_record.py", "banc_ppk2.py")},
+    }
 
 
 def analyse_series(name: str, records: list[dict], summary: dict | None,
-                   args: argparse.Namespace) -> None:
+                   args: argparse.Namespace, acquisition: dict | None = None) -> None:
     data_dir = WIN_USER_DIR / "data"
     cur_path = data_dir / f"{name}.cur.f32"
     dig_path = data_dir / f"{name}.dig.u8"
@@ -318,8 +329,9 @@ def analyse_series(name: str, records: list[dict], summary: dict | None,
     meta = {
         "name": name,
         "args": vars(args),
-        "git": git_state(),
-        "sha256": {p: sha256(SRC / p) for p in ("banc_pi.py", "ppk2_record.py", "banc_ppk2.py")},
+        # Code exécuté pendant l'acquisition (relevé au lancement) et pour cette analyse
+        "acquisition": acquisition,
+        "analysis": provenance(),
         "pi_times": all(r.get("t_rise") is not None for r in tx),
         "setup": next((r for r in records if r["event"] == "setup"), None),
         "end": records[-1] if records else None,

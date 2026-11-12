@@ -1,0 +1,57 @@
+{
+  "name": "2026-11-12_1007_7330_smu3300_abp-cnf-sf7-sf8-sf9-6o-x30",
+  "args": {
+    "sf": [
+      7,
+      8,
+      9
+    ],
+    "reps": 30,
+    "mode": "cnf",
+    "payload": 6,
+    "sleep_ms": 4000,
+    "rxdelay1": 1000,
+    "mv": 3300,
+    "label": "",
+    "reanalyse": null
+  },
+  "git": "3025214+modifié",
+  "sha256": {
+    "banc_pi.py": "a47f0be527f170e5",
+    "ppk2_record.py": "fbce0c0bdcf04306",
+    "banc_ppk2.py": "a33fe295d9a8660c"
+  },
+  "pi_times": true,
+  "setup": {
+    "event": "setup",
+    "version": "RN2483 1.0.6 RC3 May 18 2021 18:35:00",
+    "vdd_mv": "3233",
+    "hweui": "0004A30B00FD7330",
+    "rxdelay1": "1000",
+    "rxdelay2": "2000",
+    "rx2": "0 869525000",
+    "pwridx": "1",
+    "retx": "0"
+  },
+  "end": {
+    "event": "done",
+    "attempts": 90,
+    "resets": []
+  },
+  "recorder": {
+    "port": "COM7",
+    "mv": 3300,
+    "calibrated": "0",
+    "hw": "56484",
+    "bytes": 523042816,
+    "samples": 130760704,
+    "host_seconds": 1307.7801695999997,
+    "cur": "C:\\Users\\yanis\\banc-ppk2\\data\\2026-11-12_1007_7330_smu3300_abp-cnf-sf7-sf8-sf9-6o-x30.cur.f32",
+    "dig": "C:\\Users\\yanis\\banc-ppk2\\data\\2026-11-12_1007_7330_smu3300_abp-cnf-sf7-sf8-sf9-6o-x30.dig.u8"
+  },
+  "thresholds_ua": {
+    "tx": 30000,
+    "active": 8000
+  },
+  "tolerance_samples": 500
+}

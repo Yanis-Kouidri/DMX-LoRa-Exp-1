@@ -563,7 +563,19 @@ Uplink non confirmé de 6 octets, séquence complète (émission, RX1, RX2), `pw
 - Écart-type inférieur à 0,3 % à chaque SF ; durées d'émission égales au calcul théorique.
 - Un message coûte environ **32 mJ quel que soit le SF** : attentes au repos entre l'émission, RX1 et RX2 (environ 2 s), et fenêtre RX2 en SF12 (264 ms). En SF7, l'émission ne représente qu'environ 20 % du coût du message. L'écart entre SF7 et le SF de repli est donc plus faible que le rapport des temps d'émission : 2 fois moins cher qu'en SF10, 5,7 fois moins cher qu'en SF12.
 - Une fenêtre RX2 peut rester ouverte plus longtemps quand le module détecte un préambule (558 ms au lieu de 264 ms, +36 % d'énergie) : observé une fois sur 183 messages.
-- **Reste à mesurer** : la sonde ratée (`mac tx cnf`, `retx` 0), qui devrait coûter autant qu'un uplink non confirmé au même SF puisque ses fenêtres sont les mêmes ; les tailles de 20 et 51 octets ; la sonde réussie (OTAA, à portée de la gateway de l'IRIT).
+- **Sonde ratée (12 novembre 2026)** : 38,76 mJ en SF7, 46,12 en SF8, 58,12 en SF9 (n = 30 par SF), soit le coût d'un uplink non confirmé au même SF (écart de 0 à 0,3 %).
+- **Débit de RX2** : avec RX2 en SF9 au lieu de SF12, une sonde SF7 ratée coûte 28,99 mJ (−25 %). Le levier est standard (`RXParamSetupReq`, réglage cohérent avec ChirpStack) ; le repli étant non confirmé, il n'a pas besoin d'une fenêtre RX2 robuste.
+- **Seuil de rentabilité de la sonde.** Si chaque sonde réussit indépendamment avec la probabilité p (contact avec la gateway mobile), la stratégie P bat B1 dès que p > p* = E_ratée / (E_repli − E_réussie + E_ratée), quel que soit le budget k de sondes par période. En prenant prudemment E_réussie = E_ratée (une sonde réussie n'ouvre pas RX2 et devrait coûter moins), p* = E_ratée / E_repli :
+
+| Repli vers la gateway fixe | RX2 en SF12 : p* | RX2 en SF12 : gain si p = 1 | RX2 en SF9 : p* (estimé) | RX2 en SF9 : gain si p = 1 (estimé) |
+|---|---|---|---|---|
+| SF10 | 0,48 | 52 % | 0,41 | 59 % |
+| SF11 | 0,28 | 72 % | 0,23 | 77 % |
+| SF12 | 0,18 | 82 % | 0,14 | 86 % |
+
+  Les valeurs « RX2 en SF9 » retranchent au repli l'économie mesurée en SF7 (9,8 mJ, la fenêtre RX2 ne dépend pas du SF de l'uplink) : estimation à confirmer par une mesure au SF de repli.
+- **Conséquence pour la phase 0** : p est la probabilité qu'une sonde tombe pendant un contact SF7 avec la gateway mobile. Des sondes réparties au hasard dans la période réussiraient trop rarement si la gateway ne passe que quelques heures par semaine. Le gain dépend donc de la **planification des sondes** (sonder quand la gateway a des chances de passer), et la tournée pilote doit mesurer, en plus de la part de la boucle à portée SF7, la probabilité qu'une sonde envoyée pendant une tournée soit reçue.
+- **Reste à mesurer** : la sonde réussie (OTAA, à portée de la gateway de l'IRIT) ; les tailles de 20 et 51 octets ; le repli en SF10 à SF12 avec RX2 en SF9.
 
 ## 10. Indicateurs et statistiques
 
