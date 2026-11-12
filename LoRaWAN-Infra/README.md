@@ -395,7 +395,31 @@ depuis `configuration/grafana/` :
 - **LoRaWAN — Uplinks** : répartition des SF, SNR et RSSI par device, uplinks
   reçus ;
 - **LoRaWAN — Debug** : derniers uplinks, requêtes de join OTAA et downlinks
-  (avec le statut d'acquittement de la gateway).
+  (avec le statut d'acquittement de la gateway) ;
+- **LoRaWAN — Régime 1a** (`regime-1a.json`, depuis le 12 novembre 2026,
+  https://grafana.chirpstack.kouidri.fr/d/regime-1a) : suivi du régime 1a à
+  partir des tables `regime_1a_*`, voir ci-dessous.
+
+**Tableau de bord du régime 1a.** Période par défaut : 7 derniers jours,
+actualisation toutes les 10 min, heures de Paris. Les PDR sont des sommes de
+comptes horaires (`sum(received) / sum(sent)`), donc à l'heure près.
+
+| Panneau | Contenu |
+|---|---|
+| PDR par mote et par SF | Une ligne par mote, une colonne par SF, case colorée de blanc (0 %) à bleu foncé (100 %), émissions comptées et exclues |
+| PDR en SF`$sf` par mote | Courbe par mote, agrégée par 1 h, 3 h, 6 h ou 1 jour (sélecteurs « SF du graphique » et « Agrégation ») |
+| État des motes et de la collecte | Minutes depuis la dernière réception, la dernière émission journalisée et la dernière collecte réussie (orange puis rouge au-delà de 60 et 120 min pour la réception, 25 et 60 min pour le reste), reprises automatiques |
+| Fenêtres d'exclusion | Motif, début, fin et durée des fenêtres E1 à E4 de la période |
+| Gateway fixe | Statistiques reçues par heure (120 attendues), en rouge sous 115 |
+
+Le sélecteur « Heures E3 » donne le PDR avec la règle complète ou en gardant
+les heures E3, comme le demande la règle. Seuil de 60 min pour la réception :
+au CBI, l'écart entre deux réceptions dépasse parfois une heure (99e centile
+d'environ 70 min du 6 au 12 novembre).
+
+Vérifié le 12 novembre 2026 par l'API de Grafana : tableau chargé, les six
+panneaux renvoient des données, avec les deux valeurs du sélecteur E3 et
+plusieurs SF et agrégations.
 
 Les tableaux de bord sont modifiables dans l'interface, mais les fichiers JSON
 de `configuration/grafana/dashboards/` font foi. Pour garder une modification,

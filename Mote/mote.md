@@ -133,8 +133,14 @@ le connecteur ICSP de la carte).
   | 2026-11-07 22:11 | 35,1 h | 24 s, join au premier essai |
   | 2026-11-08 10:55 | 12,7 h | 24 s, join au premier essai |
   | 2026-11-10 15:03 | 52,1 h | 1 min 31 s, join refusé puis accepté au 2e essai |
+  | 2026-11-12 06:50 | 39,8 h | 1 min 32 s, join refusé puis accepté au 2e essai |
 
-- Soit un blocage toutes les 36 h environ (de 13 à 52 h), ou environ toutes
+- **La mote témoin `0004A30B0023F200` (`pi-mote-1`) s'est aussi bloquée**, le
+  11 novembre 2026 à 14:23, environ 20 h après son lancement : même symptôme
+  (`mac set dr` sans réponse), même reprise (coupure USB, join refusé puis
+  accepté au 2e essai, 1 min 32 s). C'est la troisième mote différente touchée,
+  après `…F575` et `…0C83`.
+- Pour `…0C83` : soit un blocage toutes les 36 h environ (de 13 à 52 h), ou environ toutes
   les 13 000 commandes série (environ 5 par émission, une émission toutes les
   50 s). Les motes de `pi-mote-2` et `pi-mote-4` ne se sont jamais bloquées
   sur la même période (environ 12 000 émissions chacune au 10 novembre, soit

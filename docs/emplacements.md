@@ -186,6 +186,8 @@ du RN2483 limite aussi le temps d'émission des joins.
 | 2026-11-10 15:03:21 → 15:04:52 | `pi-mote-5` | Idem (`mac set dr` sans réponse) : coupure USB à 15:03:36, join refusé puis accepté au 2e essai (1 min 31 s) |
 | 2026-11-10 18:03:05 | `pi-mote-1` | Démarrage du régime 1a sur la mote témoin, près de la gateway (Pi mis à jour à `8dba4ef`) |
 | 2026-11-11, vers 16:08:44 | serveur | Redémarrage de tous les conteneurs de la pile LoRaWAN (ChirpStack, base, broker) par le propriétaire, après des mises à jour du serveur. Aucun trou de plus de 75 s dans les statistiques de la gateway, mais des uplinks ont pu être perdus pendant le redémarrage : exclu (E4) de 16:07:30 à 16:09:30, l'heure d'arrêt n'étant pas connue |
+| 2026-11-11 14:23:22 → 14:24:54 | `pi-mote-1` | **Mote témoin muette** (`mac set dr` sans réponse) : reprise automatique, coupure USB à 14:23:38, join refusé puis accepté au 2e essai (1 min 32 s) |
+| 2026-11-12 06:50:22 → 06:51:54 | `pi-mote-5` | Mote muette (`mac set dr` sans réponse) : reprise automatique, coupure USB à 06:50:38, join refusé puis accepté au 2e essai (1 min 32 s) |
 | 2026-11-12 | serveur | Tailscale installé sur l'instance EC2 (`tag:server`), pour la collecte automatique des journaux (voir [`LoRaWAN-Infra/README.md`](../LoRaWAN-Infra/README.md#accès-tailscale-du-serveur)). Sans effet sur la chaîne de mesure |
 
 Les redémarrages de service n'ont pas provoqué de nouveau join : chacun coûte
