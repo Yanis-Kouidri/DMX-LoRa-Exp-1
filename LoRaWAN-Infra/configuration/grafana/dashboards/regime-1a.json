@@ -1,0 +1,562 @@
+{
+  "uid": "regime-1a",
+  "title": "LoRaWAN — Régime 1a",
+  "tags": [
+    "regime-1a",
+    "phase-1"
+  ],
+  "timezone": "Europe/Paris",
+  "schemaVersion": 41,
+  "version": 1,
+  "editable": true,
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "refresh": "10m",
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 3
+      },
+      "id": 1,
+      "options": {
+        "mode": "markdown",
+        "content": "**Régime 1a : taux de réception (PDR) vers la gateway fixe.** Calculé toutes les 10 min par le traitement du serveur (`LoRaWAN-Infra/regime1a/`), avec le même code que `Mote/src/bilan_regime_1a.py`. Période comptée à l'heure près, depuis le 6 novembre 2026 à 11:53. Fenêtres d'exclusion E1 à E4 retirées (règle du plan, section 10) ; le sélecteur « Heures E3 » permet de les garder. Heures en heure de Paris."
+      }
+    },
+    {
+      "type": "table",
+      "title": "PDR par mote et par SF (période sélectionnée)",
+      "id": 2,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "efwxza0hb47wgf"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 3,
+        "w": 24,
+        "h": 7
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "efwxza0hb47wgf"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE host WHEN 'pi-mote-1' THEN 'Mote 1 · témoin (IRIT)' WHEN 'pi-mote-2' THEN 'Mote 2 · Forum' WHEN 'pi-mote-3' THEN 'Mote 3' WHEN 'pi-mote-4' THEN 'Mote 4 · CBI' WHEN 'pi-mote-5' THEN 'Mote 5 · 4R1' WHEN 'pi-mote-6' THEN 'Mote 6' ELSE host END AS \"Mote\",\n  round(100.0 * sum(CASE WHEN '$e3' = 'exclues' THEN received ELSE received_without_e3 END) FILTER (WHERE sf = 7) / nullif(sum(CASE WHEN '$e3' = 'exclues' THEN sent ELSE sent_without_e3 END) FILTER (WHERE sf = 7), 0), 1) AS \"SF7\",\n  round(100.0 * sum(CASE WHEN '$e3' = 'exclues' THEN received ELSE received_without_e3 END) FILTER (WHERE sf = 8) / nullif(sum(CASE WHEN '$e3' = 'exclues' THEN sent ELSE sent_without_e3 END) FILTER (WHERE sf = 8), 0), 1) AS \"SF8\",\n  round(100.0 * sum(CASE WHEN '$e3' = 'exclues' THEN received ELSE received_without_e3 END) FILTER (WHERE sf = 9) / nullif(sum(CASE WHEN '$e3' = 'exclues' THEN sent ELSE sent_without_e3 END) FILTER (WHERE sf = 9), 0), 1) AS \"SF9\",\n  round(100.0 * sum(CASE WHEN '$e3' = 'exclues' THEN received ELSE received_without_e3 END) FILTER (WHERE sf = 10) / nullif(sum(CASE WHEN '$e3' = 'exclues' THEN sent ELSE sent_without_e3 END) FILTER (WHERE sf = 10), 0), 1) AS \"SF10\",\n  round(100.0 * sum(CASE WHEN '$e3' = 'exclues' THEN received ELSE received_without_e3 END) FILTER (WHERE sf = 11) / nullif(sum(CASE WHEN '$e3' = 'exclues' THEN sent ELSE sent_without_e3 END) FILTER (WHERE sf = 11), 0), 1) AS \"SF11\",\n  round(100.0 * sum(CASE WHEN '$e3' = 'exclues' THEN received ELSE received_without_e3 END) FILTER (WHERE sf = 12) / nullif(sum(CASE WHEN '$e3' = 'exclues' THEN sent ELSE sent_without_e3 END) FILTER (WHERE sf = 12), 0), 1) AS \"SF12\",\n  sum(CASE WHEN '$e3' = 'exclues' THEN sent ELSE sent_without_e3 END) AS \"Émissions comptées\",\n  sum(excluded) AS \"Émissions exclues\"\nFROM regime_1a_hourly\nWHERE $__timeFilter(hour)\nGROUP BY host\nORDER BY host",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "md"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "color": {
+            "mode": "continuous-blues"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "color-background",
+              "mode": "gradient"
+            }
+          },
+          "noValue": "–"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mote"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              },
+              {
+                "id": "custom.width",
+                "value": 230
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "Émissions.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "PDR en SF$sf par mote (agrégé par $agregation)",
+      "id": 3,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "efwxza0hb47wgf"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "efwxza0hb47wgf"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(hour, $agregation),\n  CASE host WHEN 'pi-mote-1' THEN 'Mote 1 · témoin (IRIT)' WHEN 'pi-mote-2' THEN 'Mote 2 · Forum' WHEN 'pi-mote-3' THEN 'Mote 3' WHEN 'pi-mote-4' THEN 'Mote 4 · CBI' WHEN 'pi-mote-5' THEN 'Mote 5 · 4R1' WHEN 'pi-mote-6' THEN 'Mote 6' ELSE host END AS metric,\n  100.0 * sum(CASE WHEN '$e3' = 'exclues' THEN received ELSE received_without_e3 END) / nullif(sum(CASE WHEN '$e3' = 'exclues' THEN sent ELSE sent_without_e3 END), 0) AS \"PDR\"\nFROM regime_1a_hourly\nWHERE $__timeFilter(hour) AND sf = $sf\nGROUP BY 1, 2\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "min"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 0
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "table",
+      "title": "État des motes et de la collecte",
+      "id": 4,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "efwxza0hb47wgf"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 14,
+        "h": 7
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "efwxza0hb47wgf"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH tx AS (SELECT host, dev_eui, max(utc) AS last_tx FROM regime_1a_tx GROUP BY 1, 2),\n     rx AS (SELECT dev_eui, max(received_at) AS last_rx FROM uplinks WHERE received_at > now() - interval '30 days' GROUP BY 1),\n     col AS (SELECT host, max(utc) FILTER (WHERE status = 'ok') AS last_ok FROM regime_1a_collection GROUP BY 1),\n     rec AS (SELECT host, max(utc) AS last_recover,\n                    count(*) FILTER (WHERE detail LIKE '%resync%' AND $__timeFilter(utc)) AS n\n             FROM regime_1a_events WHERE event = 'recover' GROUP BY 1)\nSELECT CASE host WHEN 'pi-mote-1' THEN 'Mote 1 · témoin (IRIT)' WHEN 'pi-mote-2' THEN 'Mote 2 · Forum' WHEN 'pi-mote-3' THEN 'Mote 3' WHEN 'pi-mote-4' THEN 'Mote 4 · CBI' WHEN 'pi-mote-5' THEN 'Mote 5 · 4R1' WHEN 'pi-mote-6' THEN 'Mote 6' ELSE host END AS \"Mote\",\n  round(extract(epoch FROM now() - rx.last_rx) / 60) AS \"Dernière réception (min)\",\n  round(extract(epoch FROM now() - tx.last_tx) / 60) AS \"Dernière émission journalisée (min)\",\n  round(extract(epoch FROM now() - col.last_ok) / 60) AS \"Dernière collecte réussie (min)\",\n  coalesce(rec.n, 0) AS \"Reprises auto (période)\",\n  rec.last_recover AS \"Dernière reprise auto\"\nFROM tx LEFT JOIN rx USING (dev_eui) LEFT JOIN col USING (host) LEFT JOIN rec USING (host)\nORDER BY host",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "noValue": "–"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mote"
+            },
+            "properties": [
+              {
+                "id": "custom.align",
+                "value": "left"
+              },
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Dernière réception (min)"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 60
+                    },
+                    {
+                      "color": "red",
+                      "value": 120
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "Dernière (émission|collecte).*"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 25
+                    },
+                    {
+                      "color": "red",
+                      "value": 60
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Dernière reprise auto"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "table",
+      "title": "Fenêtres d'exclusion (période sélectionnée)",
+      "id": 5,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "efwxza0hb47wgf"
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 19,
+        "w": 10,
+        "h": 7
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "efwxza0hb47wgf"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT rule AS \"Motif\", start_at AS \"Début\", end_at AS \"Fin\",\n  round(extract(epoch FROM end_at - start_at)) AS \"Durée (s)\"\nFROM regime_1a_exclusions\nWHERE start_at < $__timeTo() AND end_at > $__timeFrom()\nORDER BY start_at DESC",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "Début|Fin"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Gateway fixe : statistiques reçues par heure",
+      "id": 6,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "efwxza0hb47wgf"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "efwxza0hb47wgf"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time, 1h), count(*) AS \"Statistiques reçues (120 attendues par heure)\"\nFROM gateway_events\nWHERE event_type = 'stats' AND $__timeFilter(time)\nGROUP BY 1\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 130,
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "lineWidth": 1
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 115
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "custom",
+        "name": "e3",
+        "label": "Heures E3",
+        "query": "exclues,gardees",
+        "current": {
+          "text": "exclues (règle complète)",
+          "value": "exclues"
+        },
+        "options": [
+          {
+            "text": "exclues (règle complète)",
+            "value": "exclues",
+            "selected": true
+          },
+          {
+            "text": "gardées (sans E3)",
+            "value": "gardees",
+            "selected": false
+          }
+        ],
+        "hide": 0,
+        "includeAll": false,
+        "multi": false
+      },
+      {
+        "type": "custom",
+        "name": "sf",
+        "label": "SF du graphique",
+        "query": "7,8,9,10,11,12",
+        "current": {
+          "text": "SF12",
+          "value": "12"
+        },
+        "options": [
+          {
+            "text": "SF7",
+            "value": "7",
+            "selected": false
+          },
+          {
+            "text": "SF8",
+            "value": "8",
+            "selected": false
+          },
+          {
+            "text": "SF9",
+            "value": "9",
+            "selected": false
+          },
+          {
+            "text": "SF10",
+            "value": "10",
+            "selected": false
+          },
+          {
+            "text": "SF11",
+            "value": "11",
+            "selected": false
+          },
+          {
+            "text": "SF12",
+            "value": "12",
+            "selected": true
+          }
+        ],
+        "hide": 0,
+        "includeAll": false,
+        "multi": false
+      },
+      {
+        "type": "custom",
+        "name": "agregation",
+        "label": "Agrégation du graphique",
+        "query": "1h,3h,6h,1d",
+        "current": {
+          "text": "3 h",
+          "value": "3h"
+        },
+        "options": [
+          {
+            "text": "1 h",
+            "value": "1h",
+            "selected": false
+          },
+          {
+            "text": "3 h",
+            "value": "3h",
+            "selected": true
+          },
+          {
+            "text": "6 h",
+            "value": "6h",
+            "selected": false
+          },
+          {
+            "text": "1 jour",
+            "value": "1d",
+            "selected": false
+          }
+        ],
+        "hide": 0,
+        "includeAll": false,
+        "multi": false
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  }
+}
