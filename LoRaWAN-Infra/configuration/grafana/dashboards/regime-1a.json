@@ -7,7 +7,7 @@
   ],
   "timezone": "Europe/Paris",
   "schemaVersion": 41,
-  "version": 2,
+  "version": 3,
   "editable": true,
   "time": {
     "from": "now-7d",
@@ -22,12 +22,12 @@
         "x": 0,
         "y": 0,
         "w": 24,
-        "h": 3
+        "h": 4
       },
       "id": 1,
       "options": {
         "mode": "markdown",
-        "content": "**Régime 1a : taux de réception (PDR) vers la gateway fixe.** Calculé toutes les 10 min par le traitement du serveur (`LoRaWAN-Infra/regime1a/`), avec le même code que `Mote/src/bilan_regime_1a.py`. Période comptée à l'heure près, depuis le 6 novembre 2026 à 11:53. Exclusions E1 à E5 retirées (E5 : chevauchement entre deux motes de l'expérience) (règle du plan, section 10) ; le sélecteur « Heures E3 » permet de les garder. Heures en heure de Paris."
+        "content": "**Régime 1a : taux de réception (PDR) vers la gateway fixe.** Calculé toutes les 10 min par le traitement du serveur (`LoRaWAN-Infra/regime1a/`), avec le même code que `Mote/src/bilan_regime_1a.py`. Période comptée à l'heure près, depuis le 6 novembre 2026 à 11:53. Exclusions E1 à E5 retirées (E5 : chevauchement entre deux motes de l'expérience) (règle du plan, section 10) ; le sélecteur « Heures E3 » permet de les garder. Heures en heure de Paris.\n\n**Motifs d'exclusion** — **E1** : gateway sans statistiques plus de 75 s (coupure) · **E2** : relance de la LoRa de la gateway (30 s) · **E3** : heure de réception dégradée (trames des autres réseaux LoRa trop faibles ou trop rares) · **E4** : intervention documentée (`docs/exclusions-e4.csv`) · **E5** : émission qui chevauche celle d'une autre mote de l'expérience."
       }
     },
     {
@@ -40,7 +40,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 3,
+        "y": 4,
         "w": 24,
         "h": 7
       },
@@ -137,7 +137,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 10,
+        "y": 11,
         "w": 24,
         "h": 9
       },
@@ -196,7 +196,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 19,
+        "y": 20,
         "w": 14,
         "h": 7
       },
@@ -336,7 +336,7 @@
       },
       "gridPos": {
         "x": 14,
-        "y": 19,
+        "y": 20,
         "w": 10,
         "h": 7
       },
@@ -349,7 +349,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT rule AS \"Motif\", start_at AS \"Début\", end_at AS \"Fin\",\n  round(extract(epoch FROM end_at - start_at)) AS \"Durée (s)\"\nFROM regime_1a_exclusions\nWHERE start_at < $__timeTo() AND end_at > $__timeFrom()\nORDER BY start_at DESC",
+          "rawSql": "SELECT rule AS \"Motif\", CASE rule WHEN 'E1' THEN 'Gateway sans statistiques plus de 75 s (coupure)' WHEN 'E2' THEN 'Relance de la LoRa de la gateway (30 s)' WHEN 'E3' THEN 'Heure de réception dégradée (trames étrangères trop faibles ou trop rares)' WHEN 'E4' THEN 'Intervention documentée (docs/exclusions-e4.csv)' ELSE rule END AS \"Signification\", start_at AS \"Début\", end_at AS \"Fin\",\n  round(extract(epoch FROM end_at - start_at)) AS \"Durée (s)\"\nFROM regime_1a_exclusions\nWHERE start_at < $__timeTo() AND end_at > $__timeFrom()\nORDER BY start_at DESC",
           "refId": "A"
         }
       ],
@@ -377,9 +377,22 @@
                 "value": "dateTimeAsLocal"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Motif"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
           }
         ]
-      }
+      },
+      "description": "Règle d'exclusion du plan expérimental (section 10). E1 : gateway sans statistiques plus de 75 s. E2 : relance de la LoRa (30 s). E3 : heure de réception dégradée. E4 : intervention documentée. E5 (chevauchement entre deux motes de l'expérience) exclut des émissions une à une : pas de fenêtre ici."
     },
     {
       "type": "timeseries",
@@ -391,7 +404,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 26,
+        "y": 27,
         "w": 24,
         "h": 6
       },
