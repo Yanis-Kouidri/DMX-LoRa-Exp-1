@@ -137,7 +137,7 @@ def setup(mote: Mote, args: argparse.Namespace) -> dict:
         "mac set adr off",
         f"mac set pwridx {args.pwridx}",
         f"mac set rxdelay1 {args.rxdelay1}",
-        "mac set rx2 0 869525000",
+        f"mac set rx2 {args.rx2_dr} 869525000",
         "mac set retx 0",
     ):
         mote.expect(command)
@@ -219,6 +219,7 @@ def main() -> None:
     parser.add_argument("--sleep-ms", type=int, default=4000)
     parser.add_argument("--rxdelay1", type=int, default=1000)
     parser.add_argument("--pwridx", type=int, default=1)
+    parser.add_argument("--rx2-dr", type=int, default=0, help="débit de RX2 (0 = SF12)")
     parser.add_argument("--max-attempts", type=int, default=400)
     args = parser.parse_args()
 
