@@ -95,6 +95,21 @@ services:
       - mosquitto
       - postgres
 
+  # Traitement du régime 1a, lancé par regime1a-collecte.service après chaque
+  # collecte (docker compose --profile jobs run --rm regime1a-traitement).
+  regime1a-traitement:
+    build:
+      context: ./regime1a
+    profiles: ["jobs"]
+    environment:
+      POSTGRES_DSN: postgresql://regime1a_writer:${REGIME1A_DB_PASSWORD:-}@postgres:5432/lorawan_experiments
+      REGIME1A_DEBUT: "2026-11-06T11:53:00+01:00"
+    volumes:
+      - /srv/regime1a:/srv/regime1a:ro
+      - ..:/repo:ro
+    depends_on:
+      - postgres
+
   grafana:
     image: grafana/grafana-oss:11.6.5
     restart: unless-stopped

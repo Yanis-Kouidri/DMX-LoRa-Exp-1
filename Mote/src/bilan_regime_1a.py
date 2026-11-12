@@ -30,10 +30,17 @@ Exclusions (docs/plan-experimental.md, section 10, règle du 10 novembre
 2026) : une émission est exclue si son `utc_tx_start` tombe dans une fenêtre
 E1 (gateway sans statistiques plus de 75 s), E2 (relance de la LoRa, plus
 30 s), E3 (heure de réception dégradée, d'après les trames des autres réseaux
-LoRa) ou E4 (intervention documentée, donnée par `--exclure`). E1 à E3 sont
-détectées automatiquement ; le PDR est donné avec et sans E3. La référence
-d'E3 est calculée séparément pour chaque position de la gateway
-(`--deplacement-gateway`).
+LoRa) ou E4 (intervention documentée). E1 à E3 sont détectées
+automatiquement ; le PDR est donné avec et sans E3. Les interventions E4 et
+les déplacements de la gateway (la référence d'E3 est calculée séparément
+pour chaque position) sont lus dans les fichiers versionnés
+docs/exclusions-e4.csv et docs/deplacements-gateway.csv, complétés au besoin
+par `--exclure` et `--deplacement-gateway`.
+
+Les fonctions de ce module servent aussi au traitement automatique du serveur
+(LoRaWAN-Infra/regime1a/traitement.py), qui remplit la table
+regime_1a_hourly : les chiffres du tableau de bord et ceux de ce script
+sortent du même code.
 
 La santé de la gateway est donnée heure par heure : nombre de statistiques
 reçues (120 par heure quand elle est connectée) et trames des autres réseaux
@@ -50,6 +57,7 @@ import statistics
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Iterable
 
 PARIS = timezone(timedelta(hours=1))  # CET ; à adapter en heure d'été
 SF_RANGE = range(7, 13)
@@ -65,6 +73,10 @@ E3_RSSI_DROP_DB = 10.0
 E3_COUNT_RATIO = 1 / 3
 
 Window = tuple[datetime, datetime, str]    # début, fin, motif
+
+DOCS = Path(__file__).resolve().parents[2] / "docs"
+E4_FILE = DOCS / "exclusions-e4.csv"
+MOVES_FILE = DOCS / "deplacements-gateway.csv"
 
 
 def parse_time(value: str) -> datetime:
@@ -121,15 +133,37 @@ def read_netwatch(path: Path) -> tuple[list[datetime], list[datetime]]:
     return downs, restarts
 
 
-class GatewayData:
-    """Statistiques, connexions et trames étrangères de `gateway_events.csv`."""
+def read_e4(path: Path) -> list[Window]:
+    """Interventions documentées (E4) du fichier versionné (`debut,fin,motif`)."""
 
-    def __init__(self, data_dir: Path, our_euis: set[str], uplinks: list[dict[str, str]]) -> None:
+    if not path.exists():
+        return []
+    with path.open(newline="", encoding="utf-8") as f:
+        return [(parse_time(r["debut"]), parse_time(r["fin"]), "E4") for r in csv.DictReader(f)]
+
+
+def read_moves(path: Path) -> list[datetime]:
+    """Déplacements de la gateway du fichier versionné (`heure,description`)."""
+
+    if not path.exists():
+        return []
+    with path.open(newline="", encoding="utf-8") as f:
+        return [parse_time(r["heure"]) for r in csv.DictReader(f)]
+
+
+class GatewayData:
+    """Statistiques, connexions et trames étrangères de la gateway.
+
+    `events` : lignes de `gateway_events` (time, event_type, m_type, dev_eui,
+    rssi_dbm), lues dans l'export CSV ou dans la base.
+    """
+
+    def __init__(self, events: Iterable[dict[str, str]], our_euis: set[str], uplinks: list[dict[str, str]]) -> None:
         our_times = sorted(parse_time(u["received_at"]) for u in uplinks if u["dev_eui"] in our_euis)
         self.stats: list[datetime] = []
         self.conn: list[datetime] = []
         self.foreign: list[tuple[datetime, int]] = []
-        for event in read_csv(data_dir / "gateway_events.csv"):
+        for event in events:
             when = parse_time(event["time"])
             if event["event_type"] == "stats":
                 self.stats.append(when)
@@ -140,7 +174,7 @@ class GatewayData:
                 # on écarte ceux qui coïncident avec un uplink d'une de nos motes
                 if event["m_type"] != "JoinRequest" and near(our_times, when):
                     continue
-                self.foreign.append((when, int(event["rssi_dbm"])))
+                self.foreign.append((when, round(float(event["rssi_dbm"]))))
         self.stats.sort()
         self.conn.sort()
         self.foreign.sort()
@@ -216,6 +250,48 @@ def detect_windows(
     return [w for w in windows if w[1] > start and w[0] < end]
 
 
+def classify(
+    rows: list[dict[str, str]], start: datetime, end: datetime, windows: list[Window],
+) -> list[tuple[dict[str, str], str | None]]:
+    """Émissions de la période (`event=tx`, réponse `ok`) et motif d'exclusion de chacune."""
+
+    in_period = [
+        r for r in rows
+        if r["event"] == "tx" and r["immediate"] == "ok" and start <= tx_time(r) < end
+    ]
+    return [(r, excluded(tx_time(r), windows)) for r in in_period]
+
+
+def journal_deveui(rows: list[dict[str, str]]) -> str:
+    return next(r["deveui"] for r in rows if r.get("deveui")).lower()
+
+
+def hourly_counts(
+    rows: list[dict[str, str]], received_payloads: set[str], start: datetime, end: datetime,
+    windows: list[Window],
+) -> dict[tuple[datetime, int], list[int]]:
+    """Par heure d'émission et par SF : émis, reçus, exclus, émis et reçus sans E3.
+
+    Les émis et reçus excluent toutes les fenêtres ; les colonnes « sans E3 »
+    gardent les heures E3 (résultats publiés avec et sans E3, règle du plan).
+    """
+
+    counts: defaultdict[tuple[datetime, int], list[int]] = defaultdict(lambda: [0, 0, 0, 0, 0])
+    for row, rule in classify(rows, start, end, windows):
+        hour = tx_time(row).astimezone(timezone.utc).replace(minute=0, second=0, microsecond=0)
+        c = counts[(hour, int(row["sf"]))]
+        got = row["payload_hex"].upper() in received_payloads
+        if rule is None:
+            c[0] += 1
+            c[1] += got
+        else:
+            c[2] += 1
+        if rule in (None, "E3"):
+            c[3] += 1
+            c[4] += got
+    return dict(counts)
+
+
 def mote_report(
     journal: Path,
     uplinks: list[dict[str, str]],
@@ -225,7 +301,7 @@ def mote_report(
     excluded_hours: Counter[int],
 ) -> str:
     rows = read_csv(journal)
-    deveui = next(r["deveui"] for r in rows if r.get("deveui")).lower()
+    deveui = journal_deveui(rows)
     received = {u["payload"].upper(): u for u in uplinks if u["dev_eui"] == deveui}
 
     joins = [r for r in rows if r["event"] == "join"]
@@ -233,11 +309,9 @@ def mote_report(
     print(f"\n=== {journal.stem.removeprefix('regime_1a_')} ({deveui})")
     print(f"joins : {len(joins)} {dict(Counter(r['async'] or r['immediate'] for r in joins))}, acceptés : {accepted}")
 
-    in_period = [
-        r for r in rows
-        if r["event"] == "tx" and r["immediate"] == "ok" and start <= tx_time(r) < end
-    ]
-    rules = {id(r): excluded(tx_time(r), windows) for r in in_period}
+    classified = classify(rows, start, end, windows)
+    in_period = [r for r, _ in classified]
+    rules = {id(r): rule for r, rule in classified}
     for r in in_period:
         if rules[id(r)]:
             excluded_hours[tx_time(r).hour] += 1
@@ -282,25 +356,26 @@ def main() -> None:
     parser.add_argument("--fin", type=parse_time, required=True, help="ex. 2026-11-10T14:10 (heure de Paris)")
     parser.add_argument(
         "--exclure", type=parse_window, action="append", default=[],
-        help="intervention documentée (E4) DÉBUT/FIN, répétable (voir docs/emplacements.md)",
+        help="intervention E4 DÉBUT/FIN en plus du fichier, répétable",
     )
     parser.add_argument(
         "--deplacement-gateway", type=parse_time, action="append", default=[],
-        help="heure d'un changement de position de la gateway, répétable : la référence E3 "
-             "est calculée séparément de part et d'autre (ex. 2026-11-03T17:00)",
+        help="déplacement de la gateway en plus du fichier, répétable (ex. 2026-11-03T17:00)",
     )
+    parser.add_argument("--fichier-e4", type=Path, default=E4_FILE, help=f"défaut : {E4_FILE}")
+    parser.add_argument("--fichier-deplacements", type=Path, default=MOVES_FILE, help=f"défaut : {MOVES_FILE}")
     args = parser.parse_args()
 
     uplinks = read_csv(args.dossier / "uplinks.csv")
     journals = sorted(args.dossier.glob("regime_1a_*.csv"))
-    euis = {
-        next(r["deveui"] for r in read_csv(j) if r.get("deveui")).lower() for j in journals
-    }
-    gw = GatewayData(args.dossier, euis, uplinks)
+    euis = {journal_deveui(read_csv(j)) for j in journals}
+    gw = GatewayData(read_csv(args.dossier / "gateway_events.csv"), euis, uplinks)
     downs, restarts = read_netwatch(args.dossier / "netwatch.log")
+    moves = read_moves(args.fichier_deplacements) + args.deplacement_gateway
 
-    windows = detect_windows(gw, downs, restarts, args.debut, args.fin, args.deplacement_gateway)
-    windows += [(a, b, "E4") for a, b in args.exclure]
+    windows = detect_windows(gw, downs, restarts, args.debut, args.fin, moves)
+    e4 = read_e4(args.fichier_e4) + [(a, b, "E4") for a, b in args.exclure]
+    windows += [w for w in e4 if w[1] > args.debut and w[0] < args.fin]
     windows.sort()
 
     print(f"Période : {args.debut:%Y-%m-%d %H:%M} → {args.fin:%Y-%m-%d %H:%M} (heure de Paris)")

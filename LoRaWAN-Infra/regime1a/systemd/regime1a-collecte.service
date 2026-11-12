@@ -2,12 +2,15 @@
 # Installation : sudo systemctl link /home/ubuntu/DMX-LoRa-Exp-1/LoRaWAN-Infra/regime1a/systemd/regime1a-collecte.service
 
 [Unit]
-Description=Collecte des journaux du régime 1a sur les Pi des motes
+Description=Collecte des journaux du régime 1a sur les Pi des motes, puis traitement
 Wants=network-online.target tailscaled.service
 After=network-online.target tailscaled.service
 
 [Service]
 Type=oneshot
 User=ubuntu
+WorkingDirectory=/home/ubuntu/DMX-LoRa-Exp-1/LoRaWAN-Infra
 ExecStart=/home/ubuntu/DMX-LoRa-Exp-1/LoRaWAN-Infra/regime1a/collecte-journaux.sh
+# Puis chargement des journaux et calcul du PDR (traitement.py, conteneur de la pile)
+ExecStart=/usr/bin/docker compose --profile jobs run --rm regime1a-traitement
 TimeoutStartSec=15min
