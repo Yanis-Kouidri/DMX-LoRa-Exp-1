@@ -24,6 +24,7 @@ refaite à 10:06.
 | `2026-11-12_1054_…-cnf-sf7-sf8-sf9-20o-x30` | 30 sondes ratées par SF, SF7 à SF9, 20 octets | commit `a3ed546` | même exécution |
 | `2026-11-12_1122_…-cnf-sf7-sf8-sf9-51o-x30` | 30 sondes ratées par SF, SF7 à SF9, 51 octets | commit `a3ed546` | même exécution |
 | `2026-11-12_1240_…-uncnf-sf10-sf11-sf12-6o-x30-rx2dr3` | 30 × `mac tx uncnf` par SF, SF10 à SF12, 6 octets, RX2 en SF9 | commit `7d1cb9e` | même exécution |
+| `2026-11-12_1453_…-uncnf-sf10-sf11-20o-x30` | 30 × `mac tx uncnf` par SF, SF10 et SF11, 20 octets (premier fragment de la série de repli en 20 octets) | commit `5e7d8fb` | même exécution |
 
 Pour la série `2026-11-12_1007`, les champs `git` et `sha256` du JSON sont
 faux : ils ont été relevés à la fin de la série, alors que les scripts avaient
@@ -93,10 +94,23 @@ quand une fenêtre RX2 allongée la décale).
 Temps d'émission en 20 octets : 71,9 / 133,6 / 246,8 ms ; en 51 octets :
 118,0 / 215,6 / 390,1 ms (SF7 / SF8 / SF9).
 
+## Repli selon la taille de la charge utile
+
+Uplink non confirmé, RX2 en SF12, `rx1_delay` 1 s, n = 30 par case. Moyenne ±
+écart-type.
+
+| SF | 6 octets | 20 octets | 51 octets |
+|---|---|---|---|
+| 10 | 80,15 ± 0,08 | 97,42 ± 1,56 (médiane 97,14) | à mesurer |
+| 11 | 137,90 ± 0,25 | 172,28 ± 0,28 | à mesurer |
+| 12 | 220,41 ± 0,40 | à mesurer | à mesurer |
+
+Temps d'émission en 20 octets : 452,6 ms (SF10) et 987,1 ms (SF11).
+
 **Fenêtres RX2 allongées** (le module détecte un préambule et reste en
-réception) : 3 messages sur 543 mesurés du 10 au 12 novembre (validation SF7 :
-558 ms, 52,4 mJ ; SF8 20 octets : 371 ms, 55,3 mJ ; SF9 51 octets : 1 282 ms,
-133,3 mJ). Elles sont gardées dans les statistiques : la moyenne est la valeur
+réception) : 4 messages sur 603 mesurés du 10 au 12 novembre (validation SF7 :
+558 ms, 52,4 mJ ; sonde SF8 20 octets : 371 ms, 55,3 mJ ; sonde SF9 51 octets :
+1 282 ms, 133,3 mJ ; repli SF10 20 octets : 449 ms, 105,7 mJ). Elles sont gardées dans les statistiques : la moyenne est la valeur
 à retenir pour le modèle d'énergie.
 
 ## Colonnes du CSV
