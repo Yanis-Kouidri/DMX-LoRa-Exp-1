@@ -741,3 +741,5 @@ Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 
 - Spécification LoRaWAN L2 1.0.4 (LinkCheckReq, fenêtres de réception) : https://lora-alliance.org/wp-content/uploads/2021/11/LoRaWAN-Link-Layer-Specification-v1.0.4.pdf
 
 **Support de présentation** (phases 0 et 1, pour les directeurs de thèse) : https://claude.ai/artifact/CDKfivjox7gLvguU3JwqEL
+
+**Support de présentation** (banc PPK2 : énergie par message, sonde ratée, seuil de rentabilité ; go/no-go du 13 novembre 2026) : https://claude.ai/artifact/HQZbtLMEdh3rJM9qzbdMSG
