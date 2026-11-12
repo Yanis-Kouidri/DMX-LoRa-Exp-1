@@ -30,7 +30,9 @@ Exclusions (docs/plan-experimental.md, section 10, règle du 10 novembre
 2026) : une émission est exclue si son `utc_tx_start` tombe dans une fenêtre
 E1 (gateway sans statistiques plus de 75 s), E2 (relance de la LoRa, plus
 30 s), E3 (heure de réception dégradée, d'après les trames des autres réseaux
-LoRa) ou E4 (intervention documentée). E1 à E3 sont détectées
+LoRa) ou E4 (intervention documentée). E5 exclut en plus toute émission qui
+chevauche dans le temps celle d'une autre mote de l'expérience (amendement du
+12 novembre 2026). E1 à E3 et E5 sont détectées
 automatiquement ; le PDR est donné avec et sans E3. Les interventions E4 et
 les déplacements de la gateway (la référence d'E3 est calculée séparément
 pour chaque position) sont lus dans les fichiers versionnés
@@ -70,6 +72,7 @@ NETWATCH_SEARCH = timedelta(minutes=2)     # E1 : alerte rattachée à un écart
 RESTART_TAIL = timedelta(seconds=30)       # E2 : 26 s mesurées pour une relance
 CONN_CLUSTER = timedelta(seconds=60)       # E2 : événements de connexion d'une même relance
 E3_RSSI_DROP_DB = 10.0
+E5_MARGIN = timedelta(seconds=0.1)         # E5 : incertitude sur l'instant d'émission
 E3_COUNT_RATIO = 1 / 3
 
 Window = tuple[datetime, datetime, str]    # début, fin, motif
@@ -232,7 +235,9 @@ def detect_windows(
             if not any(h <= m < h + timedelta(hours=1) for m in gateway_moves):
                 hours.append(h)
             h += timedelta(hours=1)
-        full_hours = [h for h in hours if h >= seg_start and h + timedelta(hours=1) <= seg_end]
+        # une heure qui dépasse les dernières données reçues n'est pas encore complète
+        data_end = min(seg_end, gw.stats[-1]) if gw.stats else seg_end
+        full_hours = [h for h in hours if h >= seg_start and h + timedelta(hours=1) <= data_end]
         all_rssi = [rssi for h in hours for rssi in by_hour[h]]
         if not (all_rssi and full_hours):
             continue
@@ -250,16 +255,52 @@ def detect_windows(
     return [w for w in windows if w[1] > start and w[0] < end]
 
 
+def self_overlaps(journals: dict[str, list[dict[str, str]]]) -> set[tuple[str, str]]:
+    """E5 : émissions (mote, charge utile) qui chevauchent celle d'une autre mote de l'expérience.
+
+    Intervalle d'une émission : de `utc_tx_start` à `utc_tx_start` + temps
+    d'émission, élargi de E5_MARGIN de chaque côté.
+    """
+
+    spans = []
+    for host, rows in journals.items():
+        for r in rows:
+            if r["event"] == "tx" and r["immediate"] == "ok" and r.get("airtime_ms"):
+                t = tx_time(r)
+                spans.append((t - E5_MARGIN, t + timedelta(milliseconds=float(r["airtime_ms"])) + E5_MARGIN,
+                              host, r["payload_hex"].upper()))
+    spans.sort()
+    hits: set[tuple[str, str]] = set()
+    active: list[tuple[datetime, str, str]] = []   # (fin, mote, charge utile) en cours
+    for begin, finish, host, payload in spans:
+        active = [a for a in active if a[0] > begin]
+        for _, other_host, other_payload in active:
+            if other_host != host:
+                hits.add((host, payload))
+                hits.add((other_host, other_payload))
+        active.append((finish, host, payload))
+    return hits
+
+
 def classify(
     rows: list[dict[str, str]], start: datetime, end: datetime, windows: list[Window],
+    host: str = "", overlaps: set[tuple[str, str]] | None = None,
 ) -> list[tuple[dict[str, str], str | None]]:
-    """Émissions de la période (`event=tx`, réponse `ok`) et motif d'exclusion de chacune."""
+    """Émissions de la période (`event=tx`, réponse `ok`) et motif d'exclusion de chacune.
 
-    in_period = [
-        r for r in rows
-        if r["event"] == "tx" and r["immediate"] == "ok" and start <= tx_time(r) < end
-    ]
-    return [(r, excluded(tx_time(r), windows)) for r in in_period]
+    Les fenêtres E1 à E4 priment ; sinon E5 si l'émission chevauche une autre mote.
+    """
+
+    overlaps = overlaps or set()
+    out = []
+    for r in rows:
+        if r["event"] != "tx" or r["immediate"] != "ok" or not start <= tx_time(r) < end:
+            continue
+        rule = excluded(tx_time(r), windows)
+        if rule is None and (host, r["payload_hex"].upper()) in overlaps:
+            rule = "E5"
+        out.append((r, rule))
+    return out
 
 
 def journal_deveui(rows: list[dict[str, str]]) -> str:
@@ -268,7 +309,7 @@ def journal_deveui(rows: list[dict[str, str]]) -> str:
 
 def hourly_counts(
     rows: list[dict[str, str]], received_payloads: set[str], start: datetime, end: datetime,
-    windows: list[Window],
+    windows: list[Window], host: str = "", overlaps: set[tuple[str, str]] | None = None,
 ) -> dict[tuple[datetime, int], list[int]]:
     """Par heure d'émission et par SF : émis, reçus, exclus, émis et reçus sans E3.
 
@@ -277,7 +318,7 @@ def hourly_counts(
     """
 
     counts: defaultdict[tuple[datetime, int], list[int]] = defaultdict(lambda: [0, 0, 0, 0, 0])
-    for row, rule in classify(rows, start, end, windows):
+    for row, rule in classify(rows, start, end, windows, host, overlaps):
         hour = tx_time(row).astimezone(timezone.utc).replace(minute=0, second=0, microsecond=0)
         c = counts[(hour, int(row["sf"]))]
         got = row["payload_hex"].upper() in received_payloads
@@ -299,6 +340,7 @@ def mote_report(
     end: datetime,
     windows: list[Window],
     excluded_hours: Counter[int],
+    overlaps: set[tuple[str, str]],
 ) -> str:
     rows = read_csv(journal)
     deveui = journal_deveui(rows)
@@ -309,7 +351,7 @@ def mote_report(
     print(f"\n=== {journal.stem.removeprefix('regime_1a_')} ({deveui})")
     print(f"joins : {len(joins)} {dict(Counter(r['async'] or r['immediate'] for r in joins))}, acceptés : {accepted}")
 
-    classified = classify(rows, start, end, windows)
+    classified = classify(rows, start, end, windows, journal.stem.removeprefix("regime_1a_"), overlaps)
     in_period = [r for r, _ in classified]
     rules = {id(r): rule for r, rule in classified}
     for r in in_period:
@@ -390,9 +432,12 @@ def main() -> None:
     print("Durée exclue : " + ", ".join(f"{r} {s / 60:.1f} min" for r, s in sorted(total.items()))
           + f" (sur {period_s / 3600:.1f} h, fenêtres qui se chevauchent comptées une fois par motif)")
 
+    overlaps = self_overlaps({j.stem.removeprefix("regime_1a_"): read_csv(j) for j in journals})
+    print(f"E5 : {len(overlaps)} émissions chevauchent celle d'une autre mote de l'expérience")
+
     excluded_hours: Counter[int] = Counter()
     for journal in journals:
-        mote_report(journal, uplinks, args.debut, args.fin, windows, excluded_hours)
+        mote_report(journal, uplinks, args.debut, args.fin, windows, excluded_hours, overlaps)
     print("\nÉmissions exclues par heure de la journée (concentration à vérifier) :")
     hours = " ".join(f"{h}h:{excluded_hours[h]}" for h in range(24) if excluded_hours[h])
     print("  " + (hours or "aucune"))

@@ -9,8 +9,8 @@ dans le conteneur `regime1a-traitement` de la pile (voir ../README.md). Il :
    lignes déjà chargées sont ignorées) ;
 2. charge l'état des collectes dans regime_1a_collection ;
 3. recalcule, depuis REGIME1A_DEBUT jusqu'à maintenant, les fenêtres
-   d'exclusion (regime_1a_exclusions) et les comptes horaires par mote et par
-   SF (regime_1a_hourly), avec le code de Mote/src/bilan_regime_1a.py : mêmes
+   d'exclusion E1 à E4 (regime_1a_exclusions) et les comptes horaires par mote
+   et par SF (regime_1a_hourly, émissions E5 comptées dans les exclues), avec le code de Mote/src/bilan_regime_1a.py : mêmes
    règles et mêmes chiffres que le bilan en ligne de commande.
 
 Le journal du netwatch n'est pas accessible depuis le serveur : E1 n'est pas
@@ -151,13 +151,14 @@ def main() -> None:
         windows += [w for w in bilan.read_e4(REPO / "docs" / "exclusions-e4.csv") if w[1] > START and w[0] < end]
         windows.sort()
 
+        overlaps = bilan.self_overlaps(by_host)
         received: dict[str, set[str]] = {}
         for u in uplinks:
             received.setdefault(u["dev_eui"], set()).add(u["payload"].upper())
         hourly = []
         for host, rows in by_host.items():
             deveui = bilan.journal_deveui(rows)
-            counts = bilan.hourly_counts(rows, received.get(deveui, set()), START, end, windows)
+            counts = bilan.hourly_counts(rows, received.get(deveui, set()), START, end, windows, host, overlaps)
             hourly += [(hour, deveui, host, sf, *c) for (hour, sf), c in counts.items()]
 
         # Recalcul complet de la période : fenêtres et comptes remplacés d'un bloc
