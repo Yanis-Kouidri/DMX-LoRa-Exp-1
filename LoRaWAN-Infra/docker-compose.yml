@@ -110,6 +110,23 @@ services:
     depends_on:
       - postgres
 
+  # Chargement des résultats du banc PPK2 (Mote/banc-ppk2/) pour Grafana, à
+  # lancer à la main après un git pull :
+  # docker compose --profile jobs run --rm banc-ppk2-chargement
+  banc-ppk2-chargement:
+    # Même image que le traitement du régime 1a (Python et psycopg)
+    build:
+      context: ./regime1a
+    profiles: ["jobs"]
+    command: ["python", "-u", "/repo/LoRaWAN-Infra/banc-ppk2/chargement.py"]
+    environment:
+      POSTGRES_DSN: postgresql://banc_ppk2_writer:${BANC_PPK2_DB_PASSWORD:-}@postgres:5432/lorawan_experiments
+      BANC_PPK2_REPO: /repo
+    volumes:
+      - ..:/repo:ro
+    depends_on:
+      - postgres
+
   grafana:
     image: grafana/grafana-oss:11.6.5
     restart: unless-stopped

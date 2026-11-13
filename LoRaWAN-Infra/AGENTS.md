@@ -6,6 +6,7 @@ The root files define and document the deployment: `docker-compose.yml` orchestr
 The `scripts/` directory contains `gateway-certs.sh`, which generates the private gateway CA and the Basic Station server certificate (run through `make gateway-certs`).
 The `configuration/` directory contains ChirpStack, Gateway Bridge, Mosquitto, and PostgreSQL configuration files for the supported regions and integrations.
 The `uplink-collector/` directory contains the MQTT-to-PostgreSQL collector application (uplinks, device events and gateway traffic), its Dockerfile, and Python dependencies.
+The `banc-ppk2/` directory contains the loader that copies the PPK2 bench results (`Mote/banc-ppk2/`) into PostgreSQL for Grafana.
 The `configuration/postgresql/migrations/` directory contains SQL migrations to apply manually to existing databases; `initdb/` holds the full schema for fresh installs.
 
 ## Stack

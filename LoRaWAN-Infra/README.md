@@ -59,6 +59,8 @@ L'API gRPC de ChirpStack est à préférer à l'API REST.
 - `regime1a/` : collecte automatique des journaux du régime 1a (script, liste
   des Pi, clé publique, unités systemd ; voir
   [Collecte automatique des journaux du régime 1a](#collecte-automatique-des-journaux-du-régime-1a)).
+- `banc-ppk2/` : chargement des résultats du banc PPK2 dans la base (voir
+  [Résultats du banc PPK2](#résultats-du-banc-ppk2)).
 - `tailscale-policy.hujson` : copie versionnée de la politique d'accès du
   réseau Tailscale (voir [Accès Tailscale du serveur](#accès-tailscale-du-serveur)).
 
@@ -375,6 +377,35 @@ que de nouveaux objets (aucune table existante modifiée). Vérifié :
 `regime1a_writer` a `SELECT, INSERT, UPDATE, DELETE` sur ces tables et
 seulement `SELECT` sur `uplinks` et `gateway_events`.
 
+### Résultats du banc PPK2
+
+La migration `006` ajoute les résultats du [banc PPK2](../Mote/banc-ppk2.md)
+(énergie par message), pour le tableau de bord Grafana :
+
+| Objet | Contenu |
+|---|---|
+| `ppk2_series` | Une ligne par série de `Mote/banc-ppk2/` : réglages (mode, taille, `rx1_delay`, SF de RX2, duty cycle), mote, commit d'acquisition, et `in_results` (faux pour les contrôles de méthode : validation, chambre blindée sans duty cycle) |
+| `ppk2_messages` | Une ligne par tentative (une ligne du CSV de la série), avec les mêmes colonnes ; `rx1_ms` et `rx2_ms` séparent les deux fenêtres de `rx_windows_ms` |
+| `ppk2_results` (vue) | Messages retenus (`valid`) des séries de résultats, avec les réglages de leur série : seule source des panneaux de résultats |
+
+Les fichiers versionnés de `Mote/banc-ppk2/` font foi. La base n'en est qu'une
+copie pour l'affichage : `banc-ppk2/chargement.py` la remplace d'un bloc à
+chaque passage, et les échantillons bruts (plusieurs gigaoctets par série) n'y
+vont pas. Le tri entre résultats et contrôles suit le README de
+`Mote/banc-ppk2/` ; la provenance du code de chaque série y est aussi.
+
+Après avoir commité une nouvelle série, sur le serveur :
+
+```sh
+git pull --ff-only
+docker compose --profile jobs run --rm banc-ppk2-chargement
+```
+
+Le conteneur réutilise l'image du traitement du régime 1a et se connecte avec
+`banc_ppk2_writer` (mot de passe `BANC_PPK2_DB_PASSWORD` dans `.env`), qui
+n'écrit que dans ces deux tables. Sans base, `python3
+banc-ppk2/chargement.py --verifier` liste les séries lues et leur classement.
+
 ### Migrations
 
 `configuration/postgresql/initdb/` ne s'exécute qu'à la création du volume
@@ -402,6 +433,10 @@ depuis `configuration/grafana/` :
   https://grafana.chirpstack.kouidri.fr/d/regime-1a) : suivi du régime 1a à
   partir des tables `regime_1a_*`, voir ci-dessous.
 
+- **LoRaWAN — Banc PPK2** (`banc-ppk2.json`,
+  https://grafana.chirpstack.kouidri.fr/d/banc-ppk2) : énergie par message
+  mesurée au banc, à partir des tables `ppk2_*`, voir plus bas.
+
 **Tableau de bord du régime 1a.** Période par défaut : 7 derniers jours,
 actualisation toutes les 10 min, heures de Paris. Les PDR sont des sommes de
 comptes horaires (`sum(received) / sum(sent)`), donc à l'heure près.
@@ -422,6 +457,26 @@ d'environ 70 min du 6 au 12 novembre).
 Vérifié le 12 novembre 2026 par l'API de Grafana : tableau chargé, les six
 panneaux renvoient des données, avec les deux valeurs du sélecteur E3 et
 plusieurs SF et agrégations.
+
+**Tableau de bord du banc PPK2.** Résultats de banc et non séries
+temporelles : pas de période à choisir. Il sert à lire et à montrer les
+résultats ; les figures du papier viendront d'un script versionné.
+
+| Panneau | Contenu |
+|---|---|
+| Chiffres clés | Séries et messages retenus, énergie d'un message de 6 octets en SF7 et en SF12, rapport des deux |
+| Énergie selon le SF et la taille | Moyenne par SF pour 6, 20 et 51 octets (`rx1_delay` 1 s, RX2 en SF12) ; barre absente : cas non mesuré |
+| Durée d'un message | Émission, attentes au repos, RX1 et RX2 par SF, en 6 octets |
+| Sonde ratée ou uplink non confirmé | Les deux coûts côte à côte, SF7 à SF9 |
+| Effet du débit de RX2, effet de `rx1_delay` | Mêmes messages avec RX2 en SF9, ou `rx1_delay` à 3 s |
+| Seuil de rentabilité p* | p* = E_sonde ratée / E_repli par SF de repli et SF de sonde (plan, section 9), selon les sélecteurs « Charge utile » et « RX2 » |
+| Gain selon la probabilité de réussite | Droites gain = p − p* par SF de repli, pour la sonde du sélecteur « Sonde » : un calcul à partir des énergies mesurées, pas une mesure de terrain |
+| Répétabilité | Écart de chaque message à la médiane de son SF, pour la série du sélecteur « Série » |
+| Séries mesurées | Par série et par SF : effectif, moyenne, écart-type, CV, extrêmes, fenêtres RX2 allongées, rôle (résultats ou contrôle de méthode) |
+
+Les moyennes gardent les messages à fenêtre RX2 allongée, comme dans
+`Mote/banc-ppk2/README.md`. Le panneau « Gain » utilise le type `trend`, encore
+en bêta dans Grafana 11.6.
 
 Les tableaux de bord sont modifiables dans l'interface, mais les fichiers JSON
 de `configuration/grafana/dashboards/` font foi. Pour garder une modification,
