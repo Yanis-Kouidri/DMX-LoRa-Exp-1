@@ -1,0 +1,11 @@
+{
+  "port": "COM7",
+  "mv": 3300,
+  "calibrated": "0",
+  "hw": "56484",
+  "bytes": 37275648,
+  "samples": 9318912,
+  "host_seconds": 93.18088720000014,
+  "cur": "C:\\Users\\yanis\\banc-ppk2\\data\\2026-11-13_1635_7330_smu3300_abp-uncnf-sf7-6o-x10-sensib-11-mote-debout-sans-gourde.cur.f32",
+  "dig": "C:\\Users\\yanis\\banc-ppk2\\data\\2026-11-13_1635_7330_smu3300_abp-uncnf-sf7-6o-x10-sensib-11-mote-debout-sans-gourde.dig.u8"
+}

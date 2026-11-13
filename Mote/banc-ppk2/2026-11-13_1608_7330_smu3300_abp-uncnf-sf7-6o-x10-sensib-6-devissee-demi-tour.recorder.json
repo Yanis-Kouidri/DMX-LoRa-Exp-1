@@ -1,0 +1,11 @@
+{
+  "port": "COM7",
+  "mv": 3300,
+  "calibrated": "0",
+  "hw": "56484",
+  "bytes": 37246976,
+  "samples": 9311744,
+  "host_seconds": 93.11836229999972,
+  "cur": "C:\\Users\\yanis\\banc-ppk2\\data\\2026-11-13_1608_7330_smu3300_abp-uncnf-sf7-6o-x10-sensib-6-devissee-demi-tour.cur.f32",
+  "dig": "C:\\Users\\yanis\\banc-ppk2\\data\\2026-11-13_1608_7330_smu3300_abp-uncnf-sf7-6o-x10-sensib-6-devissee-demi-tour.dig.u8"
+}

@@ -50,6 +50,9 @@ Détail des tables et des panneaux dans
 | `2026-11-12_1240_…-uncnf-sf10-sf11-sf12-6o-x30-rx2dr3` | 30 × `mac tx uncnf` par SF, SF10 à SF12, 6 octets, RX2 en SF9 | commit `7d1cb9e` | même exécution |
 | `2026-11-12_1453_…-uncnf-sf10-sf11-20o-x30` | 30 × `mac tx uncnf` par SF, SF10 et SF11, 20 octets (premier fragment de la série de repli en 20 octets) | commit `5e7d8fb` | même exécution |
 | `2026-11-12_1618_…-uncnf-sf10-51o-x30` | 30 × `mac tx uncnf`, SF10, 51 octets (premier fragment de la série de repli en 51 octets) | commit `5210933` | même exécution |
+| `2026-11-13_1123_…-uncnf-sf12-20o-x30` | 30 × `mac tx uncnf` SF12, 20 octets, + 1 message de chauffe exclu | commit `a0d3584` | même exécution |
+| `2026-11-13_1300_…-uncnf-sf11-51o-x30` | 30 × `mac tx uncnf` SF11, 51 octets, + 1 de chauffe ; tentatives 29 à 31 dans une autre condition (voir plus bas) | commit `a0d3584` | même exécution |
+| `2026-11-13_15xx/16xx_…-sf7-6o-x10-sensib-*` | Test de sensibilité à l'environnement de l'antenne : 11 conditions × (10 × `mac tx uncnf` SF7, 6 octets, + 1 de chauffe) | code du commit `ea2874a` (`Mote/src` inchangé ensuite) | même exécution |
 | `2026-11-13_1036_…-uncnf-sf12-6o-x30-nodc-controle` | **Contrôle de méthode**, hors résultats : 30 × `mac tx uncnf` SF12, 6 octets, chambre anéchoïque blindée, duty cycle coupé (`--no-duty-cycle`), 6 s de sommeil entre messages | commit `00a3697` | même exécution |
 
 Pour la série `2026-11-12_1007`, les champs `git` et `sha256` du JSON sont
@@ -128,11 +131,58 @@ Uplink non confirmé, RX2 en SF12, `rx1_delay` 1 s, n = 30 par case. Moyenne ±
 | SF | 6 octets | 20 octets | 51 octets |
 |---|---|---|---|
 | 10 | 80,15 ± 0,08 | 97,42 ± 1,56 (médiane 97,14) | 130,65 ± 0,23 |
-| 11 | 137,90 ± 0,25 | 172,28 ± 0,28 | à mesurer |
-| 12 | 220,41 ± 0,40 | à mesurer | à mesurer |
+| 11 | 137,90 ± 0,25 | 172,28 ± 0,28 | 248,05 ± 2,58 (médiane 248,72) |
+| 12 | 220,41 ± 0,40 | 286,81 ± 0,28 | à mesurer |
 
-Temps d'émission en 20 octets : 452,6 ms (SF10) et 987,1 ms (SF11) ; en 51 octets :
-698,4 ms (SF10).
+Repli SF11 en 51 octets : tentatives 1 à 28 entre 247 et 250 mJ (courant
+d'émission 42,6 mA), tentatives 29 à 31 à 240,6 mJ (40,9 mA) après une
+modification du montage vers 14:15, voir la section sur la sensibilité.
+
+Temps d'émission en 20 octets : 452,6 ms (SF10), 987,1 ms (SF11), 1 810,4 ms
+(SF12) ; en 51 octets : 698,4 ms (SF10), 1 560,6 ms (SF11).
+
+## Sensibilité à l'environnement de l'antenne (13 novembre 2026)
+
+Le courant d'émission (`i_tx_ma`, moyenne au-dessus de 30 mA) ne dépend que de
+la puissance émise et de ce que « voit » l'antenne. Il valait 42,5 à 42,9 mA
+d'une série à l'autre du 10 au 13 novembre, puis a sauté de −4 % pendant la
+série SF11 en 51 octets. Test dédié : 11 conditions, 10 messages SF7 de
+6 octets chacune, dans l'ordre.
+
+| # | Condition | Courant d'émission (mA) | Écart | Énergie SF7 (mJ) |
+|---|---|---|---|---|
+| 1 | Mote à plat, antenne à plat (référence du jour) | 41,99 | — | 38,60 |
+| 2 | Antenne verticale | 43,62 | +3,9 % | 38,86 |
+| 3 | Gourde métallique remplie d'eau à 5 cm de l'antenne | 42,06 | +0,2 % | 38,59 |
+| 4 | Gourde en contact avec l'antenne | 41,97 | 0,0 % | 38,56 |
+| 5 | Gourde posée sur le bout de l'antenne | 42,50 | +1,2 % | 38,65 |
+| 6 | Antenne dévissée d'un demi-tour | 42,74 | +1,8 % | 38,68 |
+| 7 | Retour à la référence | 41,87 | −0,3 % | 38,52 |
+| 8 | Pince à sertir en face de l'antenne | 41,97 | 0,0 % | 38,55 |
+| 9 | Mote tournée sur le bureau | 44,44 | +5,8 % | 38,31 (38,98 sans la tentative 5) |
+| 10 | Mote debout, adossée à la gourde | 36,14 | −13,9 % | 37,55 |
+| 11 | Mote debout, sans la gourde | 45,01 | +7,2 % | 39,10 |
+
+- Plage observée : **−14 % à +7 %** sur le courant d'émission. Un objet
+  métallique à côté de l'antenne n'a pas d'effet ; la position de la carte et
+  de l'antenne, et un objet contre la carte, en ont un.
+- Effet sur l'énergie d'un message proportionnel à la part de l'émission :
+  −2,7 % à +1,3 % en SF7 ; jusqu'à environ −12 % / +6 % en SF12.
+- Reproductibilité : 0,3 % dans une même session (conditions 1 et 7), 0,75 à
+  2 % d'un jour à l'autre.
+- Le montage est fragile (fils sur barrettes, soudures à la main) : un
+  mouvement de la carte peut aussi modifier le plan de masse et le trajet du
+  courant, sans qu'on puisse séparer cet effet de celui de l'antenne. Règle :
+  ne pas toucher au montage pendant une série, contrôler le courant d'émission
+  au démarrage (`--i-tx-ref`).
+
+**Émission manquante** : dans la condition 9, la tentative 5 a reçu
+`mac_tx_ok` et ouvert RX1 et RX2, mais le courant est resté au niveau du repos
+pendant l'émission (pointe de 2 ms au lieu de 51 ms à 44 mA). Seul cas sur les
+884 messages mesurés du 10 au 13 novembre. Sur le terrain, un tel message
+serait compté comme émis puis perdu. Cause inconnue (faux contact du montage
+manipulé juste avant, défaut du module) ; énergie apparente de 32,0 mJ, gardée
+dans la moyenne de la condition 9.
 
 ## Contrôle de la méthode sans duty cycle (13 novembre 2026)
 
@@ -161,9 +211,11 @@ cycle coupé. La série de contrôle répète la référence SF12 en 6 octets :
   résultat publié n'en dépend.
 
 **Fenêtres RX2 allongées** (le module détecte un préambule et reste en
-réception) : 4 messages sur 603 mesurés du 10 au 12 novembre (validation SF7 :
+réception) : 5 messages sur 884 mesurés du 10 au 13 novembre (validation SF7 :
 558 ms, 52,4 mJ ; sonde SF8 20 octets : 371 ms, 55,3 mJ ; sonde SF9 51 octets :
-1 282 ms, 133,3 mJ ; repli SF10 20 octets : 449 ms, 105,7 mJ). Elles sont gardées dans les statistiques : la moyenne est la valeur
+1 282 ms, 133,3 mJ ; repli SF10 20 octets : 449 ms, 105,7 mJ ; chauffe SF7 de
+la condition 8 : 1 395 ms, 91,0 mJ, avec `mac_err` sur un uplink non confirmé,
+ce qui confirme la réception d'une trame étrangère rejetée). Elles sont gardées dans les statistiques : la moyenne est la valeur
 à retenir pour le modèle d'énergie.
 
 ## Colonnes du CSV

@@ -1,0 +1,75 @@
+{
+  "name": "2026-11-13_1624_7330_smu3300_abp-uncnf-sf7-6o-x10-sensib-9-mote-tournee",
+  "args": {
+    "sf": [
+      7
+    ],
+    "reps": 10,
+    "mode": "uncnf",
+    "payload": 6,
+    "sleep_ms": 4000,
+    "rxdelay1": 1000,
+    "rx2_dr": 0,
+    "no_duty_cycle": false,
+    "warmup": 1,
+    "i_tx_ref": 0.0,
+    "mv": 3300,
+    "label": "-sensib-9-mote-tournee",
+    "reanalyse": null
+  },
+  "acquisition": {
+    "git": "c500007",
+    "sha256": {
+      "banc_pi.py": "7355b75f5c6a618e",
+      "ppk2_record.py": "fbce0c0bdcf04306",
+      "banc_ppk2.py": "d82240231e45f723"
+    }
+  },
+  "analysis": {
+    "git": "c500007",
+    "sha256": {
+      "banc_pi.py": "7355b75f5c6a618e",
+      "ppk2_record.py": "fbce0c0bdcf04306",
+      "banc_ppk2.py": "d82240231e45f723"
+    }
+  },
+  "pi_times": true,
+  "setup": {
+    "event": "setup",
+    "version": "RN2483 1.0.6 RC3 May 18 2021 18:35:00",
+    "vdd_mv": "3233",
+    "hweui": "0004A30B00FD7330",
+    "rxdelay1": "1000",
+    "rxdelay2": "2000",
+    "rx2": "0 869525000",
+    "pwridx": "1",
+    "retx": "0",
+    "dcycle": [
+      "302",
+      "302",
+      "302"
+    ],
+    "dcycleps": "1"
+  },
+  "end": {
+    "event": "done",
+    "attempts": 11,
+    "resets": []
+  },
+  "recorder": {
+    "port": "COM7",
+    "mv": 3300,
+    "calibrated": "0",
+    "hw": "56484",
+    "bytes": 37318656,
+    "samples": 9329664,
+    "host_seconds": 93.28612150000117,
+    "cur": "C:\\Users\\yanis\\banc-ppk2\\data\\2026-11-13_1624_7330_smu3300_abp-uncnf-sf7-6o-x10-sensib-9-mote-tournee.cur.f32",
+    "dig": "C:\\Users\\yanis\\banc-ppk2\\data\\2026-11-13_1624_7330_smu3300_abp-uncnf-sf7-6o-x10-sensib-9-mote-tournee.dig.u8"
+  },
+  "thresholds_ua": {
+    "tx": 30000,
+    "active": 8000
+  },
+  "tolerance_samples": 500
+}

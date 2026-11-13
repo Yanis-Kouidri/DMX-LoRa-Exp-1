@@ -598,7 +598,10 @@ Uplink non confirmé de 6 octets, séquence complète (émission, RX1, RX2), `pw
 - **Conséquence pour la phase 0** : p est la probabilité qu'une sonde tombe pendant un contact SF7 avec la gateway mobile. Des sondes réparties au hasard dans la période réussiraient trop rarement si la gateway ne passe que quelques heures par semaine. Le gain dépend donc de la **planification des sondes** (sonder quand la gateway a des chances de passer), et la tournée pilote doit mesurer, en plus de la part de la boucle à portée SF7, la probabilité qu'une sonde envoyée pendant une tournée soit reçue.
 - **`rx1_delay`** : à 3 s au lieu de 1 s, une sonde SF7 ratée coûte 57,90 mJ (+49 %). Le délai de 1 s est donc à tenir pour la gateway mobile en 4G.
 - **Taille de la charge utile** : une sonde SF7 ratée coûte 41,6 mJ en 20 octets et 47,9 mJ en 51 octets (38,8 mJ en 6 octets) ; détail dans [`Mote/banc-ppk2/`](../Mote/banc-ppk2/README.md).
-- **Reste à mesurer** : la sonde réussie (OTAA, à portée de la gateway de l'IRIT) ; le repli en SF10 à SF12 en 20 et 51 octets.
+- **Repli selon la taille** : 20 octets 97,4 / 172,3 / 286,8 mJ, 51 octets 130,7 / 248,1 mJ (SF10 / SF11 / SF12) ; la taille pèse bien plus sur le repli que sur la sonde SF7, ce qui augmente l'économie d'une sonde réussie quand le tampon grossit.
+- **Sensibilité à l'environnement de l'antenne (13 novembre 2026)** : le courant d'émission varie de −14 % à +7 % selon la position de la carte et de l'antenne (un objet métallique à côté de l'antenne n'a pas d'effet). Sur l'énergie d'un message, environ ±3 % en SF7 et jusqu'à −12 % / +6 % en SF12, à annoncer comme incertitude : les valeurs mesurées valent pour la mote posée à plat, antenne à plat. Pour un repli en SF12, le seuil p* varie d'environ 0,17 à 0,20. Orientation des antennes sur le terrain à relever pour discuter la représentativité.
+- **Émission manquante** : 1 message sur 884 a reçu `mac_tx_ok` sans émission mesurée ; sur le terrain, il serait compté comme perdu par la propagation. **Fenêtres RX2 allongées** : 5 sur 884, jusqu'à +136 % sur le message, par réception de trames d'autres réseaux sur 869,525 MHz.
+- **Reste à mesurer** : la sonde réussie (OTAA, à portée de la gateway de l'IRIT) ; le repli SF12 en 51 octets.
 
 ## 10. Indicateurs et statistiques
 
