@@ -7,7 +7,7 @@
   ],
   "timezone": "Europe/Paris",
   "schemaVersion": 41,
-  "version": 1,
+  "version": 2,
   "editable": true,
   "graphTooltip": 0,
   "timepicker": {
@@ -248,8 +248,8 @@
       "gridPos": {
         "x": 0,
         "y": 9,
-        "w": 14,
-        "h": 10
+        "w": 24,
+        "h": 9
       },
       "description": "Moyenne des messages retenus. SF7 à SF9 : sondes ratées (et uplinks non confirmés en 6 octets, de même coût). SF10 à SF12 : uplinks non confirmés (repli). Une barre absente est un cas pas encore mesuré.",
       "datasource": {
@@ -355,9 +355,9 @@
       "title": "Durée d'un message de 6 octets : où passe le temps",
       "id": 4,
       "gridPos": {
-        "x": 14,
-        "y": 9,
-        "w": 10,
+        "x": 0,
+        "y": 18,
+        "w": 12,
         "h": 10
       },
       "description": "Durées moyennes, du début de l'émission à la fin de RX2. Les attentes (environ 2 s, module au repos à 4,3 mA) et RX2 ne dépendent pas du SF : c'est le coût fixe d'un message.",
@@ -399,7 +399,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "ms",
+          "unit": "suffix: ms",
           "decimals": 0,
           "min": 0,
           "noValue": "–",
@@ -407,7 +407,133 @@
             "fillOpacity": 90,
             "lineWidth": 0,
             "axisBorderShow": false,
-            "axisGridShow": true
+            "axisGridShow": true,
+            "axisLabel": "Durée moyenne (ms)"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Émission"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eb6834"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Attentes au repos"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#9a9a94"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RX1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1baf7a"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RX2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2a78d6"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Énergie d'un message de 6 octets : où passe l'énergie (estimation)",
+      "id": 5,
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 10
+      },
+      "description": "Estimation : le banc mesure l'énergie totale du message, pas celle de chaque phase. Attentes : courant de repos mesuré avant le message, sur la durée des attentes. RX1 et RX2 : durée de la fenêtre multipliée par la puissance en réception, déduite de l'écart entre les séries RX2 en SF12 et RX2 en SF9. Émission : le reste de l'énergie mesurée. Le total de chaque barre est l'énergie mesurée.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "efwxza0hb47wgf"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "efwxza0hb47wgf"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH paires AS (\n  -- Puissance en réception au-dessus du fond : écart d'énergie entre RX2 en\n  -- SF12 et en SF9, rapporté à l'écart de durée de la fenêtre RX2\n  SELECT (avg(energy_mj) FILTER (WHERE rx2_sf = 12) - avg(energy_mj) FILTER (WHERE rx2_sf = 9))\n       / (avg(rx2_ms) FILTER (WHERE rx2_sf = 12) - avg(rx2_ms) FILTER (WHERE rx2_sf = 9)) AS mj_par_ms\n  FROM ppk2_results\n  WHERE payload_bytes = 6 AND rx1_delay_ms = 1000\n  GROUP BY sf, mode\n  HAVING count(*) FILTER (WHERE rx2_sf = 9) > 0 AND count(*) FILTER (WHERE rx2_sf = 12) > 0\n), rx AS (\n  SELECT avg(mj_par_ms) AS mj_par_ms FROM paires\n), m AS (\n  SELECT sf, energy_mj,\n    rx.mj_par_ms * rx1_ms AS e_rx1,\n    rx.mj_par_ms * rx2_ms AS e_rx2,\n    (i_idle_ma - i_sleep_ma) * source_mv / 1000.0 * (duration_ms - tx_ms - rx1_ms - rx2_ms) / 1000.0 AS e_attente\n  FROM ppk2_results, rx\n  WHERE mode = 'uncnf' AND payload_bytes = 6 AND rx2_sf = 12 AND rx1_delay_ms = 1000\n)\nSELECT 'SF' || sf AS \"SF\",\n  avg(energy_mj - e_attente - e_rx1 - e_rx2) AS \"Émission\",\n  avg(e_attente) AS \"Attentes au repos\",\n  avg(e_rx1) AS \"RX1\",\n  avg(e_rx2) AS \"RX2\"\nFROM m\nGROUP BY sf\nORDER BY sf",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "SF",
+        "orientation": "horizontal",
+        "stacking": "normal",
+        "showValue": "never",
+        "groupWidth": 0.72,
+        "barWidth": 0.92,
+        "barRadius": 0.08,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "mJ",
+          "decimals": 1,
+          "min": 0,
+          "noValue": "–",
+          "custom": {
+            "fillOpacity": 90,
+            "lineWidth": 0,
+            "axisBorderShow": false,
+            "axisGridShow": true,
+            "axisLabel": "Énergie moyenne (mJ)"
           }
         },
         "overrides": [
@@ -477,10 +603,10 @@
     {
       "type": "barchart",
       "title": "Sonde ratée ou uplink non confirmé (6 octets)",
-      "id": 5,
+      "id": 6,
       "gridPos": {
         "x": 0,
-        "y": 19,
+        "y": 28,
         "w": 8,
         "h": 8
       },
@@ -571,10 +697,10 @@
     {
       "type": "barchart",
       "title": "Effet du débit de RX2 (6 octets)",
-      "id": 6,
+      "id": 7,
       "gridPos": {
         "x": 8,
-        "y": 19,
+        "y": 28,
         "w": 8,
         "h": 8
       },
@@ -665,10 +791,10 @@
     {
       "type": "barchart",
       "title": "Effet de rx1_delay (6 octets, RX2 en SF12)",
-      "id": 7,
+      "id": 8,
       "gridPos": {
         "x": 16,
-        "y": 19,
+        "y": 28,
         "w": 8,
         "h": 8
       },
@@ -759,10 +885,10 @@
     {
       "type": "table",
       "title": "Seuil de rentabilité p* de la sonde ($charge octets, RX2 en SF$rx2)",
-      "id": 8,
+      "id": 9,
       "gridPos": {
         "x": 0,
-        "y": 27,
+        "y": 36,
         "w": 11,
         "h": 8
       },
@@ -871,10 +997,10 @@
     {
       "type": "trend",
       "title": "Gain d'énergie selon la probabilité de réussite d'une sonde SF$sonde ($charge octets, RX2 en SF$rx2)",
-      "id": 9,
+      "id": 10,
       "gridPos": {
         "x": 11,
-        "y": 27,
+        "y": 36,
         "w": 13,
         "h": 8
       },
@@ -1013,10 +1139,10 @@
     {
       "type": "trend",
       "title": "Répétabilité : écart de chaque message à la médiane de son SF",
-      "id": 10,
+      "id": 11,
       "gridPos": {
         "x": 0,
-        "y": 35,
+        "y": 44,
         "w": 24,
         "h": 8
       },
@@ -1109,10 +1235,10 @@
     {
       "type": "table",
       "title": "Séries mesurées",
-      "id": 11,
+      "id": 12,
       "gridPos": {
         "x": 0,
-        "y": 43,
+        "y": 52,
         "w": 24,
         "h": 12
       },

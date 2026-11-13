@@ -475,12 +475,31 @@ résultats ; les figures du papier viendront d'un script versionné.
 | Chiffres clés | Séries et messages retenus, énergie d'un message de 6 octets en SF7 et en SF12, rapport des deux |
 | Énergie selon le SF et la taille | Moyenne par SF pour 6, 20 et 51 octets (`rx1_delay` 1 s, RX2 en SF12) ; barre absente : cas non mesuré |
 | Durée d'un message | Émission, attentes au repos, RX1 et RX2 par SF, en 6 octets |
+| Énergie d'un message par phase (estimation) | Mêmes phases en énergie, par SF, en 6 octets : voir la méthode ci-dessous |
 | Sonde ratée ou uplink non confirmé | Les deux coûts côte à côte, SF7 à SF9 |
 | Effet du débit de RX2, effet de `rx1_delay` | Mêmes messages avec RX2 en SF9, ou `rx1_delay` à 3 s |
 | Seuil de rentabilité p* | p* = E_sonde ratée / E_repli par SF de repli et SF de sonde (plan, section 9), selon les sélecteurs « Charge utile » et « RX2 » |
 | Gain selon la probabilité de réussite | Droites gain = p − p* par SF de repli, pour la sonde du sélecteur « Sonde » : un calcul à partir des énergies mesurées, pas une mesure de terrain |
 | Répétabilité | Écart de chaque message à la médiane de son SF, pour la série du sélecteur « Série » |
 | Séries mesurées | Par série et par SF : effectif, moyenne, écart-type, CV, extrêmes, fenêtres RX2 allongées, rôle (résultats ou contrôle de méthode) |
+
+**Énergie par phase : une estimation.** Le banc donne l'énergie totale d'un
+message, pas celle de chaque phase. Le panneau la répartit ainsi (ajout du
+13 novembre 2026) :
+
+- attentes au repos : (courant de repos − fond) mesurés avant le message, à la
+  tension de la source, sur la durée des attentes ;
+- RX1 et RX2 : durée de la fenêtre × puissance en réception au-dessus du fond,
+  déduite de l'écart d'énergie entre les séries RX2 en SF12 et RX2 en SF9
+  rapporté à l'écart de durée de la fenêtre (quatre paires de séries, de 41,3 à
+  44,9 mW, moyenne 43,1 mW, soit ± 4 %) ;
+- émission : le reste, si bien que le total de chaque barre est l'énergie
+  mesurée.
+
+L'incertitude sur la puissance en réception se reporte sur RX1 et RX2
+(RX2 : 11,4 ± 0,5 mJ) et, en sens inverse, sur l'émission. Une valeur exacte
+demanderait d'intégrer chaque phase sur les échantillons bruts dans
+`Mote/src/banc_ppk2.py`.
 
 Les moyennes gardent les messages à fenêtre RX2 allongée, comme dans
 `Mote/banc-ppk2/README.md`. Le panneau « Gain » utilise le type `trend`, encore
