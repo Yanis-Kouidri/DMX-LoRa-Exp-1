@@ -26,6 +26,7 @@ refaite à 10:06.
 | `2026-11-12_1240_…-uncnf-sf10-sf11-sf12-6o-x30-rx2dr3` | 30 × `mac tx uncnf` par SF, SF10 à SF12, 6 octets, RX2 en SF9 | commit `7d1cb9e` | même exécution |
 | `2026-11-12_1453_…-uncnf-sf10-sf11-20o-x30` | 30 × `mac tx uncnf` par SF, SF10 et SF11, 20 octets (premier fragment de la série de repli en 20 octets) | commit `5e7d8fb` | même exécution |
 | `2026-11-12_1618_…-uncnf-sf10-51o-x30` | 30 × `mac tx uncnf`, SF10, 51 octets (premier fragment de la série de repli en 51 octets) | commit `5210933` | même exécution |
+| `2026-11-13_1036_…-uncnf-sf12-6o-x30-nodc-controle` | **Contrôle de méthode**, hors résultats : 30 × `mac tx uncnf` SF12, 6 octets, chambre anéchoïque blindée, duty cycle coupé (`--no-duty-cycle`), 6 s de sommeil entre messages | commit `00a3697` | même exécution |
 
 Pour la série `2026-11-12_1007`, les champs `git` et `sha256` du JSON sont
 faux : ils ont été relevés à la fin de la série, alors que les scripts avaient
@@ -108,6 +109,32 @@ Uplink non confirmé, RX2 en SF12, `rx1_delay` 1 s, n = 30 par case. Moyenne ±
 
 Temps d'émission en 20 octets : 452,6 ms (SF10) et 987,1 ms (SF11) ; en 51 octets :
 698,4 ms (SF10).
+
+## Contrôle de la méthode sans duty cycle (13 novembre 2026)
+
+Pour accélérer les séries à SF élevé (97 % du temps est l'attente du duty
+cycle), le banc a été placé dans une chambre anéchoïque blindée et le duty
+cycle coupé. La série de contrôle répète la référence SF12 en 6 octets :
+
+| | Référence (bureau, duty cycle, 10 nov.) | Contrôle (chambre, sans duty cycle) |
+|---|---|---|
+| Énergie médiane | 220,48 mJ | 219,41 mJ (−0,5 %) |
+| Moyenne ± écart-type | 220,41 ± 0,40 mJ | 219,69 ± 1,78 mJ ; 219,37 sans le 1er message |
+| Courant d'émission moyen | 42,67 mA | 42,44 mA sans le 1er message |
+| Émission, RX1, RX2 | 1 318,9 / 264 / 264 ms | identiques |
+| Fond (module en sommeil) | 1,378 mA | 1,380 mA |
+
+- Écart systématique de −0,5 %, stable du 2e au 30e message : aucune dérive
+  avec des émissions rapprochées (6 s de sommeil au lieu de 133 s). La cause
+  (environnement de l'antenne dans la chambre, température) n'est pas isolée.
+- Le 1er message de la série coûte 229,02 mJ : courant d'émission de
+  44,76 mA au lieu de 42,4 mA, durées normales. Effet probable de la première
+  émission après mise sous tension. Les séries précédentes commençaient en SF7,
+  où l'effet est noyé.
+- **Décision** : les séries de résultats restent faites au bureau, sous duty
+  cycle réglementaire, pour garder des conditions homogènes. Le contrôle valide
+  la méthode pour une campagne future plus lourde (écart à annoncer) ; aucun
+  résultat publié n'en dépend.
 
 **Fenêtres RX2 allongées** (le module détecte un préambule et reste en
 réception) : 4 messages sur 603 mesurés du 10 au 12 novembre (validation SF7 :

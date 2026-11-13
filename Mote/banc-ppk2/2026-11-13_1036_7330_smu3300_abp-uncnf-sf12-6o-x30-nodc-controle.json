@@ -1,0 +1,73 @@
+{
+  "name": "2026-11-13_1036_7330_smu3300_abp-uncnf-sf12-6o-x30-nodc-controle",
+  "args": {
+    "sf": [
+      12
+    ],
+    "reps": 30,
+    "mode": "uncnf",
+    "payload": 6,
+    "sleep_ms": 6000,
+    "rxdelay1": 1000,
+    "rx2_dr": 0,
+    "no_duty_cycle": true,
+    "mv": 3300,
+    "label": "-controle",
+    "reanalyse": null
+  },
+  "acquisition": {
+    "git": "00a3697",
+    "sha256": {
+      "banc_pi.py": "119f17e35063b24d",
+      "ppk2_record.py": "fbce0c0bdcf04306",
+      "banc_ppk2.py": "86ee54f7718bcaa4"
+    }
+  },
+  "analysis": {
+    "git": "00a3697",
+    "sha256": {
+      "banc_pi.py": "119f17e35063b24d",
+      "ppk2_record.py": "fbce0c0bdcf04306",
+      "banc_ppk2.py": "86ee54f7718bcaa4"
+    }
+  },
+  "pi_times": true,
+  "setup": {
+    "event": "setup",
+    "version": "RN2483 1.0.6 RC3 May 18 2021 18:35:00",
+    "vdd_mv": "3223",
+    "hweui": "0004A30B00FD7330",
+    "rxdelay1": "1000",
+    "rxdelay2": "2000",
+    "rx2": "0 869525000",
+    "pwridx": "1",
+    "retx": "0",
+    "dcycle": [
+      "0",
+      "0",
+      "0"
+    ],
+    "dcycleps": "1"
+  },
+  "end": {
+    "event": "done",
+    "attempts": 30,
+    "resets": []
+  },
+  "recorder": {
+    "port": "COM7",
+    "mv": 3300,
+    "calibrated": "0",
+    "hw": "56484",
+    "bytes": 124452864,
+    "samples": 31113216,
+    "host_seconds": 311.13375829999995,
+    "cur": "C:\\Users\\yanis\\banc-ppk2\\data\\2026-11-13_1036_7330_smu3300_abp-uncnf-sf12-6o-x30-nodc-controle.cur.f32",
+    "dig": "C:\\Users\\yanis\\banc-ppk2\\data\\2026-11-13_1036_7330_smu3300_abp-uncnf-sf12-6o-x30-nodc-controle.dig.u8"
+  },
+  "thresholds_ua": {
+    "tx": 30000,
+    "active": 8000
+  },
+  "tolerance_samples": 500
+}
