@@ -232,6 +232,8 @@ def main() -> None:
     parser.add_argument("--rx2-dr", type=int, default=0, help="débit de RX2 (0 = SF12)")
     parser.add_argument("--no-duty-cycle", action="store_true",
                         help="duty cycle coupé : environnement fermé uniquement")
+    parser.add_argument("--warmup", type=int, default=0,
+                        help="messages de chauffe au premier SF, exclus des statistiques")
     parser.add_argument("--max-attempts", type=int, default=400)
     args = parser.parse_args()
 
@@ -241,6 +243,13 @@ def main() -> None:
     try:
         emit(setup(mote, args))
         attempts = 0
+        for k in range(args.warmup):
+            # Première émission après mise sous tension : courant plus élevé
+            # (contrôle du 13 novembre 2026) ; envoyée, journalisée, exclue.
+            attempts += 1
+            record = attempt(mote, args.sf[0], -1 - k, args)
+            record.update(attempt=attempts, warmup=True)
+            emit(record)
         for sf in args.sf:
             done = 0
             while done < args.reps:

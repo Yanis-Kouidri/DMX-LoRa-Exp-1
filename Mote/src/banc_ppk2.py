@@ -151,6 +151,7 @@ def analyse(record: dict, rise: int, fall: int, cur_path: Path, mv: int) -> dict
     row = {k: record.get(k) for k in (
         "attempt", "rep", "sf", "mode", "payload_bytes", "upctr", "immediate", "final",
         "reset_seen")}
+    row["warmup"] = bool(record.get("warmup"))
     row.update(rise=rise, fall=fall)
     if record.get("t_rise") is not None:
         marker_s = record["t_fall"] - record["t_rise"]
@@ -209,6 +210,8 @@ def main() -> None:
     parser.add_argument("--rx2-dr", type=int, default=0, help="débit de RX2 (0 = SF12)")
     parser.add_argument("--no-duty-cycle", action="store_true",
                         help="duty cycle coupé : en chambre blindée uniquement")
+    parser.add_argument("--warmup", type=int, default=0,
+                        help="messages de chauffe en début de série, exclus des statistiques")
     parser.add_argument("--mv", type=int, default=3300)
     parser.add_argument("--label", default="")
     parser.add_argument("--reanalyse", metavar="NOM",
@@ -245,7 +248,7 @@ def main() -> None:
     pi_args = (f"--sf {' '.join(map(str, args.sf))} --reps {args.reps} --mode {args.mode} "
                f"--payload {args.payload} --sleep-ms {args.sleep_ms} "
                f"--rxdelay1 {args.rxdelay1} --rx2-dr {args.rx2_dr}"
-               f"{' --no-duty-cycle' if args.no_duty_cycle else ''}")
+               f"{' --no-duty-cycle' if args.no_duty_cycle else ''} --warmup {args.warmup}")
     records: list[dict] = []
     pi_log = open(data_dir / f"{name}.pi.jsonl", "w")  # sauvegardé avant toute analyse
     with open(SRC / "banc_pi.py", "rb") as script, pi_log:
@@ -317,7 +320,8 @@ def analyse_series(name: str, records: list[dict], summary: dict | None,
                 gaps[k] - round(statistics.median(same))
                 if same and tx[k - 1]["sf"] == record["sf"] else 0)
         row["valid"] = (
-            record["immediate"] == "ok"
+            not record.get("warmup")
+            and record["immediate"] == "ok"
             and not record["reset_seen"]
             and "energy_mj" in row
             and abs(row["gap_samples_error"]) <= TOLERANCE_SAMPLES
@@ -358,7 +362,10 @@ def analyse_series(name: str, records: list[dict], summary: dict | None,
               f"{statistics.stdev(e) if len(e) > 1 else 0:>10.2f} {min(e):>7.2f} {max(e):>7.2f} "
               f"{statistics.fmean(r['duration_ms'] for r in ok):>10.1f} "
               f"{statistics.fmean(r['i_sleep_ma'] for r in ok):>11.3f}")
-    rejected = [r for r in rows if not r["valid"]]
+    rejected = [r for r in rows if not r["valid"] and not r["warmup"]]
+    warm = [r for r in rows if r["warmup"]]
+    if warm:
+        print("chauffe (exclue) : " + ", ".join(f"{r.get('energy_mj', '?')} mJ" for r in warm))
     print(f"{len(rejected)} tentative(s) écartée(s) ; fichiers : {WIN_USER_DIR_WIN}\\data\\{name}.*")
 
 
