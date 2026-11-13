@@ -512,7 +512,7 @@ en bêta dans Grafana 11.6.
 Grafana de rôle `Viewer` lisent les quatre tableaux de bord sans pouvoir les
 modifier ni en créer (vérifié par l'API : lecture acceptée, écriture
 refusée) : `directeurs`, partagé par les directeurs de thèse, et `lina`,
-compte personnel d'une relectrice. Les mots de passe ne sont pas versionnés :
+compte personnel d'une collègue. Les mots de passe ne sont pas versionnés :
 ils sont sur le serveur dans `~/grafana-compte-directeurs.txt` et
 `~/grafana-compte-lina.txt` (lisibles par `ubuntu` seulement) et se changent
 dans Grafana (Administration → Users).
