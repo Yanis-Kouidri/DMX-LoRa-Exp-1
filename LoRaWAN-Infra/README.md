@@ -508,6 +508,14 @@ Les moyennes gardent les messages à fenêtre RX2 allongée, comme dans
 `Mote/banc-ppk2/README.md`. Le panneau « Gain » utilise le type `trend`, encore
 en bêta dans Grafana 11.6.
 
+**Compte en lecture seule.** Depuis le 13 novembre 2026, le compte Grafana
+`directeurs` (rôle `Viewer`, partagé par les directeurs de thèse) lit les
+quatre tableaux de bord sans pouvoir les modifier ni en créer (vérifié par
+l'API : lecture et requêtes acceptées, écriture refusée). Son mot de passe
+n'est pas versionné : il est sur le serveur dans
+`~/grafana-compte-directeurs.txt` (lisible par `ubuntu` seulement) et se
+change dans Grafana (Administration → Users).
+
 Les tableaux de bord sont modifiables dans l'interface, mais les fichiers JSON
 de `configuration/grafana/dashboards/` font foi. Pour garder une modification,
 exporter le tableau de bord (Share → Export → Save to file, sans cocher
