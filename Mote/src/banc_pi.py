@@ -169,7 +169,7 @@ def setup(mote: Mote, args: argparse.Namespace) -> dict:
 
 
 def payload_hex(rep: int, sf: int, length: int) -> str:
-    head = rep.to_bytes(2, "big") + bytes([sf])
+    head = (rep & 0xFFFF).to_bytes(2, "big") + bytes([sf])  # chauffe : rep négatif
     return (head + b"\xaa" * max(0, length - len(head)))[:length].hex().upper()
 
 
