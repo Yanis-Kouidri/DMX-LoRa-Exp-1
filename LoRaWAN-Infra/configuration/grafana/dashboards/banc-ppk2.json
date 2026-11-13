@@ -7,7 +7,7 @@
   ],
   "timezone": "Europe/Paris",
   "schemaVersion": 41,
-  "version": 2,
+  "version": 3,
   "editable": true,
   "graphTooltip": 0,
   "timepicker": {
@@ -360,7 +360,7 @@
         "w": 12,
         "h": 10
       },
-      "description": "Durées moyennes, du début de l'émission à la fin de RX2. Les attentes (environ 2 s, module au repos à 4,3 mA) et RX2 ne dépendent pas du SF : c'est le coût fixe d'un message.",
+      "description": "Durées moyennes, du début de l'émission à la fin de RX2 (total affiché à côté du SF). Les attentes (environ 2 s, module au repos à 4,3 mA) et RX2 ne dépendent pas du SF : c'est le coût fixe d'un message.",
       "datasource": {
         "type": "grafana-postgresql-datasource",
         "uid": "efwxza0hb47wgf"
@@ -374,7 +374,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT 'SF' || sf AS \"SF\",\n  avg(tx_ms) AS \"Émission\",\n  avg(duration_ms - tx_ms - rx1_ms - rx2_ms) AS \"Attentes au repos\",\n  avg(rx1_ms) AS \"RX1\",\n  avg(rx2_ms) AS \"RX2\"\nFROM ppk2_results\nWHERE mode = 'uncnf' AND payload_bytes = 6 AND rx2_sf = 12 AND rx1_delay_ms = 1000\nGROUP BY sf\nORDER BY sf",
+          "rawSql": "SELECT 'SF' || sf || ' · total ' || round(avg(duration_ms)) || ' ms' AS \"SF\",\n  avg(tx_ms) AS \"Émission\",\n  avg(duration_ms - tx_ms - rx1_ms - rx2_ms) AS \"Attentes au repos\",\n  avg(rx1_ms) AS \"RX1\",\n  avg(rx2_ms) AS \"RX2\"\nFROM ppk2_results\nWHERE mode = 'uncnf' AND payload_bytes = 6 AND rx2_sf = 12 AND rx1_delay_ms = 1000\nGROUP BY sf\nORDER BY sf",
           "refId": "A"
         }
       ],
@@ -477,7 +477,7 @@
     },
     {
       "type": "barchart",
-      "title": "Énergie d'un message de 6 octets : où passe l'énergie (estimation)",
+      "title": "Énergie d'un message de 6 octets : où passe l'énergie (estimation provisoire)",
       "id": 5,
       "gridPos": {
         "x": 12,
@@ -485,7 +485,7 @@
         "w": 12,
         "h": 10
       },
-      "description": "Estimation : le banc mesure l'énergie totale du message, pas celle de chaque phase. Attentes : courant de repos mesuré avant le message, sur la durée des attentes. RX1 et RX2 : durée de la fenêtre multipliée par la puissance en réception, déduite de l'écart entre les séries RX2 en SF12 et RX2 en SF9. Émission : le reste de l'énergie mesurée. Le total de chaque barre est l'énergie mesurée.",
+      "description": "Répartition provisoire, à remplacer par un calcul précis par phase sur les échantillons bruts quand les séries du banc seront terminées. Le total affiché est l'énergie mesurée. Estimation : le banc mesure l'énergie totale du message, pas celle de chaque phase. Attentes : courant de repos mesuré avant le message, sur la durée des attentes. RX1 et RX2 : durée de la fenêtre multipliée par la puissance en réception, déduite de l'écart entre les séries RX2 en SF12 et RX2 en SF9. Émission : le reste de l'énergie mesurée. Le total de chaque barre est l'énergie mesurée.",
       "datasource": {
         "type": "grafana-postgresql-datasource",
         "uid": "efwxza0hb47wgf"
@@ -499,7 +499,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH paires AS (\n  -- Puissance en réception au-dessus du fond : écart d'énergie entre RX2 en\n  -- SF12 et en SF9, rapporté à l'écart de durée de la fenêtre RX2\n  SELECT (avg(energy_mj) FILTER (WHERE rx2_sf = 12) - avg(energy_mj) FILTER (WHERE rx2_sf = 9))\n       / (avg(rx2_ms) FILTER (WHERE rx2_sf = 12) - avg(rx2_ms) FILTER (WHERE rx2_sf = 9)) AS mj_par_ms\n  FROM ppk2_results\n  WHERE payload_bytes = 6 AND rx1_delay_ms = 1000\n  GROUP BY sf, mode\n  HAVING count(*) FILTER (WHERE rx2_sf = 9) > 0 AND count(*) FILTER (WHERE rx2_sf = 12) > 0\n), rx AS (\n  SELECT avg(mj_par_ms) AS mj_par_ms FROM paires\n), m AS (\n  SELECT sf, energy_mj,\n    rx.mj_par_ms * rx1_ms AS e_rx1,\n    rx.mj_par_ms * rx2_ms AS e_rx2,\n    (i_idle_ma - i_sleep_ma) * source_mv / 1000.0 * (duration_ms - tx_ms - rx1_ms - rx2_ms) / 1000.0 AS e_attente\n  FROM ppk2_results, rx\n  WHERE mode = 'uncnf' AND payload_bytes = 6 AND rx2_sf = 12 AND rx1_delay_ms = 1000\n)\nSELECT 'SF' || sf AS \"SF\",\n  avg(energy_mj - e_attente - e_rx1 - e_rx2) AS \"Émission\",\n  avg(e_attente) AS \"Attentes au repos\",\n  avg(e_rx1) AS \"RX1\",\n  avg(e_rx2) AS \"RX2\"\nFROM m\nGROUP BY sf\nORDER BY sf",
+          "rawSql": "WITH paires AS (\n  -- Puissance en réception au-dessus du fond : écart d'énergie entre RX2 en\n  -- SF12 et en SF9, rapporté à l'écart de durée de la fenêtre RX2\n  SELECT (avg(energy_mj) FILTER (WHERE rx2_sf = 12) - avg(energy_mj) FILTER (WHERE rx2_sf = 9))\n       / (avg(rx2_ms) FILTER (WHERE rx2_sf = 12) - avg(rx2_ms) FILTER (WHERE rx2_sf = 9)) AS mj_par_ms\n  FROM ppk2_results\n  WHERE payload_bytes = 6 AND rx1_delay_ms = 1000\n  GROUP BY sf, mode\n  HAVING count(*) FILTER (WHERE rx2_sf = 9) > 0 AND count(*) FILTER (WHERE rx2_sf = 12) > 0\n), rx AS (\n  SELECT avg(mj_par_ms) AS mj_par_ms FROM paires\n), m AS (\n  SELECT sf, energy_mj,\n    rx.mj_par_ms * rx1_ms AS e_rx1,\n    rx.mj_par_ms * rx2_ms AS e_rx2,\n    (i_idle_ma - i_sleep_ma) * source_mv / 1000.0 * (duration_ms - tx_ms - rx1_ms - rx2_ms) / 1000.0 AS e_attente\n  FROM ppk2_results, rx\n  WHERE mode = 'uncnf' AND payload_bytes = 6 AND rx2_sf = 12 AND rx1_delay_ms = 1000\n)\nSELECT 'SF' || sf || ' · total ' || replace(to_char(avg(energy_mj), 'FM9990.0'), '.', ',') || ' mJ' AS \"SF\",\n  avg(energy_mj - e_attente - e_rx1 - e_rx2) AS \"Émission\",\n  avg(e_attente) AS \"Attentes au repos\",\n  avg(e_rx1) AS \"RX1\",\n  avg(e_rx2) AS \"RX2\"\nFROM m\nGROUP BY sf\nORDER BY sf",
           "refId": "A"
         }
       ],

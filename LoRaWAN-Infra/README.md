@@ -474,8 +474,8 @@ résultats ; les figures du papier viendront d'un script versionné.
 |---|---|
 | Chiffres clés | Séries et messages retenus, énergie d'un message de 6 octets en SF7 et en SF12, rapport des deux |
 | Énergie selon le SF et la taille | Moyenne par SF pour 6, 20 et 51 octets (`rx1_delay` 1 s, RX2 en SF12) ; barre absente : cas non mesuré |
-| Durée d'un message | Émission, attentes au repos, RX1 et RX2 par SF, en 6 octets |
-| Énergie d'un message par phase (estimation) | Mêmes phases en énergie, par SF, en 6 octets : voir la méthode ci-dessous |
+| Durée d'un message | Émission, attentes au repos, RX1 et RX2 par SF, en 6 octets ; durée totale à côté du SF |
+| Énergie d'un message par phase (estimation provisoire) | Mêmes phases en énergie, par SF, en 6 octets ; énergie totale mesurée à côté du SF ; voir la méthode ci-dessous |
 | Sonde ratée ou uplink non confirmé | Les deux coûts côte à côte, SF7 à SF9 |
 | Effet du débit de RX2, effet de `rx1_delay` | Mêmes messages avec RX2 en SF9, ou `rx1_delay` à 3 s |
 | Seuil de rentabilité p* | p* = E_sonde ratée / E_repli par SF de repli et SF de sonde (plan, section 9), selon les sélecteurs « Charge utile » et « RX2 » |
@@ -483,7 +483,10 @@ résultats ; les figures du papier viendront d'un script versionné.
 | Répétabilité | Écart de chaque message à la médiane de son SF, pour la série du sélecteur « Série » |
 | Séries mesurées | Par série et par SF : effectif, moyenne, écart-type, CV, extrêmes, fenêtres RX2 allongées, rôle (résultats ou contrôle de méthode) |
 
-**Énergie par phase : une estimation.** Le banc donne l'énergie totale d'un
+**Énergie par phase : une estimation provisoire.** Elle sera remplacée par un
+calcul précis par phase quand les séries du banc seront terminées (à faire :
+intégrer chaque phase sur les échantillons bruts, puis réanalyser les séries).
+D'ici là, ces chiffres ne sont pas à publier. Le banc donne l'énergie totale d'un
 message, pas celle de chaque phase. Le panneau la répartit ainsi (ajout du
 13 novembre 2026) :
 
