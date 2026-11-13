@@ -808,4 +808,6 @@ Hypothèses : EU868, BW 125 kHz, CR 4/5, préambule de 8 symboles, CRC activé, 
 
 **Support de présentation** (phases 0 et 1, pour les directeurs de thèse) : https://claude.ai/artifact/CDKfivjox7gLvguU3JwqEL
 
+**Tableau de bord du banc PPK2** (énergie par message, seuil de rentabilité ; copie des résultats de [`Mote/banc-ppk2/`](../Mote/banc-ppk2/README.md), depuis le 13 novembre 2026) : https://grafana.chirpstack.kouidri.fr/d/banc-ppk2
+
 **Support de présentation** (banc PPK2 : énergie par message, sonde ratée, seuil de rentabilité ; go/no-go du 13 novembre 2026) : https://claude.ai/artifact/HQZbtLMEdh3rJM9qzbdMSG

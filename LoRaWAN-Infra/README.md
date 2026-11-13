@@ -411,8 +411,8 @@ d'objets seulement), mot de passe de `banc_ppk2_writer` ajouté à `.env` (copie
 de l'ancien : `.env.bak-2026-11-13`), premier chargement de 11 séries et
 723 messages. Vérifié : `grafana_reader` lit la vue et ne peut pas écrire,
 `banc_ppk2_writer` ne lit pas `uplinks`, et les dix requêtes du tableau de bord
-renvoient des données par l'API de Grafana. Aucun conteneur de production
-redémarré.
+renvoient des données par l'API de Grafana. Rendu des panneaux contrôlé à
+l'écran et validé le même jour. Aucun conteneur de production redémarré.
 
 ### Migrations
 

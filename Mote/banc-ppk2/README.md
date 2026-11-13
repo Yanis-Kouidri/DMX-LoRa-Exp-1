@@ -12,6 +12,30 @@ même nom dans le dossier partagé de l'équipe (Google Drive), sous-dossier
 échantillons bruts : son analyse s'était arrêtée sur une erreur, la série a été
 refaite à 10:06.
 
+## Tableau de bord Grafana
+
+Depuis le 13 novembre 2026, les résultats sont aussi affichés sur
+https://grafana.chirpstack.kouidri.fr/d/banc-ppk2 (énergie selon le SF et la
+taille, durées, effets de RX2 et de `rx1_delay`, seuil de rentabilité p*,
+répétabilité, tableau des séries). Les fichiers de ce dossier font foi : la
+base du serveur n'en est qu'une copie, sans les échantillons bruts, et les
+figures du papier ne viendront pas de Grafana.
+
+Une série n'apparaît qu'après avoir été commitée, poussée, puis chargée sur le
+serveur (`ssh chirpstack-aws`, dans `~/DMX-LoRa-Exp-1/LoRaWAN-Infra`) :
+
+```sh
+git pull --ff-only
+docker compose --profile jobs run --rm banc-ppk2-chargement
+```
+
+Le chargement classe hors résultats les séries lancées avec `--no-duty-cycle`
+ou dont le libellé contient `validation` ; elles ne figurent que dans le
+tableau des séries. Les tentatives marquées `valid` dans le CSV sont toutes
+comptées : pour en écarter, il faut le faire dans l'analyse, pas dans Grafana.
+Détail des tables et des panneaux dans
+[`LoRaWAN-Infra/README.md`](../../LoRaWAN-Infra/README.md#résultats-du-banc-ppk2).
+
 ## Séries
 
 | Série | Contenu | Acquisition | Analyse |
