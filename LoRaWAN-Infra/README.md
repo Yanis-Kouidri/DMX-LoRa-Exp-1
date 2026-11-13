@@ -406,6 +406,14 @@ Le conteneur réutilise l'image du traitement du régime 1a et se connecte avec
 n'écrit que dans ces deux tables. Sans base, `python3
 banc-ppk2/chargement.py --verifier` liste les séries lues et leur classement.
 
+Mise en service le 13 novembre 2026 : migration `006` appliquée (création
+d'objets seulement), mot de passe de `banc_ppk2_writer` ajouté à `.env` (copie
+de l'ancien : `.env.bak-2026-11-13`), premier chargement de 11 séries et
+723 messages. Vérifié : `grafana_reader` lit la vue et ne peut pas écrire,
+`banc_ppk2_writer` ne lit pas `uplinks`, et les dix requêtes du tableau de bord
+renvoient des données par l'API de Grafana. Aucun conteneur de production
+redémarré.
+
 ### Migrations
 
 `configuration/postgresql/initdb/` ne s'exécute qu'à la création du volume
