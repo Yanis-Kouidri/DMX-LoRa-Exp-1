@@ -170,6 +170,12 @@ série SF11 en 51 octets. Test dédié : 11 conditions, 10 messages SF7 de
   −2,7 % à +1,3 % en SF7 ; jusqu'à environ −12 % / +6 % en SF12.
 - Reproductibilité : 0,3 % dans une même session (conditions 1 et 7), 0,75 à
   2 % d'un jour à l'autre.
+- Aucun facteur de correction n'est transposable d'une position à une autre
+  (la condition 2 vaut pour cette position de la mote seulement). Toutes les
+  séries de résultats sont faites mote et antenne à plat ; sur le terrain, les
+  antennes sont verticales, dans des environnements propres à chaque mote. La
+  dépendance à l'emplacement est donc une incertitude sur l'énergie
+  d'émission, pas une correction.
 - Le montage est fragile (fils sur barrettes, soudures à la main) : un
   mouvement de la carte peut aussi modifier le plan de masse et le trajet du
   courant, sans qu'on puisse séparer cet effet de celui de l'antenne. Règle :
