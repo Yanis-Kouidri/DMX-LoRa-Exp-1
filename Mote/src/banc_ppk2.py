@@ -54,6 +54,7 @@ ACTIVE_THRESHOLD_UA = 8_000
 RX_MIN_SAMPLES = 200  # 2 ms
 RX_MERGE_GAP = 50  # 0,5 ms
 TOLERANCE_SAMPLES = 500  # 5 ms
+I_TX_TOLERANCE = 0.01  # écart toléré au courant d'émission de référence
 WAKE_TO_RISE_S = 0.45  # resynchronisation + SETTLE_S de banc_pi.py, avec marge
 PI_HOST = "pi@pi-ppk2"
 MOTE_ID = "7330"
@@ -189,6 +190,9 @@ def analyse(record: dict, rise: int, fall: int, cur_path: Path, mv: int) -> dict
         duration_ms=round(seconds * 1000, 2),
         charge_mc=round(charge_mc, 4),
         tx_ms=round(sum(1 for v in event if v > TX_THRESHOLD_UA) / RATE * 1000, 2),
+        # Courant moyen d'émission : sensible à l'environnement de l'antenne
+        # (13 novembre 2026), sert d'indicateur de stabilité du montage.
+        i_tx_ma=round(statistics.fmean(v for v in event if v > TX_THRESHOLD_UA) / 1000, 3),
         energy_mj=round((charge_mc - row["i_sleep_ma"] * seconds) * mv / 1000, 3),
     )
     rx = runs(event, ACTIVE_THRESHOLD_UA, TX_THRESHOLD_UA)
@@ -212,6 +216,8 @@ def main() -> None:
                         help="duty cycle coupé : en chambre blindée uniquement")
     parser.add_argument("--warmup", type=int, default=0,
                         help="messages de chauffe en début de série, exclus des statistiques")
+    parser.add_argument("--i-tx-ref", type=float, default=0.0, metavar="MA",
+                        help="courant d'émission de référence : signale les messages à plus de 1 %%")
     parser.add_argument("--mv", type=int, default=3300)
     parser.add_argument("--label", default="")
     parser.add_argument("--reanalyse", metavar="NOM",
@@ -351,7 +357,7 @@ def analyse_series(name: str, records: list[dict], summary: dict | None,
     (data_dir / f"{name}.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False))
 
     print(f"\n{'SF':>3} {'n':>3} {'E moy. (mJ)':>12} {'écart-type':>10} {'min':>7} {'max':>7}"
-          f" {'durée (ms)':>10} {'I fond (mA)':>11}")
+          f" {'durée (ms)':>10} {'I fond (mA)':>11} {'I émis. (mA)':>12}")
     for sf in args.sf:
         ok = [r for r in rows if r["sf"] == sf and r["valid"]]
         if not ok:
@@ -361,7 +367,14 @@ def analyse_series(name: str, records: list[dict], summary: dict | None,
         print(f"{sf:>3} {len(e):>3} {statistics.fmean(e):>12.2f} "
               f"{statistics.stdev(e) if len(e) > 1 else 0:>10.2f} {min(e):>7.2f} {max(e):>7.2f} "
               f"{statistics.fmean(r['duration_ms'] for r in ok):>10.1f} "
-              f"{statistics.fmean(r['i_sleep_ma'] for r in ok):>11.3f}")
+              f"{statistics.fmean(r['i_sleep_ma'] for r in ok):>11.3f} "
+              f"{statistics.fmean(r['i_tx_ma'] for r in ok):>12.2f}")
+    if args.i_tx_ref:
+        off = [r for r in rows if "i_tx_ma" in r
+               and abs(r["i_tx_ma"] / args.i_tx_ref - 1) > I_TX_TOLERANCE]
+        print(f"courant d'émission hors de {args.i_tx_ref} mA ± {I_TX_TOLERANCE:.0%} : "
+              + (", ".join(f"tentative {r['attempt']} ({r['i_tx_ma']} mA)" for r in off)
+                 if off else "aucun message"))
     rejected = [r for r in rows if not r["valid"] and not r["warmup"]]
     warm = [r for r in rows if r["warmup"]]
     if warm:
