@@ -72,6 +72,8 @@ def airtime_seconds(sf: int, payload_bytes: int) -> float:
 def sleep_ms_for(sf: int, args: argparse.Namespace) -> int:
     """Sommeil avant chaque tentative : au moins le temps de repos imposé par le duty cycle."""
 
+    if args.no_duty_cycle:
+        return args.sleep_ms
     airtime = airtime_seconds(sf, args.payload + LORAWAN_OVERHEAD_BYTES)
     return max(args.sleep_ms, math.ceil(airtime * DUTY_CYCLE_FACTOR * 1000))
 
@@ -145,6 +147,12 @@ def setup(mote: Mote, args: argparse.Namespace) -> dict:
     accepted = mote.readline(5)
     if accepted != "accepted":
         raise RuntimeError(f"join ABP : {accepted!r}")
+    if args.no_duty_cycle:
+        # Environnement fermé seulement (chambre blindée) : canaux ABP 0 à 2 à
+        # 100 %, prescaler global levé ; non sauvegardé (pas de mac save).
+        for channel in range(3):
+            mote.expect(f"mac set ch dcycle {channel} 0")
+        mote.expect("mac set dcycleps 1")
     return {
         "event": "setup",
         "version": version,
@@ -155,6 +163,8 @@ def setup(mote: Mote, args: argparse.Namespace) -> dict:
         "rx2": mote.cmd("mac get rx2 868"),
         "pwridx": mote.cmd("mac get pwridx"),
         "retx": mote.cmd("mac get retx"),
+        "dcycle": [mote.cmd(f"mac get ch dcycle {c}") for c in range(3)],
+        "dcycleps": mote.cmd("mac get dcycleps"),
     }
 
 
@@ -220,6 +230,8 @@ def main() -> None:
     parser.add_argument("--rxdelay1", type=int, default=1000)
     parser.add_argument("--pwridx", type=int, default=1)
     parser.add_argument("--rx2-dr", type=int, default=0, help="débit de RX2 (0 = SF12)")
+    parser.add_argument("--no-duty-cycle", action="store_true",
+                        help="duty cycle coupé : environnement fermé uniquement")
     parser.add_argument("--max-attempts", type=int, default=400)
     args = parser.parse_args()
 

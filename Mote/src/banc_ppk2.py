@@ -207,6 +207,8 @@ def main() -> None:
     parser.add_argument("--sleep-ms", type=int, default=4000)
     parser.add_argument("--rxdelay1", type=int, default=1000)
     parser.add_argument("--rx2-dr", type=int, default=0, help="débit de RX2 (0 = SF12)")
+    parser.add_argument("--no-duty-cycle", action="store_true",
+                        help="duty cycle coupé : en chambre blindée uniquement")
     parser.add_argument("--mv", type=int, default=3300)
     parser.add_argument("--label", default="")
     parser.add_argument("--reanalyse", metavar="NOM",
@@ -221,7 +223,8 @@ def main() -> None:
     name = (f"{datetime.now():%Y-%m-%d_%H%M}_{MOTE_ID}_smu{args.mv}_"
             f"abp-{args.mode}-{sfs}-{args.payload}o-x{args.reps}"
             f"{f'-rx2dr{args.rx2_dr}' if args.rx2_dr else ''}"
-            f"{f'-rxd{args.rxdelay1}' if args.rxdelay1 != 1000 else ''}{args.label}")
+            f"{f'-rxd{args.rxdelay1}' if args.rxdelay1 != 1000 else ''}"
+            f"{'-nodc' if args.no_duty_cycle else ''}{args.label}")
     data_dir = WIN_USER_DIR / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy(SRC / "ppk2_record.py", WIN_USER_DIR / "ppk2_record.py")
@@ -241,7 +244,8 @@ def main() -> None:
 
     pi_args = (f"--sf {' '.join(map(str, args.sf))} --reps {args.reps} --mode {args.mode} "
                f"--payload {args.payload} --sleep-ms {args.sleep_ms} "
-               f"--rxdelay1 {args.rxdelay1} --rx2-dr {args.rx2_dr}")
+               f"--rxdelay1 {args.rxdelay1} --rx2-dr {args.rx2_dr}"
+               f"{' --no-duty-cycle' if args.no_duty_cycle else ''}")
     records: list[dict] = []
     pi_log = open(data_dir / f"{name}.pi.jsonl", "w")  # sauvegardé avant toute analyse
     with open(SRC / "banc_pi.py", "rb") as script, pi_log:
