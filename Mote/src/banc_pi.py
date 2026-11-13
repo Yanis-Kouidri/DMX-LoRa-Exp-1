@@ -149,10 +149,10 @@ def setup(mote: Mote, args: argparse.Namespace) -> dict:
         raise RuntimeError(f"join ABP : {accepted!r}")
     if args.no_duty_cycle:
         # Environnement fermé seulement (chambre blindée) : canaux ABP 0 à 2 à
-        # 100 %, prescaler global levé ; non sauvegardé (pas de mac save).
+        # 100 %, non sauvegardé (pas de mac save). Le prescaler global
+        # (dcycleps) n'est que lisible sur le RN2483 1.0.6 : relu ci-dessous.
         for channel in range(3):
             mote.expect(f"mac set ch dcycle {channel} 0")
-        mote.expect("mac set dcycleps 1")
     return {
         "event": "setup",
         "version": version,
